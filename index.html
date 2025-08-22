@@ -1343,13 +1343,16 @@
                     <label for="lockSettings">Lock Settings</label>
                 </div>
             </div>
-
+<div class="settings-section">
+    
+    <h3>Actions</h3>
             <div style="text-align: center; margin: 20px;">
                 <button onclick="exportSettings()">Export Settings</button>
                 <input type="file" id="importSettingsInput" style="display:none;" accept=".json">
                 <button onclick="document.getElementById('importSettingsInput').click()">Import Settings</button>
                 <button id="resetSettings" onclick="resetSettings()">Reset to Defaults</button>
             </div>
+</div>
         </div>
     </div>
 
