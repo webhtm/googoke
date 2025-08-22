@@ -1,0 +1,3043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Googoke</title>
+    
+    <style>
+        h1 {
+            font-family: Franklin Gothic;
+        }
+        button {
+            font-family: Franklin Gothic;
+        }
+        body {
+            font-family: Franklin Gothic;
+            text-align: center;
+            margin: 0;
+            padding: 20px 0;
+            background: linear-gradient(to right, rgb(0, 70, 117), rgb(0, 98, 50));
+            color: white;
+            min-height: 100vh;
+        }
+        
+        body.light-mode {
+            background: linear-gradient(to right, #e0e0e0, #ffff93);
+            color: black;
+        }
+        
+        body.light-mode input[type="search"] {
+            background-color: #eeeeee94;
+            color: black;
+        }
+        
+        body.light-mode input[type="search"]:hover {
+            background-color: #dddddd;
+        }
+        
+        body.light-mode .widget {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+        
+        body.light-mode #photoModal, body.light-mode #webAppModal, body.light-mode #menuModal, body.light-mode #settingsModal, body.light-mode #historyModal, body.light-mode #bookmarksModal, body.light-mode #reminderModal {
+            background: linear-gradient(135deg, #eeeeee, #dddddd);
+            color: black;
+        }
+        
+        body.light-mode .settings-section {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        body.light-mode .setting-item input, body.light-mode .setting-item select, body.light-mode .setting-item textarea {
+            background: rgba(0, 0, 0, 0.1);
+            color: black;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+        }
+        
+        body.light-mode .reminder-item {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        body.light-mode .reminder-form {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        body.light-mode .history-item, body.light-mode .bookmark-item {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        body.light-mode .history-item:hover, body.light-mode .bookmark-item:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        body.light-mode .mediaItem, body.light-mode .appItem {
+            background-color: #bbb;
+        }
+        
+        body.light-mode .mediaItem:hover, body.light-mode .appItem:hover {
+            background-color: #aaa;
+        }
+        
+        .main-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .search-container {
+            position: relative;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        
+        form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="search"] {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: none;
+            background-color: #33333394;
+            color: white;
+            border-radius: 5px;
+            flex: 1;
+            transition: 0.45s ease;
+            
+        }
+        
+        input[type="search"]:hover {
+            background-color: #222;
+        }
+        
+        input[type="search"]:focus {
+            outline: none;
+            color: white;
+        }
+        
+        .search-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .quick-access {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-access button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+        
+        .quick-access button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            
+        }
+        
+        .most-visited-item {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .most-visited-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            
+        }
+        
+        .widgets-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+            padding: 0 20px;
+        }
+        
+        .widget {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .widget.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 999;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        
+        .clock-widget {
+            text-align: center;
+        }
+        
+        .clock-time {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .clock-date {
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        
+        .weather-widget {
+            text-align: center;
+        }
+        
+        .slideshow-widget {
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        
+        .slideshow-content {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        
+        .slideshow-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 5px;
+        }
+        
+        .slide-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+        
+        .slide-dot.active {
+            background: white;
+        }
+        
+        .calendar-widget table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .calendar-widget th, .calendar-widget td {
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 5px;
+            text-align: center;
+        }
+        
+        .calendar-widget .today {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .rss-widget {
+            overflow-y: auto;
+            max-height: 300px;
+        }
+        
+        .rss-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+        
+        .rss-item a {
+            color: inherit;
+        }
+        
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 10px;
+            border: none;
+            background-color: transparent;
+            color: white;
+            transition: ease-in-out 0.3s;
+        }
+        
+        button:hover {
+            background-color: white;
+            color: black;
+        }
+        
+        #searchBtn {
+            background-color: transparent;
+            color: white;
+            border-radius: 20px;
+        }
+        
+        #searchBtn:hover {
+            background-color: rgb(154, 249, 209);
+            color: black;
+        }
+        
+        #homepage, #photos, #webapps {
+            background-color: transparent;
+            color: white;
+        }
+        
+        #homepage:hover, #photos:hover, #webapps:hover {
+            text-decoration: underline;
+        }
+
+        /* Settings search */
+        .settings-search {
+            margin: 20px;
+            padding: 0 20px;
+        }
+
+        .settings-search input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: Franklin Gothic;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .settings-search input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .settings-search input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        /* Modal Styles - Non-transparent */
+        #photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            color: white;
+            text-align: center;
+            padding-top: 50px;
+            overflow-y: auto;
+            transition: 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .settings-section {
+            background: rgba(255, 255, 255, 0.05);
+            margin: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: left;
+        }
+        
+        .settings-section h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        
+        .setting-item {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .setting-item label {
+            min-width: 150px;
+        }
+        
+        .setting-item input, .setting-item select, .setting-item textarea {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: Franklin Gothic;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .setting-item input:focus, .setting-item select:focus, .setting-item textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        
+        .setting-item textarea {
+            resize: vertical;
+            min-height: 80px;
+            width: 300px;
+            line-height: 1.4;
+        }
+        
+        /* Color input specific styling */
+        .setting-item input[type="color"] {
+            width: 60px;
+            height: 40px;
+            padding: 2px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+        }
+        
+        .setting-item input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+            border: none;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .setting-item input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+        
+        .setting-item input[type="color"]::-moz-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+        
+        /* Dropdown/Select styling */
+        .setting-item select {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+        
+        .setting-item select option {
+            background: #2d2d2d;
+            color: white;
+            padding: 10px;
+        }
+        
+        /* Sort controls dropdown */
+        .sort-controls select {
+            padding: 8px 35px 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-family: Franklin Gothic;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+        }
+        
+        .sort-controls select option {
+            background: #2d2d2d;
+            color: white;
+            padding: 8px;
+        }
+        
+        .widget-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .reminder-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .reminder-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            margin: 20px;
+            border-radius: 15px;
+        }
+        
+        .reminder-form h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+        
+        .reminder-form input[type="datetime-local"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0 15px 0;
+            box-sizing: border-box;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: Franklin Gothic;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .reminder-form input[type="datetime-local"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        
+        .reminder-form input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+        
+        .reminder-form textarea {
+            width: 100%;
+            margin: 8px 0 15px 0;
+            box-sizing: border-box;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: Franklin Gothic;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+        }
+        
+        .reminder-form textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        
+        .reminder-form textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .reminder-form button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-family: Franklin Gothic;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .reminder-form button:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            max-width: 350px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        
+        #menuPassword {
+            width: 70%;
+            max-width: 300px;
+        }
+        .toast.overdue {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        
+        .toast-close {
+            float: right;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: 10px;
+            padding: 0;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .history-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+        
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .history-url {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .history-date {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+        
+        .bookmark-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+        
+        .bookmark-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        #depu{margin-bottom: 10px;}
+        .sort-controls {
+            margin: 20px 0;
+        }
+        
+        .sort-controls label {
+            margin-right: 10px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .sort-controls select {
+            padding: 8px 35px 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-family: Franklin Gothic;
+            font-size: 14px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .sort-controls select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        
+        .sort-controls select option {
+            background: #2d2d2d;
+            color: white;
+            padding: 8px;
+        }
+        
+        #mediaContainer, #appContainer, #historyContainer, #bookmarkContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .mediaItem, .appItem, .historyItem {
+            position: relative;
+            margin: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            max-width: 200px;
+            border: 2px solid transparent;
+            background-color: #444;
+            padding: 10px;
+            color: white;
+            transition: 0.3s ease-in-out;
+        }
+        
+        .historyItem {
+            max-width: 400px;
+            word-break: break-all;
+        }
+        
+        .mediaItem.selected, .appItem.selected {
+            background: linear-gradient(#1563b6, rgb(8, 156, 77));
+            border: none;
+        }
+        
+        .mediaItem img, .mediaItem video {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        
+        .upload-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .mediaItem, .appItem:hover, .historyItem:hover {
+            background-color: #1563b6;
+            cursor: pointer;
+        }
+        
+        .upload-buttons button {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .upload-buttons button:hover {
+            color: white;
+            background-color: #74747462;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        #viewerModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #viewerContent {
+            width: 90%;
+            height: 90%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            position: relative;
+        }
+        
+        #viewerContent iframe, #viewerContent img, #viewerContent embed {
+            width: 90%;
+            height: 90%;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(5, 83, 70, 0.96);
+            border: none;
+        }
+        
+        #viewerContent video {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(5, 83, 70, 0.96);
+            border: none;
+        }
+
+        #fullscreenBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        #fullscreenBtn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .video-indicator, .pdf-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #statusMessage {
+            display: none; /* Hidden now, using toasts */
+        }
+        
+        .file-size {
+            display: block;
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            background-color: #444;
+            border-radius: 5px;
+            margin: 5px 0;
+            height: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: #28a745;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 600px) {
+            .widgets-container {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 0 10px;
+            }
+
+            .widget {
+                padding: 10px;
+            }
+
+            .clock-time {
+                font-size: 1.8em;
+            }
+
+            .clock-date {
+                font-size: 1em;
+            }
+
+            .slideshow-widget {
+                height: 150px;
+            }
+
+            .weather-widget h3 {
+                font-size: 1.2em;
+                margin-bottom: 5px;
+            }
+
+            .weather-widget div {
+                font-size: 0.9em;
+            }
+
+            .search-container {
+                max-width: 90%;
+            }
+
+            input[type="search"] {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+
+            .quick-access button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .most-visited-item {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+        #searchBtn {
+            border-radius: 10px;
+        }
+        #resetSettings {
+            background-color: #f44336;
+            margin-top: 20px;
+        }
+        #resetSettings:hover {
+            background-color: #d32f2f;
+        }
+        .password-container {
+            display: none;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        .password-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: Franklin Gothic;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .password-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .verify-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-family: Franklin Gothic;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .verify-btn:hover {
+            background: #45a049;
+        }
+        .modal-content {
+            display: block;
+        }
+        @media (max-width: 600px) {
+    .widgets-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 0 10px;
+    }
+
+    .widget {
+        aspect-ratio: 1 / 1;
+        padding: 10px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .slideshow-widget {
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    .slideshow-content {
+        object-fit: contain;
+    }
+
+    .clock-time {
+        font-size: 1.5em;
+    }
+
+    .clock-date {
+        font-size: 0.8em;
+    }
+
+    .weather-widget h3 {
+        font-size: 1em;
+        margin-bottom: 5px;
+    }
+
+    .weather-widget div {
+        font-size: 0.8em;
+    }
+}
+@media (max-width: 600px) {
+    .weather-widget h3 {
+        font-size: 1.2em;
+        margin-bottom: 8px;
+    }
+
+    .weather-widget div {
+        font-size: 1em;
+        margin-bottom: 4px;
+    }
+
+    .calendar-widget {
+        aspect-ratio: auto;
+        grid-column: span 2;
+        height: auto;
+        min-height: 200px;
+    }
+
+    .calendar-widget table {
+        font-size: 0.9em;
+    }
+
+    .calendar-widget th, .calendar-widget td {
+        padding: 8px;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <button id="homepage">Googoke 2.0</button>
+        <button id="photos">Media</button>
+        <button id="webapps">Web Apps</button>
+
+        <div class="search-container">
+            <form action="https://www.google.com/search" method="GET" target="_blank">
+                <input type="search" id="depu" name="q" placeholder="Search Google or open an URL" list="suggestions">
+                <datalist id="suggestions"></datalist>
+                <button type="submit" id="searchBtn" >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="20" height="18" fill="currentColor">
+                            <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="GTY(event)" >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" width="20" height="18" fill="currentColor">
+                            <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                        </svg>
+                    </button>
+            </form>
+            
+            <div class="quick-access">
+                <button id="bookmarksBtn" style.hover="">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="16" height="16" viewBox="0 0 50 50" fill="currentColor">
+                        <path d="M 37 48 C 36.824219 48 36.652344 47.953125 36.496094 47.863281 L 25 41.15625 L 13.503906 47.863281 C 13.195313 48.042969 12.8125 48.046875 12.503906 47.867188 C 12.191406 47.6875 12 47.359375 12 47 L 12 3 C 12 2.449219 12.449219 2 13 2 L 37 2 C 37.554688 2 38 2.449219 38 3 L 38 47 C 38 47.359375 37.808594 47.6875 37.496094 47.867188 C 37.34375 47.957031 37.171875 48 37 48 Z"></path>
+                    </svg>
+                    
+                </button>
+                <div id="mostVisitedContainer"></div>
+            </div>
+        </div>
+
+        <div class="widgets-container" id="widgetsContainer">
+            <!-- Widgets will be dynamically added here -->
+        </div>
+    </div>
+
+    <div id="statusMessage"></div>
+
+    <!-- All modals remain the same structure but with updated styling -->
+    <div id="photoModal">
+        <button class="close-btn" onclick="closeModal('photoModal')" style.hover="">&times;</button>
+        <h2>Your Media</h2>
+        <div class="upload-buttons">
+            <button onclick="document.getElementById('uploadInput').click()">Choose Media</button>
+            <button onclick="uploadMedia()">Upload Media</button>
+        </div>
+        <input type="file" id="uploadInput" accept="image/*,video/*,.mp4,.webm,.ogg,.mov,.avi,.pdf" multiple style="display: none;">
+        <div id="progressContainer" style="display: none;">
+            <div class="progress-bar">
+                <div id="progressBar" class="progress"></div>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button onclick="openMedia()">Open</button>
+            <button onclick="downloadMedia()">Download</button>
+            <button onclick="deleteMedia()">Delete</button>
+        </div>
+        <div id="mediaContainer"></div>
+    </div>
+
+    <div id="webAppModal">
+        <button class="close-btn" onclick="closeModal('webAppModal')" style.hover="">&times;</button>
+        <h2>Your Web Apps</h2>
+        <div class="upload-buttons">
+            <button onclick="document.getElementById('webAppInput').click()">Choose HTML App</button>
+            <button onclick="uploadWebApp()">Upload App</button>
+        </div>
+        <input type="file" id="webAppInput" accept="text/html" multiple style="display: none;">
+        <div class="action-buttons">
+            <button onclick="openWebApp()">Open</button>
+            <button onclick="downloadWebApp()">Download</button>
+            <button onclick="deleteWebApp()">Delete</button>
+        </div>
+        <div id="appContainer"></div>
+    </div>
+
+    <div id="menuModal">
+        <button class="close-btn" onclick="closeModal('menuModal')" style.hover="">&times;</button>
+        <h2>Googoke Menu</h2>
+        <div class="action-buttons">
+            <button id="openSettings">Settings</button>
+            <button id="openHistory">History</button>
+            <button id="openBookmarks">Bookmarks</button>
+            <button id="openReminders">Reminders</button>
+        </div>
+    </div>
+
+    <div id="settingsModal">
+        <button class="close-btn" onclick="closeModal('settingsModal')" style.hover="">&times;</button>
+        <div class="password-container" id="settingsPasswordContainer">
+            <h2>Enter Password</h2>
+            <input type="password" class="password-input" id="settingsPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'settingsModal')">
+            <button class="verify-btn" onclick="verifyPassword('settingsModal')">Verify</button>
+        </div>
+        <div class="modal-content" id="settingsContent">
+            <h2>Settings</h2>
+            
+            <div class="settings-search">
+                <input type="text" id="settingsSearchInput" placeholder="Search settings..." oninput="searchSettings()">
+            </div>
+            
+            <div class="settings-section" data-keywords="search engine google bing duckduckgo">
+                <h3>Search Settings</h3>
+                <div class="setting-item">
+                    <label for="searchEngine">Search Engine:</label>
+                    <select id="searchEngine">
+                        <option value="google">Google</option>
+                        <option value="bing">Bing</option>
+                        <option value="duckduckgo">DuckDuckGo</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-section" data-keywords="appearance background gradient color theme css custom">
+                <h3>Appearance</h3>
+                <div class="setting-item">
+                    <label for="themeMode">Theme:</label>
+                    <select id="themeMode">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="bgType">Background Type:</label>
+                    <select id="bgType">
+                        <option value="gradient">Gradient</option>
+                        <option value="solid">Solid Color</option>
+                        
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="bgColor1">Background Color 1:</label>
+                    <input type="color" id="bgColor1" value="#004675">
+                </div>
+                <div class="setting-item">
+                    <label for="bgColor2">Background Color 2:</label>
+                    <input type="color" id="bgColor2" value="#006232">
+                </div>
+                <div class="setting-item">
+                    <label for="customBgCss" hidden>Custom Background CSS:</label>
+                    <textarea id="customBgCss" hidden></textarea>
+                </div>
+                <div class="setting-item">
+                    <label for="inputBgType">Search Input Background:</label>
+                    <select id="inputBgType">
+                        <option value="default">Default</option>
+                        <option value="solid">Solid Color</option>
+                        <option value="gradient">Gradient</option>
+                        
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="inputBgColor">Input Background Color 1:</label>
+                    <input type="color" id="inputBgColor" value="#333333">
+                </div>
+                <div class="setting-item">
+                    <label for="inputBgColor2">Input Background Color 2:</label>
+                    <input type="color" id="inputBgColor2" value="#222222">
+                </div>
+                <div class="setting-item">
+                    <label for="inputTextColor">Input Text Color:</label>
+                    <input type="color" id="inputTextColor" value="#ffffff">
+                </div>
+                <div class="setting-item">
+                    <label for="customInputCss" hidden>Custom Input Background CSS:</label>
+                    <textarea id="customInputCss" hidden></textarea>
+                </div>
+                <div class="setting-item">
+                    <label for="menuBgType">Menu Background Type:</label>
+                    <select id="menuBgType">
+                        <option value="gradient">Gradient</option>
+                        <option value="solid">Solid Color</option>
+                        
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="menuBgColor1">Menu Background Color 1:</label>
+                    <input type="color" id="menuBgColor1" value="#1a1a1a">
+                </div>
+                <div class="setting-item">
+                    <label for="menuBgColor2">Menu Background Color 2:</label>
+                    <input type="color" id="menuBgColor2" value="#2d2d2d">
+                </div>
+                <div class="setting-item">
+                    <label for="customMenuBgCss" hidden>Custom Menu Background CSS:</label>
+                    <textarea id="customMenuBgCss" hidden></textarea>
+                </div>
+            </div>
+
+            <div class="settings-section" data-keywords="widgets clock weather slideshow image video calendar rss">
+                <h3>Widgets</h3>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="showClock" checked>
+                    <label for="showClock">Show Clock</label>
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="showWeather">
+                    <label for="showWeather">Show Weather</label>
+                </div>
+                <div class="setting-item">
+                    <label for="weatherLocation">Weather Location:</label>
+                    <input id="weatherLocation" type="text" placeholder="e.g., New York">
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="showImageSlideshow">
+                    <label for="showImageSlideshow">Show Image Slideshow</label>
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="showVideoSlideshow">
+                    <label for="showVideoSlideshow">Show Video Slideshow</label>
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="showCalendar">
+                    <label for="showCalendar">Show Calendar</label>
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="showRSS" hidden>
+                    <label for="showRSS" hidden>Show RSS Feed Reader</label>
+                </div>
+                <div class="setting-item">
+                    <label for="rssUrls" hidden>RSS Feeds (comma-separated):</label>
+                    <input id="rssUrls" type="text" placeholder="https://example.com/rss" hidden>
+                </div>
+            </div>
+
+            <div class="settings-section" data-keywords="clock time format seconds date">
+                <h3>Clock Settings</h3>
+                <div class="setting-item">
+                    <label for="clockTimeFormat">Time Format:</label>
+                    <select id="clockTimeFormat">
+                        <option value="12">12-hour</option>
+                        <option value="24">24-hour</option>
+                    </select>
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="clockShowSeconds" checked>
+                    <label for="clockShowSeconds">Show Seconds</label>
+                </div>
+                <div class="setting-item">
+                    <label for="clockDateFormat">Date Format:</label>
+                    <select id="clockDateFormat">
+                        <option value="short">Short (MM/DD/YYYY)</option>
+                        <option value="long">Long (Month Day, Year)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-section" data-keywords="privacy history tracking">
+                <h3>Privacy</h3>
+                <div class="setting-item">
+                    <label for="enableHistory">Enable History:</label>
+                    <input type="checkbox" id="enableHistory" checked>
+                </div>
+                <button onclick="clearAllStorage()">Clear Cache</button>
+            </div>
+
+            <div class="settings-section" data-keywords="security lock menu password">
+                <h3>Security</h3>
+                <div class="setting-item">
+                    <label for="menuPassword">Menu Password:</label>
+                    <input type="password" id="menuPassword" placeholder="Set password">
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="lockHistory">
+                    <label for="lockHistory">Lock History</label>
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="lockBookmarks">
+                    <label for="lockBookmarks">Lock Bookmarks</label>
+                </div>
+                <div class="widget-checkbox">
+                    <input type="checkbox" id="lockSettings">
+                    <label for="lockSettings">Lock Settings</label>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 20px;">
+                <button onclick="exportSettings()">Export Settings</button>
+                <input type="file" id="importSettingsInput" style="display:none;" accept=".json">
+                <button onclick="document.getElementById('importSettingsInput').click()">Import Settings</button>
+                <button id="resetSettings" onclick="resetSettings()">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="historyModal">
+        <button class="close-btn" onclick="closeModal('historyModal')">&times;</button>
+        <div class="password-container" id="historyPasswordContainer">
+            <h2>Enter Password</h2>
+            <input type="password" class="password-input" id="historyPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'historyModal')">
+            <button class="verify-btn" onclick="verifyPassword('historyModal')">Verify</button>
+        </div>
+        <div class="modal-content" id="historyContent">
+            <h2>Browsing History</h2>
+            <div class="sort-controls">
+                <label for="historySortBy">Sort by:</label>
+                <select id="historySortBy" onchange="loadHistory()">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                </select>
+            </div>
+            <div id="historyContainer"></div>
+            <button onclick="clearHistory()">Clear History</button>
+        </div>
+    </div>
+
+    <div id="bookmarksModal">
+        <button class="close-btn" onclick="closeModal('bookmarksModal')">&times;</button>
+        <div class="password-container" id="bookmarksPasswordContainer">
+            <h2>Enter Password</h2>
+            <input type="password" class="password-input" id="bookmarksPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'bookmarksModal')">
+            <button class="verify-btn" onclick="verifyPassword('bookmarksModal')">Verify</button>
+        </div>
+        <div class="modal-content" id="bookmarksContent">
+            <h2>Bookmarks</h2>
+            <div class="upload-buttons">
+                <button onclick="addCustomBookmark()">Add Custom Bookmark</button>
+            </div>
+            <div id="bookmarkContainer"></div>
+            <button onclick="clearBookmarks()">Clear All Bookmarks</button>
+        </div>
+    </div>
+
+    <div id="reminderModal">
+        <button class="close-btn" onclick="closeModal('reminderModal')">&times;</button>
+        <h2>Reminders</h2>
+        <div class="reminder-form">
+            <h3>Add New Reminder</h3>
+            <input type="datetime-local" id="reminderDateTime" placeholder="Date and Time">
+            <textarea id="reminderTask" placeholder="What do you want to be reminded about?"></textarea>
+            <button onclick="addReminder()">Add Reminder</button>
+        </div>
+        <div id="reminderContainer"></div>
+    </div>
+
+    <div id="viewerModal" onclick="closeViewer()">
+        <div id="viewerContent" onclick="event.stopPropagation();">
+            <button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>
+        </div>
+    </div>
+
+    <script>
+        // UI Helpers
+        let selectedIndex = null;
+        let selectedAppIndex = null;
+        let db;
+        let mediaMetadata = [];
+        let webappsMetadata = [];
+        let settings = JSON.parse(localStorage.getItem('googokeSettings')) || {
+            searchEngine: 'google',
+            bgType: 'gradient',
+            bgColor1: '#004675',
+            bgColor2: '#006232',
+            customBgCss: '',
+            inputBgType: 'default',
+            inputBgColor: '#333333',
+            inputBgColor2: '#222222',
+            inputTextColor: '#ffffff',
+            customInputCss: '',
+            menuBgType: 'gradient',
+            menuBgColor1: '#1a1a1a',
+            menuBgColor2: '#2d2d2d',
+            customMenuBgCss: '',
+            themeMode: 'dark',
+            menuPassword: '',
+            lockHistory: false,
+            lockBookmarks: false,
+            lockSettings: false,
+            enableHistory: true,
+            showClock: true,
+            showWeather: false,
+            weatherLocation: '',
+            showImageSlideshow: false,
+            showVideoSlideshow: false,
+            showCalendar: false,
+            showRSS: false,
+            rssUrls: '',
+            clockTimeFormat: '12',
+            clockShowSeconds: true,
+            clockDateFormat: 'short'
+        };
+        let historyItems = JSON.parse(localStorage.getItem('googokeHistory')) || [];
+        let bookmarks = JSON.parse(localStorage.getItem('googokeBookmarks')) || [];
+        let reminders = JSON.parse(localStorage.getItem('googokeReminders')) || [];
+        let slideshowIntervals = {};
+        let mostVisited = JSON.parse(localStorage.getItem('googokeMostVisited')) || {};
+        let unlockedModals = new Set();
+
+        // Initialize everything
+        window.addEventListener('load', () => {
+            loadMediaMetadata();
+            loadWebappsMetadata();
+            initDB();
+            applySettings();
+            loadWidgets();
+            loadMostVisited();
+            checkReminders();
+            setInterval(checkReminders, 60000); // Check reminders every minute
+            document.getElementById('depu').addEventListener('input', suggestHistory);
+            document.getElementById('importSettingsInput').addEventListener('change', importSettings);
+            // Drag drop for photoModal
+            const photoModal = document.getElementById('photoModal');
+            photoModal.addEventListener('dragover', e => e.preventDefault());
+            photoModal.addEventListener('drop', e => {
+                e.preventDefault();
+                document.getElementById('uploadInput').files = e.dataTransfer.files;
+                uploadMedia();
+            });
+            // Drag drop for webAppModal
+            const webAppModal = document.getElementById('webAppModal');
+            webAppModal.addEventListener('dragover', e => e.preventDefault());
+            webAppModal.addEventListener('drop', e => {
+                e.preventDefault();
+                document.getElementById('webAppInput').files = e.dataTransfer.files;
+                uploadWebApp();
+            });
+        });
+
+        // Settings search functionality
+        function searchSettings() {
+            const searchTerm = document.getElementById('settingsSearchInput').value.toLowerCase();
+            const sections = document.querySelectorAll('.settings-section');
+            
+            sections.forEach(section => {
+                const keywords = section.getAttribute('data-keywords') || '';
+                const text = section.textContent.toLowerCase();
+                
+                if (searchTerm === '' || keywords.includes(searchTerm) || text.includes(searchTerm)) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        }
+
+        // Most visited functionality
+        function updateMostVisited(url) {
+            if (!url || url.includes('chrome://') || url.includes('about:')) return;
+            
+            // Clean the URL (remove query parameters for counting)
+            const cleanUrl = url.split('?')[0];
+            
+            if (mostVisited[cleanUrl]) {
+                mostVisited[cleanUrl].count++;
+                mostVisited[cleanUrl].lastVisited = new Date().toISOString();
+            } else {
+                mostVisited[cleanUrl] = {
+                    url: cleanUrl,
+                    count: 1,
+                    lastVisited: new Date().toISOString()
+                };
+            }
+            
+            localStorage.setItem('googokeMostVisited', JSON.stringify(mostVisited));
+            loadMostVisited();
+        }
+
+        function loadMostVisited() {
+            const container = document.getElementById('mostVisitedContainer');
+            container.innerHTML = '';
+
+            // Convert to array and sort by count, then by last visited
+            const sortedSites = Object.values(mostVisited)
+                .sort((a, b) => {
+                    if (b.count !== a.count) {
+                        return b.count - a.count;
+                    }
+                    return new Date(b.lastVisited) - new Date(a.lastVisited);
+                })
+                .slice(0, 5); // Show top 5 most visited
+
+            if (sortedSites.length === 0) return;
+
+            sortedSites.forEach(site => {
+                const element = document.createElement('div');
+                element.className = 'most-visited-item';
+                
+                // Get domain name for display
+                let displayName;
+                try {
+                    const urlObj = new URL(site.url);
+                    displayName = urlObj.hostname.replace('www.', '');
+                } catch (e) {
+                    displayName = site.url.substring(0, 20) + (site.url.length > 20 ? '...' : '');
+                }
+                
+                element.textContent = displayName;
+                element.title = `${site.url} (visited ${site.count} times)`;
+                element.onclick = () => {
+                    window.open(site.url, '_blank');
+                };
+                
+                container.appendChild(element);
+            });
+        }
+
+        // Widget functions
+        function loadWidgets() {
+            const container = document.getElementById('widgetsContainer');
+            container.innerHTML = '';
+
+            if (settings.showClock) {
+                createClockWidget();
+            }
+            if (settings.showWeather && settings.weatherLocation) {
+                createWeatherWidget();
+            }
+            const hasImages = mediaMetadata.some(item => item.type && item.type.startsWith('image'));
+            if (settings.showImageSlideshow && hasImages) {
+                createImageSlideshowWidget();
+            }
+            const hasVideos = mediaMetadata.some(item => item.type && item.type.startsWith('video'));
+            if (settings.showVideoSlideshow && hasVideos) {
+                createVideoSlideshowWidget();
+            }
+            if (settings.showCalendar) {
+                createCalendarWidget();
+            }
+            if (settings.showRSS && settings.rssUrls.trim()) {
+                createRSSWidget();
+            }
+        }
+
+        function createClockWidget() {
+            const container = document.getElementById('widgetsContainer');
+            const widget = document.createElement('div');
+            widget.className = 'widget clock-widget';
+            widget.innerHTML = `
+                <div class="clock-time" id="clockTime"></div>
+                <div class="clock-date" id="clockDate"></div>
+            `;
+            container.appendChild(widget);
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeElement = document.getElementById('clockTime');
+            const dateElement = document.getElementById('clockDate');
+            
+            if (timeElement) {
+                let timeOptions = {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: settings.clockTimeFormat === '12'
+                };
+                if (settings.clockShowSeconds) {
+                    timeOptions.second = '2-digit';
+                }
+                timeElement.textContent = now.toLocaleTimeString([], timeOptions);
+            }
+            if (dateElement) {
+                let dateOptions = {
+                    dateStyle: settings.clockDateFormat === 'short' ? 'short' : 'long'
+                };
+                dateElement.textContent = now.toLocaleDateString([], dateOptions);
+            }
+        }
+
+        function createWeatherWidget() {
+            const container = document.getElementById('widgetsContainer');
+            const widget = document.createElement('div');
+            widget.className = 'widget weather-widget';
+            widget.innerHTML = `
+                <h3>Weather</h3>
+                <div id="weatherInfo">Loading weather...</div>
+            `;
+            container.appendChild(widget);
+            loadWeather();
+        }
+
+         function loadWeather() {
+            const weatherInfo = document.getElementById('weatherInfo');
+            if (!settings.weatherLocation) {
+                weatherInfo.innerHTML = 'Please set a location in settings';
+                return;
+            }
+            fetchWeather();
+         }
+        async function fetchWeather() {
+            const weatherInfo = document.getElementById('weatherInfo');
+            const location = settings.weatherLocation || 'London';
+            try {
+                const response = await fetch(`https://wttr.in/${encodeURIComponent(location)}?format=j1`);
+                if (!response.ok) throw new Error('Failed to fetch weather');
+                const data = await response.json();
+                const current = data.current_condition[0];
+                const weather = data.weather[0];
+                weatherInfo.innerHTML = `
+                    <div>${getWeatherEmoji(current.weatherCode)} ${current.temp_C}°C / ${current.temp_F}°F</div>
+                    <div>${current.weatherDesc[0].value}</div>
+                    <div>Location: ${location}</div>
+                    <div>High: ${weather.maxtempC}°C Low: ${weather.mintempC}°C</div>
+                `;
+            } catch (error) {
+                weatherInfo.innerHTML = `<div>Error loading weather: ${error.message}</div>`;
+            }
+        }
+
+        function getWeatherEmoji(code) {
+            const emojis = {
+                '113': '☀️', // Sunny
+                '116': '⛅', // Partly cloudy
+                '119': '☁️', // Cloudy
+                '122': '☁️', // Overcast
+                '143': '🌫️', // Mist
+                '176': '🌧️', // Patchy rain
+                '179': '🌨️', // Patchy snow
+                '182': '🌨️', // Patchy sleet
+                '185': '🌧️', // Patchy freezing drizzle
+                '200': '⛈️', // Thundery outbreaks
+                // Add more as needed
+            };
+            return emojis[code] || '🌤️';
+        }
+
+        function createImageSlideshowWidget() {
+            const container = document.getElementById('widgetsContainer');
+            const widget = document.createElement('div');
+            widget.className = 'widget';
+            widget.innerHTML = `
+                <h3>Image Slideshow</h3>
+                <div class="slideshow-widget" id="imageSlideshow"></div>
+            `;
+            container.appendChild(widget);
+            startImageSlideshow();
+        }
+
+        function createVideoSlideshowWidget() {
+            const container = document.getElementById('widgetsContainer');
+            const widget = document.createElement('div');
+            widget.className = 'widget';
+            widget.innerHTML = `
+                <h3>Video Slideshow</h3>
+                <div class="slideshow-widget" id="videoSlideshow"></div>
+            `;
+            container.appendChild(widget);
+            startVideoSlideshow();
+        }
+
+        function startImageSlideshow() {
+            const images = mediaMetadata.filter(item => item.type && item.type.startsWith('image'));
+            const slideshow = document.getElementById('imageSlideshow');
+            
+            if (!slideshow || images.length === 0) return;
+
+            let currentIndex = 0;
+            
+            function showImage() {
+                const img = document.createElement('img');
+                img.src = images[currentIndex].thumbnail;
+                img.className = 'slideshow-content';
+                img.style.objectFit = 'cover';
+                
+                slideshow.innerHTML = '';
+                slideshow.appendChild(img);
+                
+                currentIndex = (currentIndex + 1) % images.length;
+            }
+
+            showImage();
+            slideshowIntervals.image = setInterval(showImage, 5000);
+        }
+
+        function startVideoSlideshow() {
+            const videos = mediaMetadata.filter(item => item.type && item.type.startsWith('video'));
+            const slideshow = document.getElementById('videoSlideshow');
+            
+            if (!slideshow || videos.length === 0) return;
+
+            let currentIndex = 0;
+            
+            function showVideoThumbnail() {
+                const img = document.createElement('img');
+                img.src = videos[currentIndex].thumbnail;
+                img.className = 'slideshow-content';
+                img.style.objectFit = 'cover';
+                img.style.cursor = 'pointer';
+                img.onclick = () => showInViewer(videos[currentIndex]);
+                
+                slideshow.innerHTML = '';
+                slideshow.appendChild(img);
+                
+                // Add play button overlay
+                const playButton = document.createElement('div');
+                playButton.innerHTML = '▶️';
+                playButton.style.position = 'absolute';
+                playButton.style.top = '50%';
+                playButton.style.left = '50%';
+                playButton.style.transform = 'translate(-50%, -50%)';
+                playButton.style.fontSize = '2em';
+                playButton.style.cursor = 'pointer';
+                playButton.onclick = () => showInViewer(videos[currentIndex]);
+                slideshow.appendChild(playButton);
+                
+                currentIndex = (currentIndex + 1) % videos.length;
+            }
+
+            showVideoThumbnail();
+            slideshowIntervals.video = setInterval(showVideoThumbnail, 7000);
+        }
+
+        function createCalendarWidget() {
+            const container = document.getElementById('widgetsContainer');
+            const widget = document.createElement('div');
+            widget.className = 'widget calendar-widget';
+            widget.innerHTML = `<h3>Calendar</h3><table id="calendarTable"></table>`;
+            container.appendChild(widget);
+            buildCalendar();
+        }
+
+        function buildCalendar() {
+            const table = document.getElementById('calendarTable');
+            table.innerHTML = '';
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDay = firstDay.getDay();
+            
+            // Header
+            const header = table.createTHead();
+            const headerRow = header.insertRow();
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+                const th = document.createElement('th');
+                th.textContent = day;
+                headerRow.appendChild(th);
+            });
+            
+            // Body
+            const tbody = table.createTBody();
+            let row = tbody.insertRow();
+            for (let i = 0; i < startingDay; i++) {
+                row.insertCell();
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+                if ((startingDay + day - 1) % 7 === 0 && day > 1) {
+                    row = tbody.insertRow();
+                }
+                const cell = row.insertCell();
+                cell.textContent = day;
+                if (day === now.getDate()) cell.classList.add('today');
+            }
+        }
+
+        function createRSSWidget() {
+            const container = document.getElementById('widgetsContainer');
+            const widget = document.createElement('div');
+            widget.className = 'widget rss-widget';
+            widget.innerHTML = `<h3>RSS Feeds</h3><div id="rssContent">Loading feeds...</div><button onclick="toggleWidgetFullscreen(this.parentElement)">Fullscreen</button>`;
+            container.appendChild(widget);
+            loadRSSFeeds();
+        }
+
+        async function loadRSSFeeds() {
+            const content = document.getElementById('rssContent');
+            content.innerHTML = '';
+            const urls = settings.rssUrls.split(',').map(u => u.trim()).filter(u => u);
+            if (urls.length === 0) {
+                content.innerHTML = '<p>No RSS feeds configured.</p>';
+                return;
+            }
+            for (const url of urls) {
+                try {
+                    const res = await fetch(url);
+                    const xml = await res.text();
+                    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+                    const items = doc.querySelectorAll('item');
+                    items.forEach(item => {
+                        const title = item.querySelector('title').textContent;
+                        const link = item.querySelector('link').textContent;
+                        const desc = item.querySelector('description') ? item.querySelector('description').textContent : '';
+                        const div = document.createElement('div');
+                        div.className = 'rss-item';
+                        div.innerHTML = `<a href="${link}" target="_blank">${title}</a><p>${desc.substring(0,100)}...</p>`;
+                        content.appendChild(div);
+                    });
+                } catch (e) {
+                    content.innerHTML += `<p>Error loading ${url}: ${e.message}</p>`;
+                }
+            }
+        }
+
+        function toggleWidgetFullscreen(widget) {
+            if (widget.classList.contains('fullscreen')) {
+                widget.classList.remove('fullscreen');
+                widget.querySelector('button').textContent = 'Fullscreen';
+            } else {
+                widget.classList.add('fullscreen');
+                widget.querySelector('button').textContent = 'Restore';
+            }
+        }
+
+        // Bookmark functions
+        function addCurrentPageBookmark() {
+            const url = prompt('Enter URL to bookmark:');
+            const title = prompt('Enter bookmark title:') || url;
+            
+            if (url) {
+                bookmarks.push({
+                    id: Date.now(),
+                    title: title,
+                    url: url,
+                    dateAdded: new Date().toISOString()
+                });
+                localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+                loadBookmarks();
+                showToast('Bookmark added!');
+            }
+        }
+
+        function addCustomBookmark() {
+            const url = prompt('Enter URL:');
+            const title = prompt('Enter title:') || url;
+            
+            if (url) {
+                bookmarks.push({
+                    id: Date.now(),
+                    title: title,
+                    url: url,
+                    dateAdded: new Date().toISOString()
+                });
+                localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+                loadBookmarks();
+                showToast('Bookmark added!');
+            }
+        }
+
+        function loadBookmarks() {
+            const container = document.getElementById('bookmarkContainer');
+            container.innerHTML = '';
+
+            if (bookmarks.length === 0) {
+                container.innerHTML = '<p>No bookmarks yet.</p>';
+                return;
+            }
+
+            bookmarks.forEach(bookmark => {
+                const div = document.createElement('div');
+                div.className = 'bookmark-item';
+                div.innerHTML = `
+                    <div style="font-weight: bold;">${bookmark.title}</div>
+                    <div style="color: #ccc; font-size: 0.9em;">${bookmark.url}</div>
+                    <div style="color: #999; font-size: 0.8em;">${new Date(bookmark.dateAdded).toLocaleDateString()}</div>
+                `;
+                div.onclick = () => window.open(bookmark.url, '_blank');
+                container.appendChild(div);
+            });
+        }
+
+        function clearBookmarks() {
+            if (confirm('Clear all bookmarks?')) {
+                bookmarks = [];
+                localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+                loadBookmarks();
+                showToast('Bookmarks cleared');
+            }
+        }
+
+        // Reminder functions
+        function addReminder() {
+            const dateTime = document.getElementById('reminderDateTime').value;
+            const task = document.getElementById('reminderTask').value;
+
+            if (!dateTime || !task) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            reminders.push({
+                id: Date.now(),
+                dateTime: dateTime,
+                task: task,
+                completed: false,
+                notified: false,
+                dateAdded: new Date().toISOString()
+            });
+
+            localStorage.setItem('googokeReminders', JSON.stringify(reminders));
+            document.getElementById('reminderDateTime').value = '';
+            document.getElementById('reminderTask').value = '';
+            loadReminders();
+            showToast('Reminder added!');
+        }
+
+        function loadReminders() {
+            const container = document.getElementById('reminderContainer');
+            container.innerHTML = '';
+
+            if (reminders.length === 0) {
+                container.innerHTML = '<p>No reminders set.</p>';
+                return;
+            }
+
+            reminders.forEach((reminder, index) => {
+                const div = document.createElement('div');
+                div.className = 'reminder-item';
+                const reminderDate = new Date(reminder.dateTime);
+                const now = new Date();
+                const isOverdue = reminderDate < now;
+
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold;">${reminder.task}</div>
+                            <div style="color: #ccc; font-size: 0.9em;">${reminderDate.toLocaleString()}</div>
+                            ${isOverdue && !reminder.completed ? '<div style="color: #f44336;">⚠️ Overdue</div>' : ''}
+                        </div>
+                        <button onclick="removeReminder(${index})">Remove</button>
+                    </div>
+                `;
+                
+                if (isOverdue && !reminder.completed) {
+                    div.style.borderLeft = '4px solid #f44336';
+                }
+
+                container.appendChild(div);
+            });
+        }
+
+        function removeReminder(index) {
+            reminders.splice(index, 1);
+            localStorage.setItem('googokeReminders', JSON.stringify(reminders));
+            loadReminders();
+            showToast('Reminder removed');
+        }
+
+        function checkReminders() {
+            const now = new Date();
+            let changed = false;
+            
+            reminders.forEach(reminder => {
+                const reminderDate = new Date(reminder.dateTime);
+                const timeDiff = now.getTime() - reminderDate.getTime();
+                
+                if (!reminder.notified && timeDiff >= 0) {
+                    if (timeDiff < 60000) {
+                        showToast(reminder.task, 'success');
+                        reminder.notified = true;
+                        reminder.completed = true;
+                        changed = true;
+                    } else if (timeDiff >= 60000) {
+                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        let overdueMsg = `You are `;
+                        if (days > 0) overdueMsg += `${days} day${days > 1 ? 's' : ''} `;
+                        if (hours > 0) overdueMsg += `${hours} hour${hours > 1 ? 's' : ''} `;
+                        if (minutes > 0) overdueMsg += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+                        overdueMsg += `late!`;
+                        
+                        showToast(`${reminder.task}\n${overdueMsg}`, 'overdue');
+                        reminder.notified = true;
+                        reminder.completed = true;
+                        changed = true;
+                    }
+                }
+            });
+            
+            if (changed) {
+                localStorage.setItem('googokeReminders', JSON.stringify(reminders));
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+                <div style="white-space: pre-line; padding-right: 30px;">${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // History functions
+        function loadHistory() {
+            const container = document.getElementById('historyContainer');
+            const sortBy = document.getElementById('historySortBy').value;
+            
+            container.innerHTML = '';
+
+            if (historyItems.length === 0) {
+                container.innerHTML = '<p>No history yet.</p>';
+                return;
+            }
+
+            let sortedHistory = [...historyItems];
+            if (sortBy === 'oldest') {
+                sortedHistory.reverse();
+            }
+
+            sortedHistory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                const date = new Date(item.date);
+                
+                div.innerHTML = `
+                    <div class="history-url">${item.url}</div>
+                    <div class="history-date">${date.toLocaleString()}</div>
+                `;
+                
+                div.onclick = () => {
+                    window.open(item.url, '_blank');
+                    updateMostVisited(item.url);
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function saveHistory(entry) {
+            if (!settings.enableHistory) return;
+            historyItems.push({ url: entry, date: new Date().toISOString() });
+            localStorage.setItem('googokeHistory', JSON.stringify(historyItems));
+            updateMostVisited(entry);
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all history?')) {
+                historyItems = [];
+                localStorage.setItem('googokeHistory', JSON.stringify(historyItems));
+                loadHistory();
+                showToast('History cleared');
+            }
+        }
+
+        // Settings application
+        function applySettings() {
+            // Theme
+            document.body.classList.toggle('light-mode', settings.themeMode === 'light');
+            
+            // Search engine
+            let form = document.querySelector('form');
+            switch (settings.searchEngine) {
+                case 'bing':
+                    form.action = 'https://www.bing.com/search';
+                    break;
+                case 'duckduckgo':
+                    form.action = 'https://duckduckgo.com/';
+                    break;
+                default:
+                    form.action = 'https://www.google.com/search';
+            }
+
+            // Background
+            const body = document.body;
+            body.style.background = '';
+            if (settings.bgType === 'solid') {
+                body.style.background = settings.bgColor1;
+            } else if (settings.bgType === 'gradient') {
+                body.style.background = `linear-gradient(to right, ${settings.bgColor1}, ${settings.bgColor2})`;
+            } else if (settings.bgType === 'custom' && settings.customBgCss) {
+                body.style.background = settings.customBgCss;
+            }
+
+            // Input styling
+            const searchInput = document.getElementById('depu');
+            searchInput.style.background = '';
+            if (settings.inputBgType === 'solid') {
+                searchInput.style.background = settings.inputBgColor;
+            } else if (settings.inputBgType === 'gradient') {
+                searchInput.style.background = `linear-gradient(45deg, ${settings.inputBgColor}, ${settings.inputBgColor2})`;
+            } else if (settings.inputBgType === 'custom' && settings.customInputCss) {
+                searchInput.style.background = settings.customInputCss;
+            }
+            
+            searchInput.style.color = settings.inputTextColor;
+
+            // Menu background
+            const modals = document.querySelectorAll('#photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal');
+            modals.forEach(modal => {
+                modal.style.background = '';
+                if (settings.menuBgType === 'solid') {
+                    modal.style.background = settings.menuBgColor1;
+                } else if (settings.menuBgType === 'gradient') {
+                    modal.style.background = `linear-gradient(135deg, ${settings.menuBgColor1}, ${settings.menuBgColor2})`;
+                } else if (settings.menuBgType === 'custom' && settings.customMenuBgCss) {
+                    modal.style.background = settings.customMenuBgCss;
+                }
+            });
+        }
+
+        // Event listeners
+        document.getElementById('photos').addEventListener('click', () => {
+            closeAllModals();
+            document.getElementById('photoModal').style.display = 'block';
+            loadMedia();
+        });
+
+        document.getElementById('webapps').addEventListener('click', () => {
+            closeAllModals();
+            document.getElementById('webAppModal').style.display = 'block';
+            loadWebApps();
+        });
+
+        document.getElementById('homepage').addEventListener('click', () => {
+            closeAllModals();
+            document.getElementById('menuModal').style.display = 'block';
+        });
+
+        document.getElementById('bookmarksBtn').addEventListener('click', () => {
+            closeAllModals();
+            openLockedModal('bookmarksModal');
+        });
+
+        document.getElementById('openSettings').addEventListener('click', () => {
+            closeModal('menuModal');
+            openLockedModal('settingsModal');
+        });
+
+        document.getElementById('openHistory').addEventListener('click', () => {
+            closeModal('menuModal');
+            openLockedModal('historyModal');
+        });
+
+        document.getElementById('openBookmarks').addEventListener('click', () => {
+            closeModal('menuModal');
+            openLockedModal('bookmarksModal');
+        });
+
+        document.getElementById('openReminders').addEventListener('click', () => {
+            closeModal('menuModal');
+            document.getElementById('reminderModal').style.display = 'block';
+            loadReminders();
+        });
+
+        function openLockedModal(modalId) {
+            const isLocked = {
+                'historyModal': settings.lockHistory,
+                'bookmarksModal': settings.lockBookmarks,
+                'settingsModal': settings.lockSettings
+            }[modalId];
+
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'block';
+
+            const passwordContainer = document.getElementById(`${modalId.replace('Modal', '')}PasswordContainer`);
+            const content = document.getElementById(`${modalId.replace('Modal', '')}Content`);
+
+            if (isLocked && !unlockedModals.has(modalId)) {
+                if (passwordContainer) passwordContainer.style.display = 'block';
+                if (content) content.style.display = 'none';
+            } else {
+                if (passwordContainer) passwordContainer.style.display = 'none';
+                if (content) content.style.display = 'block';
+                if (modalId === 'historyModal') loadHistory();
+                if (modalId === 'bookmarksModal') loadBookmarks();
+                if (modalId === 'settingsModal') {
+                    loadSettingsForm();
+                    attachSettingsListeners();
+                }
+            }
+        }
+
+        function verifyPassword(modalId) {
+            const input = document.getElementById(`${modalId.replace('Modal', '')}PasswordInput`);
+            if (input.value === settings.menuPassword) {
+                unlockedModals.add(modalId);
+                openLockedModal(modalId);
+            } else {
+                showToast('Incorrect password', 'error');
+            }
+        }
+
+        function handlePasswordKeydown(event, modalId) {
+            if (event.key === 'Enter') {
+                verifyPassword(modalId);
+            }
+        }
+
+        function loadSettingsForm() {
+            document.getElementById('themeMode').value = settings.themeMode;
+            document.getElementById('searchEngine').value = settings.searchEngine;
+            document.getElementById('bgType').value = settings.bgType;
+            document.getElementById('bgColor1').value = settings.bgColor1;
+            document.getElementById('bgColor2').value = settings.bgColor2;
+            document.getElementById('customBgCss').value = settings.customBgCss;
+            document.getElementById('inputBgType').value = settings.inputBgType;
+            document.getElementById('inputBgColor').value = settings.inputBgColor;
+            document.getElementById('inputBgColor2').value = settings.inputBgColor2;
+            document.getElementById('inputTextColor').value = settings.inputTextColor;
+            document.getElementById('customInputCss').value = settings.customInputCss;
+            document.getElementById('menuBgType').value = settings.menuBgType;
+            document.getElementById('menuBgColor1').value = settings.menuBgColor1;
+            document.getElementById('menuBgColor2').value = settings.menuBgColor2;
+            document.getElementById('customMenuBgCss').value = settings.customMenuBgCss;
+            document.getElementById('menuPassword').value = settings.menuPassword;
+            document.getElementById('lockHistory').checked = settings.lockHistory;
+            document.getElementById('lockBookmarks').checked = settings.lockBookmarks;
+            document.getElementById('lockSettings').checked = settings.lockSettings;
+            document.getElementById('enableHistory').checked = settings.enableHistory;
+            document.getElementById('showClock').checked = settings.showClock;
+            document.getElementById('showWeather').checked = settings.showWeather;
+            document.getElementById('weatherLocation').value = settings.weatherLocation;
+            document.getElementById('showImageSlideshow').checked = settings.showImageSlideshow;
+            document.getElementById('showVideoSlideshow').checked = settings.showVideoSlideshow;
+            document.getElementById('showCalendar').checked = settings.showCalendar;
+            document.getElementById('showRSS').checked = settings.showRSS;
+            document.getElementById('rssUrls').value = settings.rssUrls;
+            document.getElementById('clockTimeFormat').value = settings.clockTimeFormat;
+            document.getElementById('clockShowSeconds').checked = settings.clockShowSeconds;
+            document.getElementById('clockDateFormat').value = settings.clockDateFormat;
+        }
+
+        let debounceTimer;
+        function debouncedUpdate() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateSettings, 500);
+        }
+
+        function attachSettingsListeners() {
+            const elements = [
+                'themeMode', 'searchEngine', 'bgType', 'bgColor1', 'bgColor2', 'customBgCss',
+                'inputBgType', 'inputBgColor', 'inputBgColor2', 'inputTextColor', 'customInputCss',
+                'menuBgType', 'menuBgColor1', 'menuBgColor2', 'customMenuBgCss',
+                'menuPassword', 'lockHistory', 'lockBookmarks', 'lockSettings',
+                'enableHistory', 'showClock', 'showWeather', 'weatherLocation', 'showImageSlideshow', 'showVideoSlideshow',
+                'showCalendar', 'showRSS', 'rssUrls', 'clockTimeFormat', 'clockShowSeconds', 'clockDateFormat'
+            ];
+
+            elements.forEach(id => {
+                const elem = document.getElementById(id);
+                if (elem) {
+                    const eventType = (elem.tagName === 'TEXTAREA' || elem.type === 'text' || elem.type === 'password') ? 'input' : 'change';
+                    elem.addEventListener(eventType, debouncedUpdate);
+                }
+            });
+        }
+
+        function updateSettings() {
+            settings.themeMode = document.getElementById('themeMode').value;
+            settings.searchEngine = document.getElementById('searchEngine').value;
+            settings.bgType = document.getElementById('bgType').value;
+            settings.bgColor1 = document.getElementById('bgColor1').value;
+            settings.bgColor2 = document.getElementById('bgColor2').value;
+            settings.customBgCss = document.getElementById('customBgCss').value;
+            settings.inputBgType = document.getElementById('inputBgType').value;
+            settings.inputBgColor = document.getElementById('inputBgColor').value;
+            settings.inputBgColor2 = document.getElementById('inputBgColor2').value;
+            settings.inputTextColor = document.getElementById('inputTextColor').value;
+            settings.customInputCss = document.getElementById('customInputCss').value;
+            settings.menuBgType = document.getElementById('menuBgType').value;
+            settings.menuBgColor1 = document.getElementById('menuBgColor1').value;
+            settings.menuBgColor2 = document.getElementById('menuBgColor2').value;
+            settings.customMenuBgCss = document.getElementById('customMenuBgCss').value;
+            settings.menuPassword = document.getElementById('menuPassword').value;
+            settings.lockHistory = document.getElementById('lockHistory').checked;
+            settings.lockBookmarks = document.getElementById('lockBookmarks').checked;
+            settings.lockSettings = document.getElementById('lockSettings').checked;
+            settings.enableHistory = document.getElementById('enableHistory').checked;
+            settings.showClock = document.getElementById('showClock').checked;
+            settings.showWeather = document.getElementById('showWeather').checked;
+            settings.weatherLocation = document.getElementById('weatherLocation').value;
+            settings.showImageSlideshow = document.getElementById('showImageSlideshow').checked;
+            settings.showVideoSlideshow = document.getElementById('showVideoSlideshow').checked;
+            settings.showCalendar = document.getElementById('showCalendar').checked;
+            settings.showRSS = document.getElementById('showRSS').checked;
+            settings.rssUrls = document.getElementById('rssUrls').value;
+            settings.clockTimeFormat = document.getElementById('clockTimeFormat').value;
+            settings.clockShowSeconds = document.getElementById('clockShowSeconds').checked;
+            settings.clockDateFormat = document.getElementById('clockDateFormat').value;
+
+            localStorage.setItem('googokeSettings', JSON.stringify(settings));
+            applySettings();
+            
+            // Clear existing intervals
+            Object.values(slideshowIntervals).forEach(interval => clearInterval(interval));
+            slideshowIntervals = {};
+            
+            loadWidgets();
+        }
+
+        function resetSettings() {
+            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+                settings = {
+                    themeMode: 'dark',
+                    searchEngine: 'google',
+                    bgType: 'gradient',
+                    bgColor1: '#004675',
+                    bgColor2: '#006232',
+                    customBgCss: '',
+                    inputBgType: 'default',
+                    inputBgColor: '#333333',
+                    inputBgColor2: '#222222',
+                    inputTextColor: '#ffffff',
+                    customInputCss: '',
+                    menuBgType: 'gradient',
+                    menuBgColor1: '#1a1a1a',
+                    menuBgColor2: '#2d2d2d',
+                    customMenuBgCss: '',
+                    menuPassword: '',
+                    lockHistory: false,
+                    lockBookmarks: false,
+                    lockSettings: false,
+                    enableHistory: true,
+                    showClock: true,
+                    showWeather: false,
+                    weatherLocation: '',
+                    showImageSlideshow: false,
+                    showVideoSlideshow: false,
+                    showCalendar: false,
+                    showRSS: false,
+                    rssUrls: '',
+                    clockTimeFormat: '12',
+                    clockShowSeconds: true,
+                    clockDateFormat: 'short'
+                };
+                localStorage.setItem('googokeSettings', JSON.stringify(settings));
+                applySettings();
+                loadSettingsForm();
+                loadWidgets();
+                showToast('Settings reset to defaults');
+            }
+        }
+
+        function exportSettings() {
+            const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'googoke_settings.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Settings exported');
+        }
+
+        function importSettings(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    settings = JSON.parse(ev.target.result);
+                    localStorage.setItem('googokeSettings', JSON.stringify(settings));
+                    applySettings();
+                    loadWidgets();
+                    showToast('Settings imported');
+                } catch (err) {
+                    showToast('Error importing settings: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAllStorage() {
+            if (confirm('Clear all cache and storage? This will delete all data.')) {
+                indexedDB.deleteDatabase('MediaManagerDB');
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function suggestHistory(e) {
+            const val = e.target.value.toLowerCase();
+            const sug = document.getElementById('suggestions');
+            sug.innerHTML = '';
+            const allUrls = [...new Set([...Object.keys(mostVisited).map(k => mostVisited[k].url), ...historyItems.map(h => h.url)])];
+            const matches = allUrls.filter(u => u.toLowerCase().includes(val)).slice(0, 5);
+            matches.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                sug.appendChild(opt);
+            });
+        }
+
+        function GTY(event) {
+            event.preventDefault();
+            let url = document.getElementById('depu').value;
+            if (url) {
+                if (!url.startsWith('http')) url = 'https://' + url;
+                saveHistory(url);
+                window.open(url, '_blank');
+            }
+        }
+
+        let searchForm = document.querySelector('form');
+        searchForm.addEventListener('submit', function(event) {
+            let query = document.getElementById('depu').value;
+            if (query) {
+                let param = '?q=';
+                let fullUrl = searchForm.action + param + encodeURIComponent(query);
+                saveHistory(fullUrl);
+            }
+        });
+
+        function closeAllModals() {
+            document.getElementById('photoModal').style.display = 'none';
+            document.getElementById('webAppModal').style.display = 'none';
+            document.getElementById('menuModal').style.display = 'none';
+            document.getElementById('settingsModal').style.display = 'none';
+            document.getElementById('historyModal').style.display = 'none';
+            document.getElementById('bookmarksModal').style.display = 'none';
+            document.getElementById('reminderModal').style.display = 'none';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            unlockedModals.delete(id);
+            const inputId = id.replace('Modal', 'PasswordInput');
+            const input = document.getElementById(inputId);
+            if (input) input.value = '';
+        }
+
+        function closeViewer() {
+            const viewer = document.getElementById('viewerModal');
+            viewer.style.display = 'none';
+            const videoElements = document.querySelectorAll('#viewerContent video');
+            videoElements.forEach(video => {
+                if (video && typeof video.pause === 'function') {
+                    video.pause();
+                }
+            });
+            document.getElementById('viewerContent').innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function initDB() {
+            const request = indexedDB.open('MediaManagerDB', 3);
+            request.onerror = function(event) {
+                console.error("Database error: " + event.target.errorCode);
+                showToast("Database error. Please try again.", 'error');
+            };
+            request.onupgradeneeded = function(event) {
+                db = event.target.result;
+                if (!db.objectStoreNames.contains('media')) {
+                    const mediaStore = db.createObjectStore('media', { keyPath: 'id', autoIncrement: false });
+                    mediaStore.createIndex('name', 'name', { unique: false });
+                    mediaStore.createIndex('type', 'type', { unique: false });
+                }
+                if (!db.objectStoreNames.contains('webapps')) {
+                    const webappsStore = db.createObjectStore('webapps', { keyPath: 'id', autoIncrement: false });
+                    webappsStore.createIndex('name', 'name', { unique: false });
+                    webappsStore.createIndex('type', 'type', { unique: false });
+                }
+            };
+            request.onsuccess = function(event) {
+                db = event.target.result;
+            };
+            request.onblocked = function(event) {
+                console.warn("Database blocked. Close other tabs/windows using this database and try again.");
+                showToast("Database blocked. Close other tabs/windows using this database and try again.", 'error');
+            };
+        }
+
+        function loadMediaMetadata() {
+            mediaMetadata = JSON.parse(localStorage.getItem('mediaMetadata')) || [];
+        }
+        
+        function loadWebappsMetadata() {
+            webappsMetadata = JSON.parse(localStorage.getItem('webappsMetadata')) || [];
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+            else return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+
+        function updateProgress(percent) {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            if (percent === 0) {
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+                return;
+            }
+            progressContainer.style.display = 'block';
+            progressBar.style.width = percent + '%';
+            if (percent === 100) {
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 1000);
+            }
+        }
+
+        function createVideoThumbnail(videoFile, callback) {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            const timeoutId = setTimeout(() => callback(null), 5000);
+            video.onloadedmetadata = function() {
+                clearTimeout(timeoutId);
+                if (video.duration === 0) {
+                    callback(null);
+                    return;
+                }
+                video.currentTime = Math.min(video.duration * 0.25, 5.0);
+            };
+            video.onseeked = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 150;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+                callback(thumbnailUrl);
+                URL.revokeObjectURL(video.src);
+            };
+            video.onerror = function() {
+                clearTimeout(timeoutId);
+                callback(null);
+            };
+            video.src = URL.createObjectURL(videoFile);
+        }
+
+        function createImageThumbnail(imageFile, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxWidth = 200;
+                    const scale = maxWidth / img.width;
+                    canvas.width = maxWidth;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    callback(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.onerror = function() {
+                    callback(null); // Skip on error
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                callback(null); // Skip on error
+            };
+            reader.readAsDataURL(imageFile);
+        }
+
+        function getDefaultPdfThumbnail() {
+            return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="100%" height="100%" fill="red"/><text x="50%" y="50%" font-family="Arial" font-size="20" fill="white" text-anchor="middle" dominant-baseline="middle">PDF</text></svg>';
+        }
+
+        async function uploadMedia() {
+            const input = document.getElementById('uploadInput');
+            const files = input.files;
+            if (files.length === 0) return;
+            showToast("Uploading files...");
+            updateProgress(0);
+            let totalFiles = files.length;
+            let processedFiles = 0;
+            let skippedFiles = 0;
+            for (const file of files) {
+                const fileSize = file.size;
+                const fileId = Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+                const metadataItem = {
+                    id: fileId,
+                    name: file.name,
+                    type: file.type,
+                    size: fileSize,
+                    dateAdded: new Date().toISOString()
+                };
+                if (file.type.startsWith('video')) {
+                    await new Promise(resolve => {
+                        createVideoThumbnail(file, thumbnail => {
+                            if (thumbnail === null) {
+                                skippedFiles++;
+                                showToast(`Skipped corrupted video: ${file.name}`, 'error');
+                                processedFiles++;
+                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                                resolve();
+                                return;
+                            }
+                            metadataItem.thumbnail = thumbnail;
+                            addToDBAndMetadata(metadataItem, file, () => {
+                                processedFiles++;
+                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                                resolve();
+                            });
+                        });
+                    });
+                } else if (file.type.startsWith('image')) {
+                    await new Promise(resolve => {
+                        createImageThumbnail(file, thumbnail => {
+                            if (thumbnail === null) {
+                                skippedFiles++;
+                                showToast(`Skipped corrupted image: ${file.name}`, 'error');
+                                processedFiles++;
+                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                                resolve();
+                                return;
+                            }
+                            metadataItem.thumbnail = thumbnail;
+                            addToDBAndMetadata(metadataItem, file, () => {
+                                processedFiles++;
+                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                                resolve();
+                            });
+                        });
+                    });
+                } else if (file.type === 'application/pdf') {
+                    metadataItem.thumbnail = getDefaultPdfThumbnail();
+                    await new Promise(resolve => {
+                        addToDBAndMetadata(metadataItem, file, () => {
+                            processedFiles++;
+                            updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                            resolve();
+                        });
+                    });
+                } else {
+                    processedFiles++;
+                    updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                }
+                if (processedFiles === totalFiles) {
+                    let message = "Upload complete!";
+                    if (skippedFiles > 0) {
+                        message += ` Skipped ${skippedFiles} corrupted file(s).`;
+                    }
+                    showToast(message);
+                    input.value = "";
+                    loadMedia();
+                    if (settings.showImageSlideshow || settings.showVideoSlideshow) {
+                        loadWidgets();
+                    }
+                }
+            }
+        }
+
+        function addToDBAndMetadata(metadata, file, callback) {
+            mediaMetadata.push(metadata);
+            localStorage.setItem('mediaMetadata', JSON.stringify(mediaMetadata));
+            const transaction = db.transaction(['media'], 'readwrite');
+            transaction.oncomplete = callback;
+            transaction.onerror = e => showToast('DB Error: ' + e.target.error.message, 'error');
+            const mediaStore = transaction.objectStore('media');
+            const request = mediaStore.add({
+                id: metadata.id,
+                name: metadata.name,
+                type: metadata.type,
+                size: metadata.size,
+                data: file
+            });
+            request.onerror = event => {
+                console.error("Error uploading file to IndexedDB: ", event.target.error);
+                showToast("Error uploading file: " + file.name + ". See console for details.", 'error');
+            };
+        }
+
+        function loadMedia() {
+            let container = document.getElementById('mediaContainer');
+            container.innerHTML = '';
+            if (mediaMetadata.length === 0) {
+                container.innerHTML = '<p>No media files yet. Upload some!</p>';
+                return;
+            }
+            mediaMetadata.forEach((item, index) => {
+                let div = document.createElement('div');
+                div.className = 'mediaItem';
+                if (index === selectedIndex) div.classList.add('selected');
+                let element = document.createElement('img');
+                element.src = item.thumbnail;
+                element.title = item.name;
+                let fileInfo = document.createElement('div');
+                fileInfo.textContent = item.name;
+                let fileSize = document.createElement('span');
+                fileSize.className = 'file-size';
+                fileSize.textContent = formatFileSize(item.size);
+                fileInfo.appendChild(fileSize);
+                div.addEventListener('click', () => {
+                    selectedIndex = index;
+                    loadMedia();
+                });
+                div.addEventListener('dblclick', () => showInViewer(item));
+                div.appendChild(element);
+                div.appendChild(fileInfo);
+                if (item.type.startsWith('video')) {
+                    let videoIndicator = document.createElement('div');
+                    videoIndicator.innerHTML = '▶️';
+                    videoIndicator.className = 'video-indicator';
+                    div.appendChild(videoIndicator);
+                } else if (item.type === 'application/pdf') {
+                    let pdfIndicator = document.createElement('div');
+                    pdfIndicator.innerHTML = '📄';
+                    pdfIndicator.className = 'pdf-indicator';
+                    div.appendChild(pdfIndicator);
+                }
+                container.appendChild(div);
+            });
+        }
+
+        function deleteMedia() {
+            if (selectedIndex === null) return;
+            const item = mediaMetadata[selectedIndex];
+            if (!item || !confirm(`Delete "${item.name}"?`)) return;
+            const transaction = db.transaction(['media'], 'readwrite');
+            const mediaStore = transaction.objectStore('media');
+            const request = mediaStore.delete(item.id);
+            request.onsuccess = function() {
+                mediaMetadata.splice(selectedIndex, 1);
+                localStorage.setItem('mediaMetadata', JSON.stringify(mediaMetadata));
+                selectedIndex = null;
+                loadMedia();
+                if (settings.showImageSlideshow || settings.showVideoSlideshow) {
+                    loadWidgets();
+                }
+                showToast("Media deleted successfully");
+            };
+            request.onerror = function(event) {
+                console.error("Error deleting from IndexedDB: ", event.target.error);
+                showToast("Error deleting media: " + event.target.error.message, 'error');
+            };
+        }
+
+        function openMedia() {
+            if (selectedIndex === null) return;
+            const item = mediaMetadata[selectedIndex];
+            if (item) {
+                showInViewer(item);
+            }
+        }
+
+        function downloadMedia() {
+            if (selectedIndex === null) return;
+            const item = mediaMetadata[selectedIndex];
+            if (!item) return;
+            const transaction = db.transaction(['media'], 'readonly');
+            const mediaStore = transaction.objectStore('media');
+            const request = mediaStore.get(item.id);
+            request.onsuccess = function(event) {
+                const mediaFile = event.target.result;
+                if (mediaFile) {
+                    const url = URL.createObjectURL(mediaFile.data);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = item.name;
+                    a.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                }
+            };
+            request.onerror = function(event) {
+                console.error("Error downloading from IndexedDB: ", event.target.error);
+                showToast("Error downloading media: " + event.target.error.message, 'error');
+            };
+        }
+
+        function showInViewer(item) {
+            const viewer = document.getElementById('viewerModal');
+            const viewerContent = document.getElementById('viewerContent');
+            viewerContent.innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+            const transaction = db.transaction(['media'], 'readonly');
+            const mediaStore = transaction.objectStore('media');
+            const request = mediaStore.get(item.id);
+            request.onsuccess = function(event) {
+                const mediaFile = event.target.result;
+                if (mediaFile && mediaFile.data) {
+                    const url = URL.createObjectURL(mediaFile.data);
+                    if (item.type.startsWith('image')) {
+                        const element = document.createElement('img');
+                        element.src = url;
+                        viewerContent.appendChild(element);
+                        viewer.style.display = 'flex';
+                    } else if (item.type.startsWith('video')) {
+                        showToast("Loading video...");
+                        try {
+                            const element = document.createElement('video');
+                            element.controls = true;
+                            element.autoplay = true;
+                            element.loop = false;
+                            element.preload = "auto";
+                            element.addEventListener('loadstart', () => console.log('Video loadstart'));
+                            element.addEventListener('loadedmetadata', () => console.log('Video loadedmetadata'));
+                            element.addEventListener('loadeddata', () => console.log('Video loadeddata'));
+                            element.addEventListener('play', () => console.log('Video play event'));
+                            element.addEventListener('canplay', () => {
+                                console.log('Video canplay event');
+                                showToast("Video loaded", 'success');
+                            });
+                            element.addEventListener('error', (e) => {
+                                console.error('Video error:', e);
+                                showToast("Error playing video: " + (element.error ? element.error.message : "Unknown error"), 'error');
+                            });
+                            element.src = url;
+                            const source = document.createElement('source');
+                            source.src = url;
+                            source.type = mediaFile.type;
+                            element.appendChild(source);
+                            element.onended = function() {
+                                console.log('Video ended');
+                            };
+                            viewerContent.appendChild(element);
+                            viewer.style.display = 'flex';
+                        } catch (error) {
+                            console.error('Error setting up video:', error);
+                            showToast("Error setting up video: " + error.message, 'error');
+                        }
+                    } else if (item.type === 'application/pdf') {
+                        const element = document.createElement('embed');
+                        element.src = `${url}#toolbar=0`;
+                        element.type = 'application/pdf';
+                        viewerContent.appendChild(element);
+                        viewer.style.display = 'flex';
+                    }
+                } else {
+                    showToast("File not found in database", 'error');
+                }
+            };
+            request.onerror = function(event) {
+                console.error("Database error in showInViewer:", event.target.error);
+                showToast("Error loading file from database", 'error');
+            };
+        }
+
+        async function uploadWebApp() {
+            const input = document.getElementById('webAppInput');
+            const files = input.files;
+            if (files.length === 0) return;
+            showToast("Uploading apps...");
+            let totalFiles = files.length;
+            let processedFiles = 0;
+            for (const file of files) {
+                const fileSize = file.size;
+                const fileId = Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+                const metadataItem = {
+                    id: fileId,
+                    name: file.name,
+                    type: file.type,
+                    size: fileSize,
+                    dateAdded: new Date().toISOString()
+                };
+                webappsMetadata.push(metadataItem);
+                localStorage.setItem('webappsMetadata', JSON.stringify(webappsMetadata));
+                const transaction = db.transaction(['webapps'], 'readwrite');
+                transaction.oncomplete = () => {
+                    processedFiles++;
+                    if (processedFiles === totalFiles) {
+                        showToast("Upload complete!");
+                        input.value = "";
+                        loadWebApps();
+                    }
+                };
+                transaction.onerror = e => showToast('DB Error: ' + e.target.error.message, 'error');
+                const store = transaction.objectStore('webapps');
+                const request = store.add({
+                    id: fileId,
+                    name: file.name,
+                    type: file.type,
+                    size: fileSize,
+                    data: file
+                });
+                request.onerror = function(event) {
+                    console.error("Error uploading web app to IndexedDB: ", event.target.error);
+                    showToast("Error uploading app: " + file.name + ". See console for details.", 'error');
+                };
+            }
+        }
+
+        function loadWebApps() {
+            let container = document.getElementById('appContainer');
+            container.innerHTML = '';
+            if (webappsMetadata.length === 0) {
+                container.innerHTML = '<p>No web apps yet. Upload some HTML files!</p>';
+                return;
+            }
+            webappsMetadata.forEach((item, index) => {
+                let div = document.createElement('div');
+                div.className = 'appItem';
+                if (index === selectedAppIndex) div.classList.add('selected');
+                div.textContent = item.name;
+                let fileSizeSpan = document.createElement('span');
+                fileSizeSpan.className = 'file-size';
+                fileSizeSpan.textContent = formatFileSize(item.size);
+                div.appendChild(fileSizeSpan);
+                div.addEventListener('click', () => {
+                    selectedAppIndex = index;
+                    loadWebApps();
+                });
+                div.addEventListener('dblclick', () => showWebAppInViewer(item));
+                container.appendChild(div);
+            });
+        }
+
+        function deleteWebApp() {
+            if (selectedAppIndex === null) return;
+            const item = webappsMetadata[selectedAppIndex];
+            if (!item || !confirm(`Delete "${item.name}"?`)) return;
+            const transaction = db.transaction(['webapps'], 'readwrite');
+            const store = transaction.objectStore('webapps');
+            const request = store.delete(item.id);
+            request.onsuccess = function() {
+                webappsMetadata.splice(selectedAppIndex, 1);
+                localStorage.setItem('webappsMetadata', JSON.stringify(webappsMetadata));
+                selectedAppIndex = null;
+                loadWebApps();
+                showToast("Web app deleted successfully");
+            };
+            request.onerror = function(event) {
+                console.error("Error deleting web app from IndexedDB: ", event.target.error);
+                showToast("Error deleting web app: " + event.target.error.message, 'error');
+            };
+        }
+
+        function openWebApp() {
+            if (selectedAppIndex === null) return;
+            const item = webappsMetadata[selectedAppIndex];
+            if (item) {
+                showWebAppInViewer(item);
+            }
+        }
+
+        function downloadWebApp() {
+            if (selectedAppIndex === null) return;
+            const item = webappsMetadata[selectedAppIndex];
+            if (!item) return;
+            const transaction = db.transaction(['webapps'], 'readonly');
+            const store = transaction.objectStore('webapps');
+            const request = store.get(item.id);
+            request.onsuccess = function(event) {
+                const appFile = event.target.result;
+                if (appFile) {
+                    const url = URL.createObjectURL(appFile.data);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = item.name;
+                    a.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                }
+            };
+            request.onerror = function(event) {
+                console.error("Error downloading web app from IndexedDB: ", event.target.error);
+                showToast("Error downloading web app: " + event.target.error.message, 'error');
+            };
+        }
+
+        function showWebAppInViewer(item) {
+            const viewer = document.getElementById('viewerModal');
+            const viewerContent = document.getElementById('viewerContent');
+            viewerContent.innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+            const transaction = db.transaction(['webapps'], 'readonly');
+            const store = transaction.objectStore('webapps');
+            const request = store.get(item.id);
+            request.onsuccess = function(event) {
+                const appFile = event.target.result;
+                if (appFile && appFile.data) {
+                    const url = URL.createObjectURL(appFile.data);
+                    const element = document.createElement('iframe');
+                    element.src = url;
+                    viewerContent.appendChild(element);
+                    viewer.style.display = 'flex';
+                } else {
+                    showToast("Web app file not found in database", 'error');
+                }
+            };
+            request.onerror = function(event) {
+                console.error("Database error in showWebAppInViewer:", event.target.error);
+                showToast("Error loading web app from database", 'error');
+            };
+        }
+        
+    </script>
+</body>
+</html>
