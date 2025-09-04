@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,8 +88,9 @@
         
         .search-container {
             position: relative;
-            margin: 20px auto;
+            margin: 20px auto 10px; /* Adjusted margin */
             max-width: 600px;
+            z-index: 10; /* High z-index for regular search over widgets */
         }
         
         form {
@@ -176,8 +178,9 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin: 30px 0;
+            margin: 20px 0; /* Adjusted margin */
             padding: 0 20px;
+            z-index: 1; /* Lower than search */
         }
         
         .widget {
@@ -323,8 +326,10 @@
 
         /* Settings search */
         .settings-search {
-            margin: 20px;
+            margin: 20px auto; /* Adjusted to center */
             padding: 0 20px;
+            z-index: 10000; /* High z-index for menu search */
+            max-width: 600px; /* Consistent with main search */
         }
 
         .settings-search input {
@@ -337,6 +342,7 @@
             font-family: Franklin Gothic;
             font-size: 16px;
             box-sizing: border-box;
+            z-index: 10000;
         }
 
         .settings-search input:focus {
@@ -382,6 +388,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 1001; /* High z-index for X buttons */
         }
         
         .close-btn:hover {
@@ -390,10 +397,11 @@
         
         .settings-section {
             background: rgba(255, 255, 255, 0.05);
-            margin: 20px;
+            margin: 20px auto; /* Centered */
             padding: 20px;
             border-radius: 15px;
             text-align: left;
+            max-width: 600px; /* Consistent width */
         }
         
         .settings-section h3 {
@@ -661,6 +669,9 @@
             text-align: left;
             cursor: pointer;
             transition: 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
         
         .history-item:hover {
@@ -685,6 +696,9 @@
             text-align: left;
             cursor: pointer;
             transition: 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
         
         .bookmark-item:hover {
@@ -1413,13 +1427,977 @@
     </div>
 
     <script>
-        // UI Helpers
-        let selectedIndex = null;
-        let selectedAppIndex = null;
-        let db;
-        let mediaMetadata = [];
-        let webappsMetadata = [];
-        let settings = JSON.parse(localStorage.getItem('googokeSettings')) || {
+       // UI Helpers
+let selectedIndex = null;
+let selectedAppIndex = null;
+let db;
+let mediaMetadata = [];
+let webappsMetadata = [];
+let settings = JSON.parse(localStorage.getItem('googokeSettings')) || {
+    searchEngine: 'google',
+    bgType: 'gradient',
+    bgColor1: '#004675',
+    bgColor2: '#006232',
+    customBgCss: '',
+    inputBgType: 'default',
+    inputBgColor: '#333333',
+    inputBgColor2: '#222222',
+    inputTextColor: '#ffffff',
+    customInputCss: '',
+    menuBgType: 'gradient',
+    menuBgColor1: '#1a1a1a',
+    menuBgColor2: '#2d2d2d',
+    customMenuBgCss: '',
+    themeMode: 'dark',
+    menuPassword: '',
+    lockHistory: false,
+    lockBookmarks: false,
+    lockSettings: false,
+    enableHistory: true,
+    showClock: true,
+    showWeather: false,
+    weatherLocation: '',
+    showImageSlideshow: false,
+    showVideoSlideshow: false,
+    showCalendar: false,
+    showRSS: false,
+    rssUrls: '',
+    clockTimeFormat: '12',
+    clockShowSeconds: true,
+    clockDateFormat: 'short'
+};
+let historyItems = JSON.parse(localStorage.getItem('googokeHistory')) || [];
+let bookmarks = JSON.parse(localStorage.getItem('googokeBookmarks')) || [];
+let reminders = JSON.parse(localStorage.getItem('googokeReminders')) || [];
+let slideshowIntervals = {};
+let mostVisited = JSON.parse(localStorage.getItem('googokeMostVisited')) || {};
+let unlockedModals = new Set();
+
+// Initialize everything
+window.addEventListener('load', () => {
+    loadMediaMetadata();
+    loadWebappsMetadata();
+    initDB();
+    applySettings();
+    loadWidgets();
+    loadMostVisited();
+    checkReminders();
+    setInterval(checkReminders, 60000); // Check reminders every minute
+    document.getElementById('depu').addEventListener('input', suggestHistory);
+    document.getElementById('importSettingsInput').addEventListener('change', importSettings);
+    // Drag drop for photoModal
+    const photoModal = document.getElementById('photoModal');
+    photoModal.addEventListener('dragover', e => e.preventDefault());
+    photoModal.addEventListener('drop', e => {
+        e.preventDefault();
+        document.getElementById('uploadInput').files = e.dataTransfer.files;
+        uploadMedia();
+    });
+    // Drag drop for webAppModal
+    const webAppModal = document.getElementById('webAppModal');
+    webAppModal.addEventListener('dragover', e => e.preventDefault());
+    webAppModal.addEventListener('drop', e => {
+        e.preventDefault();
+        document.getElementById('webAppInput').files = e.dataTransfer.files;
+        uploadWebApp();
+    });
+});
+
+// Settings search functionality
+function searchSettings() {
+    const searchTerm = document.getElementById('settingsSearchInput').value.toLowerCase();
+    const sections = document.querySelectorAll('.settings-section');
+    
+    sections.forEach(section => {
+        const keywords = section.getAttribute('data-keywords') || '';
+        const text = section.textContent.toLowerCase();
+        
+        if (searchTerm === '' || keywords.includes(searchTerm) || text.includes(searchTerm)) {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+
+// Most visited functionality
+function updateMostVisited(url) {
+    if (!url || url.includes('chrome://') || url.includes('about:')) return;
+    
+    // Clean the URL (remove query parameters for counting)
+    const cleanUrl = url.split('?')[0];
+    
+    if (mostVisited[cleanUrl]) {
+        mostVisited[cleanUrl].count++;
+        mostVisited[cleanUrl].lastVisited = new Date().toISOString();
+    } else {
+        mostVisited[cleanUrl] = {
+            url: cleanUrl,
+            count: 1,
+            lastVisited: new Date().toISOString()
+        };
+    }
+    
+    localStorage.setItem('googokeMostVisited', JSON.stringify(mostVisited));
+    loadMostVisited();
+}
+
+function loadMostVisited() {
+    const container = document.getElementById('mostVisitedContainer');
+    container.innerHTML = '';
+
+    // Convert to array and sort by count, then by last visited
+    const sortedSites = Object.values(mostVisited)
+        .sort((a, b) => {
+            if (b.count !== a.count) {
+                return b.count - a.count;
+            }
+            return new Date(b.lastVisited) - new Date(a.lastVisited);
+        })
+        .slice(0, 5); // Show top 5 most visited
+
+    if (sortedSites.length === 0) return;
+
+    sortedSites.forEach(site => {
+        const element = document.createElement('div');
+        element.className = 'most-visited-item';
+        
+        // Get domain name for display
+        let displayName;
+        try {
+            const urlObj = new URL(site.url);
+            displayName = urlObj.hostname.replace('www.', '');
+        } catch (e) {
+            displayName = site.url.substring(0, 20) + (site.url.length > 20 ? '...' : '');
+        }
+        
+        element.textContent = displayName;
+        element.title = `${site.url} (visited ${site.count} times)`;
+        element.onclick = () => {
+            window.open(site.url, '_blank');
+        };
+        
+        container.appendChild(element);
+    });
+}
+
+// Widget functions
+function loadWidgets() {
+    const container = document.getElementById('widgetsContainer');
+    container.innerHTML = '';
+
+    if (settings.showClock) {
+        createClockWidget();
+    }
+    if (settings.showWeather && settings.weatherLocation) {
+        createWeatherWidget();
+    }
+    const hasImages = mediaMetadata.some(item => item.type && item.type.startsWith('image'));
+    if (settings.showImageSlideshow && hasImages) {
+        createImageSlideshowWidget();
+    }
+    const hasVideos = mediaMetadata.some(item => item.type && item.type.startsWith('video'));
+    if (settings.showVideoSlideshow && hasVideos) {
+        createVideoSlideshowWidget();
+    }
+    if (settings.showCalendar) {
+        createCalendarWidget();
+    }
+    if (settings.showRSS && settings.rssUrls.trim()) {
+        createRSSWidget();
+    }
+}
+
+function createClockWidget() {
+    const container = document.getElementById('widgetsContainer');
+    const widget = document.createElement('div');
+    widget.className = 'widget clock-widget';
+    widget.innerHTML = `
+        <div class="clock-time" id="clockTime"></div>
+        <div class="clock-date" id="clockDate"></div>
+    `;
+    container.appendChild(widget);
+    updateClock();
+    setInterval(updateClock, 1000);
+}
+
+function updateClock() {
+    const now = new Date();
+    const timeElement = document.getElementById('clockTime');
+    const dateElement = document.getElementById('clockDate');
+    
+    if (timeElement) {
+        let timeOptions = {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: settings.clockTimeFormat === '12'
+        };
+        if (settings.clockShowSeconds) {
+            timeOptions.second = '2-digit';
+        }
+        timeElement.textContent = now.toLocaleTimeString([], timeOptions);
+    }
+    if (dateElement) {
+        let dateOptions = {
+            dateStyle: settings.clockDateFormat === 'short' ? 'short' : 'long'
+        };
+        dateElement.textContent = now.toLocaleDateString([], dateOptions);
+    }
+}
+
+function createWeatherWidget() {
+    const container = document.getElementById('widgetsContainer');
+    const widget = document.createElement('div');
+    widget.className = 'widget weather-widget';
+    widget.innerHTML = `
+        <h3>Weather</h3>
+        <div id="weatherInfo">Loading weather...</div>
+    `;
+    container.appendChild(widget);
+    loadWeather();
+}
+
+ function loadWeather() {
+    const weatherInfo = document.getElementById('weatherInfo');
+    if (!settings.weatherLocation) {
+        weatherInfo.innerHTML = 'Please set a location in settings';
+        return;
+    }
+    fetchWeather();
+ }
+async function fetchWeather() {
+    const weatherInfo = document.getElementById('weatherInfo');
+    const location = settings.weatherLocation || 'London';
+    try {
+        const response = await fetch(`https://wttr.in/${encodeURIComponent(location)}?format=j1`);
+        if (!response.ok) throw new Error('Failed to fetch weather');
+        const data = await response.json();
+        const current = data.current_condition[0];
+        const weather = data.weather[0];
+        weatherInfo.innerHTML = `
+            <div>${getWeatherEmoji(current.weatherCode)} ${current.temp_C}°C / ${current.temp_F}°F</div>
+            <div>${current.weatherDesc[0].value}</div>
+            <div>Location: ${location}</div>
+            <div>High: ${weather.maxtempC}°C Low: ${weather.mintempC}°C</div>
+        `;
+    } catch (error) {
+        weatherInfo.innerHTML = `<div>Error loading weather: ${error.message}</div>`;
+    }
+}
+
+function getWeatherEmoji(code) {
+    const emojis = {
+        '113': '☀️', // Sunny
+        '116': '⛅', // Partly cloudy
+        '119': '☁️', // Cloudy
+        '122': '☁️', // Overcast
+        '143': '🌫️', // Mist
+        '176': '🌧️', // Patchy rain
+        '179': '🌨️', // Patchy snow
+        '182': '🌨️', // Patchy sleet
+        '185': '🌧️', // Patchy freezing drizzle
+        '200': '⛈️', // Thundery outbreaks
+        // Add more as needed
+    };
+    return emojis[code] || '🌤️';
+}
+
+function createImageSlideshowWidget() {
+    const container = document.getElementById('widgetsContainer');
+    const widget = document.createElement('div');
+    widget.className = 'widget';
+    widget.innerHTML = `
+        <h3>Image Slideshow</h3>
+        <div class="slideshow-widget" id="imageSlideshow"></div>
+    `;
+    container.appendChild(widget);
+    startImageSlideshow();
+}
+
+function createVideoSlideshowWidget() {
+    const container = document.getElementById('widgetsContainer');
+    const widget = document.createElement('div');
+    widget.className = 'widget';
+    widget.innerHTML = `
+        <h3>Video Slideshow</h3>
+        <div class="slideshow-widget" id="videoSlideshow"></div>
+    `;
+    container.appendChild(widget);
+    startVideoSlideshow();
+}
+
+function startImageSlideshow() {
+    const images = mediaMetadata.filter(item => item.type && item.type.startsWith('image'));
+    const slideshow = document.getElementById('imageSlideshow');
+    
+    if (!slideshow || images.length === 0) return;
+
+    let currentIndex = 0;
+    
+    function showImage() {
+        const img = document.createElement('img');
+        img.src = images[currentIndex].thumbnail;
+        img.className = 'slideshow-content';
+        img.style.objectFit = 'cover';
+        
+        slideshow.innerHTML = '';
+        slideshow.appendChild(img);
+        
+        currentIndex = (currentIndex + 1) % images.length;
+    }
+
+    showImage();
+    slideshowIntervals.image = setInterval(showImage, 5000);
+}
+
+function startVideoSlideshow() {
+    const videos = mediaMetadata.filter(item => item.type && item.type.startsWith('video'));
+    const slideshow = document.getElementById('videoSlideshow');
+    
+    if (!slideshow || videos.length === 0) return;
+
+    let currentIndex = 0;
+    
+    function showVideoThumbnail() {
+        const img = document.createElement('img');
+        img.src = videos[currentIndex].thumbnail;
+        img.className = 'slideshow-content';
+        img.style.objectFit = 'cover';
+        img.style.cursor = 'pointer';
+        img.onclick = () => showInViewer(videos[currentIndex]);
+        
+        slideshow.innerHTML = '';
+        slideshow.appendChild(img);
+        
+        // Add play button overlay
+        const playButton = document.createElement('div');
+        playButton.innerHTML = '▶️';
+        playButton.style.position = 'absolute';
+        playButton.style.top = '50%';
+        playButton.style.left = '50%';
+        playButton.style.transform = 'translate(-50%, -50%)';
+        playButton.style.fontSize = '2em';
+        playButton.style.cursor = 'pointer';
+        playButton.onclick = () => showInViewer(videos[currentIndex]);
+        slideshow.appendChild(playButton);
+        
+        currentIndex = (currentIndex + 1) % videos.length;
+    }
+
+    showVideoThumbnail();
+    slideshowIntervals.video = setInterval(showVideoThumbnail, 7000);
+}
+
+function createCalendarWidget() {
+    const container = document.getElementById('widgetsContainer');
+    const widget = document.createElement('div');
+    widget.className = 'widget calendar-widget';
+    widget.innerHTML = `<h3>Calendar</h3><table id="calendarTable"></table>`;
+    container.appendChild(widget);
+    buildCalendar();
+}
+
+function buildCalendar() {
+    const table = document.getElementById('calendarTable');
+    table.innerHTML = '';
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDay = firstDay.getDay();
+    
+    // Header
+    const header = table.createTHead();
+    const headerRow = header.insertRow();
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+        const th = document.createElement('th');
+        th.textContent = day;
+        headerRow.appendChild(th);
+    });
+    
+    // Body
+    const tbody = table.createTBody();
+    let row = tbody.insertRow();
+    for (let i = 0; i < startingDay; i++) {
+        row.insertCell();
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+        if ((startingDay + day - 1) % 7 === 0 && day > 1) {
+            row = tbody.insertRow();
+        }
+        const cell = row.insertCell();
+        cell.textContent = day;
+        if (day === now.getDate()) cell.classList.add('today');
+    }
+}
+
+function createRSSWidget() {
+    const container = document.getElementById('widgetsContainer');
+    const widget = document.createElement('div');
+    widget.className = 'widget rss-widget';
+    widget.innerHTML = `<h3>RSS Feeds</h3><div id="rssContent">Loading feeds...</div><button onclick="toggleWidgetFullscreen(this.parentElement)">Fullscreen</button>`;
+    container.appendChild(widget);
+    loadRSSFeeds();
+}
+
+async function loadRSSFeeds() {
+    const content = document.getElementById('rssContent');
+    content.innerHTML = '';
+    const urls = settings.rssUrls.split(',').map(u => u.trim()).filter(u => u);
+    if (urls.length === 0) {
+        content.innerHTML = '<p>No RSS feeds configured.</p>';
+        return;
+    }
+    for (const url of urls) {
+        try {
+            const res = await fetch(url);
+            const xml = await res.text();
+            const doc = new DOMParser().parseFromString(xml, 'application/xml');
+            const items = doc.querySelectorAll('item');
+            items.forEach(item => {
+                const title = item.querySelector('title').textContent;
+                const link = item.querySelector('link').textContent;
+                const desc = item.querySelector('description') ? item.querySelector('description').textContent : '';
+                const div = document.createElement('div');
+                div.className = 'rss-item';
+                div.innerHTML = `<a href="${link}" target="_blank">${title}</a><p>${desc.substring(0,100)}...</p>`;
+                content.appendChild(div);
+            });
+        } catch (e) {
+            content.innerHTML += `<p>Error loading ${url}: ${e.message}</p>`;
+        }
+    }
+}
+
+function toggleWidgetFullscreen(widget) {
+    if (widget.classList.contains('fullscreen')) {
+        widget.classList.remove('fullscreen');
+        widget.querySelector('button').textContent = 'Fullscreen';
+    } else {
+        widget.classList.add('fullscreen');
+        widget.querySelector('button').textContent = 'Restore';
+    }
+}
+
+// Bookmark functions
+function addCurrentPageBookmark() {
+    const url = prompt('Enter URL to bookmark:');
+    const title = prompt('Enter bookmark title:') || url;
+    
+    if (url) {
+        bookmarks.push({
+            id: Date.now(),
+            title: title,
+            url: url,
+            dateAdded: new Date().toISOString()
+        });
+        localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+        loadBookmarks();
+        showToast('Bookmark added!');
+    }
+}
+
+function addCustomBookmark() {
+    const url = prompt('Enter URL:');
+    const title = prompt('Enter title:') || url;
+    
+    if (url) {
+        bookmarks.push({
+            id: Date.now(),
+            title: title,
+            url: url,
+            dateAdded: new Date().toISOString()
+        });
+        localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+        loadBookmarks();
+        showToast('Bookmark added!');
+    }
+}
+
+function loadBookmarks() {
+    const container = document.getElementById('bookmarkContainer');
+    container.innerHTML = '';
+
+    if (bookmarks.length === 0) {
+        container.innerHTML = '<p>No bookmarks yet.</p>';
+        return;
+    }
+
+    bookmarks.forEach((bookmark, index) => {
+        const div = document.createElement('div');
+        div.className = 'bookmark-item';
+        div.innerHTML = `
+            <div style="flex: 1;">
+                <div style="font-weight: bold;">${bookmark.title}</div>
+                <div style="color: #ccc; font-size: 0.9em;">${bookmark.url}</div>
+                <div style="color: #999; font-size: 0.8em;">${new Date(bookmark.dateAdded).toLocaleDateString()}</div>
+            </div>
+            <button onclick="removeBookmark(${index})" style="margin-left: 10px;">Delete</button>
+        `;
+        div.querySelector('div').onclick = () => window.open(bookmark.url, '_blank');
+        container.appendChild(div);
+    });
+}
+
+function removeBookmark(index) {
+    if (confirm('Delete this bookmark?')) {
+        bookmarks.splice(index, 1);
+        localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+        loadBookmarks();
+        showToast('Bookmark deleted');
+    }
+}
+
+function clearBookmarks() {
+    if (confirm('Clear all bookmarks?')) {
+        bookmarks = [];
+        localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+        loadBookmarks();
+        showToast('Bookmarks cleared');
+    }
+}
+
+// Reminder functions
+function addReminder() {
+    const dateTime = document.getElementById('reminderDateTime').value;
+    const task = document.getElementById('reminderTask').value;
+
+    if (!dateTime || !task) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+
+    reminders.push({
+        id: Date.now(),
+        dateTime: dateTime,
+        task: task,
+        completed: false,
+        notified: false,
+        dateAdded: new Date().toISOString()
+    });
+
+    localStorage.setItem('googokeReminders', JSON.stringify(reminders));
+    document.getElementById('reminderDateTime').value = '';
+    document.getElementById('reminderTask').value = '';
+    loadReminders();
+    showToast('Reminder added!');
+}
+
+function loadReminders() {
+    const container = document.getElementById('reminderContainer');
+    container.innerHTML = '';
+
+    if (reminders.length === 0) {
+        container.innerHTML = '<p>No reminders set.</p>';
+        return;
+    }
+
+    reminders.forEach((reminder, index) => {
+        const div = document.createElement('div');
+        div.className = 'reminder-item';
+        const reminderDate = new Date(reminder.dateTime);
+        const now = new Date();
+        const isOverdue = reminderDate < now;
+
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: bold;">${reminder.task}</div>
+                    <div style="color: #ccc; font-size: 0.9em;">${reminderDate.toLocaleString()}</div>
+                    ${isOverdue && !reminder.completed ? '<div style="color: #f44336;">⚠️ Overdue</div>' : ''}
+                </div>
+                <button onclick="removeReminder(${index})">Remove</button>
+            </div>
+        `;
+        
+        if (isOverdue && !reminder.completed) {
+            div.style.borderLeft = '4px solid #f44336';
+        }
+
+        container.appendChild(div);
+    });
+}
+
+function removeReminder(index) {
+    reminders.splice(index, 1);
+    localStorage.setItem('googokeReminders', JSON.stringify(reminders));
+    loadReminders();
+    showToast('Reminder removed');
+}
+
+function checkReminders() {
+    const now = new Date();
+    let changed = false;
+    
+    reminders.forEach(reminder => {
+        const reminderDate = new Date(reminder.dateTime);
+        const timeDiff = now.getTime() - reminderDate.getTime();
+        
+        if (!reminder.notified && timeDiff >= 0) {
+            if (timeDiff < 60000) {
+                showToast(reminder.task, 'success');
+                reminder.notified = true;
+                reminder.completed = true;
+                changed = true;
+            } else if (timeDiff >= 60000) {
+                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                
+                let overdueMsg = `You are `;
+                if (days > 0) overdueMsg += `${days} day${days > 1 ? 's' : ''} `;
+                if (hours > 0) overdueMsg += `${hours} hour${hours > 1 ? 's' : ''} `;
+                if (minutes > 0) overdueMsg += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+                overdueMsg += `late!`;
+                
+                showToast(`${reminder.task}\n${overdueMsg}`, 'overdue');
+                reminder.notified = true;
+                reminder.completed = true;
+                changed = true;
+            }
+        }
+    });
+    
+    if (changed) {
+        localStorage.setItem('googokeReminders', JSON.stringify(reminders));
+    }
+}
+
+function showToast(message, type = 'success') {
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        <div style="white-space: pre-line; padding-right: 30px;">${message}</div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (document.body.contains(toast)) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// History functions
+function loadHistory() {
+    const container = document.getElementById('historyContainer');
+    const sortBy = document.getElementById('historySortBy').value;
+    
+    container.innerHTML = '';
+
+    if (historyItems.length === 0) {
+        container.innerHTML = '<p>No history yet.</p>';
+        return;
+    }
+
+    let sortedHistory = [...historyItems];
+    if (sortBy === 'oldest') {
+        sortedHistory.reverse();
+    }
+
+    sortedHistory.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        const date = new Date(item.date);
+        
+        div.innerHTML = `
+            <div style="flex: 1;">
+                <div class="history-url">${item.url}</div>
+                <div class="history-date">${date.toLocaleString()}</div>
+            </div>
+            <button onclick="removeHistory(${index})" style="margin-left: 10px;">Delete</button>
+        `;
+        
+        div.querySelector('div').onclick = () => {
+            window.open(item.url, '_blank');
+            updateMostVisited(item.url);
+        };
+        container.appendChild(div);
+    });
+}
+
+function removeHistory(index) {
+    if (confirm('Delete this history item?')) {
+        historyItems.splice(index, 1);
+        localStorage.setItem('googokeHistory', JSON.stringify(historyItems));
+        loadHistory();
+        showToast('History item deleted');
+    }
+}
+
+function saveHistory(entry) {
+    if (!settings.enableHistory) return;
+    historyItems.push({ url: entry, date: new Date().toISOString() });
+    localStorage.setItem('googokeHistory', JSON.stringify(historyItems));
+    updateMostVisited(entry);
+}
+
+function clearHistory() {
+    if (confirm('Clear all history?')) {
+        historyItems = [];
+        localStorage.setItem('googokeHistory', JSON.stringify(historyItems));
+        loadHistory();
+        showToast('History cleared');
+    }
+}
+
+// Settings application
+function applySettings() {
+    // Theme
+    document.body.classList.toggle('light-mode', settings.themeMode === 'light');
+    
+    // Search engine
+    let form = document.querySelector('form');
+    switch (settings.searchEngine) {
+        case 'bing':
+            form.action = 'https://www.bing.com/search';
+            break;
+        case 'duckduckgo':
+            form.action = 'https://duckduckgo.com/';
+            break;
+        default:
+            form.action = 'https://www.google.com/search';
+    }
+
+    // Background
+    const body = document.body;
+    body.style.background = '';
+    if (settings.bgType === 'solid') {
+        body.style.background = settings.bgColor1;
+    } else if (settings.bgType === 'gradient') {
+        body.style.background = `linear-gradient(to right, ${settings.bgColor1}, ${settings.bgColor2})`;
+    } else if (settings.bgType === 'custom' && settings.customBgCss) {
+        body.style.background = settings.customBgCss;
+    }
+
+    // Input styling
+    const searchInput = document.getElementById('depu');
+    searchInput.style.background = '';
+    if (settings.inputBgType === 'solid') {
+        searchInput.style.background = settings.inputBgColor;
+    } else if (settings.inputBgType === 'gradient') {
+        searchInput.style.background = `linear-gradient(45deg, ${settings.inputBgColor}, ${settings.inputBgColor2})`;
+    } else if (settings.inputBgType === 'custom' && settings.customInputCss) {
+        searchInput.style.background = settings.customInputCss;
+    }
+    
+    searchInput.style.color = settings.inputTextColor;
+
+    // Menu background
+    const modals = document.querySelectorAll('#photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal');
+    modals.forEach(modal => {
+        modal.style.background = '';
+        if (settings.menuBgType === 'solid') {
+            modal.style.background = settings.menuBgColor1;
+        } else if (settings.menuBgType === 'gradient') {
+            modal.style.background = `linear-gradient(135deg, ${settings.menuBgColor1}, ${settings.menuBgColor2})`;
+        } else if (settings.menuBgType === 'custom' && settings.customMenuBgCss) {
+            modal.style.background = settings.customMenuBgCss;
+        }
+    });
+}
+
+// Event listeners
+document.getElementById('photos').addEventListener('click', () => {
+    closeAllModals();
+    document.getElementById('photoModal').style.display = 'block';
+    loadMedia();
+});
+
+document.getElementById('webapps').addEventListener('click', () => {
+    closeAllModals();
+    document.getElementById('webAppModal').style.display = 'block';
+    loadWebApps();
+});
+
+document.getElementById('homepage').addEventListener('click', () => {
+    closeAllModals();
+    document.getElementById('menuModal').style.display = 'block';
+});
+
+document.getElementById('bookmarksBtn').addEventListener('click', () => {
+    closeAllModals();
+    openLockedModal('bookmarksModal');
+});
+
+document.getElementById('openSettings').addEventListener('click', () => {
+    closeModal('menuModal');
+    openLockedModal('settingsModal');
+});
+
+document.getElementById('openHistory').addEventListener('click', () => {
+    closeModal('menuModal');
+    openLockedModal('historyModal');
+});
+
+document.getElementById('openBookmarks').addEventListener('click', () => {
+    closeModal('menuModal');
+    openLockedModal('bookmarksModal');
+});
+
+document.getElementById('openReminders').addEventListener('click', () => {
+    closeModal('menuModal');
+    document.getElementById('reminderModal').style.display = 'block';
+    loadReminders();
+});
+
+function openLockedModal(modalId) {
+    const isLocked = {
+        'historyModal': settings.lockHistory,
+        'bookmarksModal': settings.lockBookmarks,
+        'settingsModal': settings.lockSettings
+    }[modalId];
+
+    const modal = document.getElementById(modalId);
+    modal.style.display = 'block';
+
+    const passwordContainer = document.getElementById(`${modalId.replace('Modal', '')}PasswordContainer`);
+    const content = document.getElementById(`${modalId.replace('Modal', '')}Content`);
+
+    if (isLocked && !unlockedModals.has(modalId)) {
+        if (passwordContainer) passwordContainer.style.display = 'block';
+        if (content) content.style.display = 'none';
+    } else {
+        if (passwordContainer) passwordContainer.style.display = 'none';
+        if (content) content.style.display = 'block';
+        if (modalId === 'historyModal') loadHistory();
+        if (modalId === 'bookmarksModal') loadBookmarks();
+        if (modalId === 'settingsModal') {
+            loadSettingsForm();
+            attachSettingsListeners();
+        }
+    }
+}
+
+function verifyPassword(modalId) {
+    const input = document.getElementById(`${modalId.replace('Modal', '')}PasswordInput`);
+    if (input.value === settings.menuPassword) {
+        unlockedModals.add(modalId);
+        openLockedModal(modalId);
+    } else {
+        showToast('Incorrect password', 'error');
+    }
+}
+
+function handlePasswordKeydown(event, modalId) {
+    if (event.key === 'Enter') {
+        verifyPassword(modalId);
+    }
+}
+
+function loadSettingsForm() {
+    document.getElementById('themeMode').value = settings.themeMode;
+    document.getElementById('searchEngine').value = settings.searchEngine;
+    document.getElementById('bgType').value = settings.bgType;
+    document.getElementById('bgColor1').value = settings.bgColor1;
+    document.getElementById('bgColor2').value = settings.bgColor2;
+    document.getElementById('customBgCss').value = settings.customBgCss;
+    document.getElementById('inputBgType').value = settings.inputBgType;
+    document.getElementById('inputBgColor').value = settings.inputBgColor;
+    document.getElementById('inputBgColor2').value = settings.inputBgColor2;
+    document.getElementById('inputTextColor').value = settings.inputTextColor;
+    document.getElementById('customInputCss').value = settings.customInputCss;
+    document.getElementById('menuBgType').value = settings.menuBgType;
+    document.getElementById('menuBgColor1').value = settings.menuBgColor1;
+    document.getElementById('menuBgColor2').value = settings.menuBgColor2;
+    document.getElementById('customMenuBgCss').value = settings.customMenuBgCss;
+    document.getElementById('menuPassword').value = settings.menuPassword;
+    document.getElementById('lockHistory').checked = settings.lockHistory;
+    document.getElementById('lockBookmarks').checked = settings.lockBookmarks;
+    document.getElementById('lockSettings').checked = settings.lockSettings;
+    document.getElementById('enableHistory').checked = settings.enableHistory;
+    document.getElementById('showClock').checked = settings.showClock;
+    document.getElementById('showWeather').checked = settings.showWeather;
+    document.getElementById('weatherLocation').value = settings.weatherLocation;
+    document.getElementById('showImageSlideshow').checked = settings.showImageSlideshow;
+    document.getElementById('showVideoSlideshow').checked = settings.showVideoSlideshow;
+    document.getElementById('showCalendar').checked = settings.showCalendar;
+    document.getElementById('showRSS').checked = settings.showRSS;
+    document.getElementById('rssUrls').value = settings.rssUrls;
+    document.getElementById('clockTimeFormat').value = settings.clockTimeFormat;
+    document.getElementById('clockShowSeconds').checked = settings.clockShowSeconds;
+    document.getElementById('clockDateFormat').value = settings.clockDateFormat;
+}
+
+let debounceTimer;
+function debouncedUpdate() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(updateSettings, 500);
+}
+
+function attachSettingsListeners() {
+    const elements = [
+        'themeMode', 'searchEngine', 'bgType', 'bgColor1', 'bgColor2', 'customBgCss',
+        'inputBgType', 'inputBgColor', 'inputBgColor2', 'inputTextColor', 'customInputCss',
+        'menuBgType', 'menuBgColor1', 'menuBgColor2', 'customMenuBgCss',
+        'menuPassword', 'lockHistory', 'lockBookmarks', 'lockSettings',
+        'enableHistory', 'showClock', 'showWeather', 'weatherLocation', 'showImageSlideshow', 'showVideoSlideshow',
+        'showCalendar', 'showRSS', 'rssUrls', 'clockTimeFormat', 'clockShowSeconds', 'clockDateFormat'
+    ];
+
+    elements.forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem) {
+            const eventType = (elem.tagName === 'TEXTAREA' || elem.type === 'text' || elem.type === 'password') ? 'input' : 'change';
+            elem.addEventListener(eventType, debouncedUpdate);
+        }
+    });
+}
+
+function updateSettings() {
+    settings.themeMode = document.getElementById('themeMode').value;
+    settings.searchEngine = document.getElementById('searchEngine').value;
+    settings.bgType = document.getElementById('bgType').value;
+    settings.bgColor1 = document.getElementById('bgColor1').value;
+    settings.bgColor2 = document.getElementById('bgColor2').value;
+    settings.customBgCss = document.getElementById('customBgCss').value;
+    settings.inputBgType = document.getElementById('inputBgType').value;
+    settings.inputBgColor = document.getElementById('inputBgColor').value;
+    settings.inputBgColor2 = document.getElementById('inputBgColor2').value;
+    settings.inputTextColor = document.getElementById('inputTextColor').value;
+    settings.customInputCss = document.getElementById('customInputCss').value;
+    settings.menuBgType = document.getElementById('menuBgType').value;
+    settings.menuBgColor1 = document.getElementById('menuBgColor1').value;
+    settings.menuBgColor2 = document.getElementById('menuBgColor2').value;
+    settings.customMenuBgCss = document.getElementById('customMenuBgCss').value;
+    settings.menuPassword = document.getElementById('menuPassword').value;
+    settings.lockHistory = document.getElementById('lockHistory').checked;
+    settings.lockBookmarks = document.getElementById('lockBookmarks').checked;
+    settings.lockSettings = document.getElementById('lockSettings').checked;
+    settings.enableHistory = document.getElementById('enableHistory').checked;
+    settings.showClock = document.getElementById('showClock').checked;
+    settings.showWeather = document.getElementById('showWeather').checked;
+    settings.weatherLocation = document.getElementById('weatherLocation').value;
+    settings.showImageSlideshow = document.getElementById('showImageSlideshow').checked;
+    settings.showVideoSlideshow = document.getElementById('showVideoSlideshow').checked;
+    settings.showCalendar = document.getElementById('showCalendar').checked;
+    settings.showRSS = document.getElementById('showRSS').checked;
+    settings.rssUrls = document.getElementById('rssUrls').value;
+    settings.clockTimeFormat = document.getElementById('clockTimeFormat').value;
+    settings.clockShowSeconds = document.getElementById('clockShowSeconds').checked;
+    settings.clockDateFormat = document.getElementById('clockDateFormat').value;
+
+    localStorage.setItem('googokeSettings', JSON.stringify(settings));
+    applySettings();
+    
+    // Clear existing intervals
+    Object.values(slideshowIntervals).forEach(interval => clearInterval(interval));
+    slideshowIntervals = {};
+    
+    loadWidgets();
+}
+
+function resetSettings() {
+    if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+        settings = {
+            themeMode: 'dark',
             searchEngine: 'google',
             bgType: 'gradient',
             bgColor1: '#004675',
@@ -1434,7 +2412,6 @@
             menuBgColor1: '#1a1a1a',
             menuBgColor2: '#2d2d2d',
             customMenuBgCss: '',
-            themeMode: 'dark',
             menuPassword: '',
             lockHistory: false,
             lockBookmarks: false,
@@ -1452,1594 +2429,655 @@
             clockShowSeconds: true,
             clockDateFormat: 'short'
         };
-        let historyItems = JSON.parse(localStorage.getItem('googokeHistory')) || [];
-        let bookmarks = JSON.parse(localStorage.getItem('googokeBookmarks')) || [];
-        let reminders = JSON.parse(localStorage.getItem('googokeReminders')) || [];
-        let slideshowIntervals = {};
-        let mostVisited = JSON.parse(localStorage.getItem('googokeMostVisited')) || {};
-        let unlockedModals = new Set();
-
-        // Initialize everything
-        window.addEventListener('load', () => {
-            loadMediaMetadata();
-            loadWebappsMetadata();
-            initDB();
-            applySettings();
-            loadWidgets();
-            loadMostVisited();
-            checkReminders();
-            setInterval(checkReminders, 60000); // Check reminders every minute
-            document.getElementById('depu').addEventListener('input', suggestHistory);
-            document.getElementById('importSettingsInput').addEventListener('change', importSettings);
-            // Drag drop for photoModal
-            const photoModal = document.getElementById('photoModal');
-            photoModal.addEventListener('dragover', e => e.preventDefault());
-            photoModal.addEventListener('drop', e => {
-                e.preventDefault();
-                document.getElementById('uploadInput').files = e.dataTransfer.files;
-                uploadMedia();
-            });
-            // Drag drop for webAppModal
-            const webAppModal = document.getElementById('webAppModal');
-            webAppModal.addEventListener('dragover', e => e.preventDefault());
-            webAppModal.addEventListener('drop', e => {
-                e.preventDefault();
-                document.getElementById('webAppInput').files = e.dataTransfer.files;
-                uploadWebApp();
-            });
-        });
-
-        // Settings search functionality
-        function searchSettings() {
-            const searchTerm = document.getElementById('settingsSearchInput').value.toLowerCase();
-            const sections = document.querySelectorAll('.settings-section');
-            
-            sections.forEach(section => {
-                const keywords = section.getAttribute('data-keywords') || '';
-                const text = section.textContent.toLowerCase();
-                
-                if (searchTerm === '' || keywords.includes(searchTerm) || text.includes(searchTerm)) {
-                    section.style.display = 'block';
-                } else {
-                    section.style.display = 'none';
-                }
-            });
-        }
-
-        // Most visited functionality
-        function updateMostVisited(url) {
-            if (!url || url.includes('chrome://') || url.includes('about:')) return;
-            
-            // Clean the URL (remove query parameters for counting)
-            const cleanUrl = url.split('?')[0];
-            
-            if (mostVisited[cleanUrl]) {
-                mostVisited[cleanUrl].count++;
-                mostVisited[cleanUrl].lastVisited = new Date().toISOString();
-            } else {
-                mostVisited[cleanUrl] = {
-                    url: cleanUrl,
-                    count: 1,
-                    lastVisited: new Date().toISOString()
-                };
-            }
-            
-            localStorage.setItem('googokeMostVisited', JSON.stringify(mostVisited));
-            loadMostVisited();
-        }
-
-        function loadMostVisited() {
-            const container = document.getElementById('mostVisitedContainer');
-            container.innerHTML = '';
-
-            // Convert to array and sort by count, then by last visited
-            const sortedSites = Object.values(mostVisited)
-                .sort((a, b) => {
-                    if (b.count !== a.count) {
-                        return b.count - a.count;
-                    }
-                    return new Date(b.lastVisited) - new Date(a.lastVisited);
-                })
-                .slice(0, 5); // Show top 5 most visited
-
-            if (sortedSites.length === 0) return;
-
-            sortedSites.forEach(site => {
-                const element = document.createElement('div');
-                element.className = 'most-visited-item';
-                
-                // Get domain name for display
-                let displayName;
-                try {
-                    const urlObj = new URL(site.url);
-                    displayName = urlObj.hostname.replace('www.', '');
-                } catch (e) {
-                    displayName = site.url.substring(0, 20) + (site.url.length > 20 ? '...' : '');
-                }
-                
-                element.textContent = displayName;
-                element.title = `${site.url} (visited ${site.count} times)`;
-                element.onclick = () => {
-                    window.open(site.url, '_blank');
-                };
-                
-                container.appendChild(element);
-            });
-        }
-
-        // Widget functions
-        function loadWidgets() {
-            const container = document.getElementById('widgetsContainer');
-            container.innerHTML = '';
-
-            if (settings.showClock) {
-                createClockWidget();
-            }
-            if (settings.showWeather && settings.weatherLocation) {
-                createWeatherWidget();
-            }
-            const hasImages = mediaMetadata.some(item => item.type && item.type.startsWith('image'));
-            if (settings.showImageSlideshow && hasImages) {
-                createImageSlideshowWidget();
-            }
-            const hasVideos = mediaMetadata.some(item => item.type && item.type.startsWith('video'));
-            if (settings.showVideoSlideshow && hasVideos) {
-                createVideoSlideshowWidget();
-            }
-            if (settings.showCalendar) {
-                createCalendarWidget();
-            }
-            if (settings.showRSS && settings.rssUrls.trim()) {
-                createRSSWidget();
-            }
-        }
-
-        function createClockWidget() {
-            const container = document.getElementById('widgetsContainer');
-            const widget = document.createElement('div');
-            widget.className = 'widget clock-widget';
-            widget.innerHTML = `
-                <div class="clock-time" id="clockTime"></div>
-                <div class="clock-date" id="clockDate"></div>
-            `;
-            container.appendChild(widget);
-            updateClock();
-            setInterval(updateClock, 1000);
-        }
-
-        function updateClock() {
-            const now = new Date();
-            const timeElement = document.getElementById('clockTime');
-            const dateElement = document.getElementById('clockDate');
-            
-            if (timeElement) {
-                let timeOptions = {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: settings.clockTimeFormat === '12'
-                };
-                if (settings.clockShowSeconds) {
-                    timeOptions.second = '2-digit';
-                }
-                timeElement.textContent = now.toLocaleTimeString([], timeOptions);
-            }
-            if (dateElement) {
-                let dateOptions = {
-                    dateStyle: settings.clockDateFormat === 'short' ? 'short' : 'long'
-                };
-                dateElement.textContent = now.toLocaleDateString([], dateOptions);
-            }
-        }
-
-        function createWeatherWidget() {
-            const container = document.getElementById('widgetsContainer');
-            const widget = document.createElement('div');
-            widget.className = 'widget weather-widget';
-            widget.innerHTML = `
-                <h3>Weather</h3>
-                <div id="weatherInfo">Loading weather...</div>
-            `;
-            container.appendChild(widget);
-            loadWeather();
-        }
-
-         function loadWeather() {
-            const weatherInfo = document.getElementById('weatherInfo');
-            if (!settings.weatherLocation) {
-                weatherInfo.innerHTML = 'Please set a location in settings';
-                return;
-            }
-            fetchWeather();
-         }
-        async function fetchWeather() {
-            const weatherInfo = document.getElementById('weatherInfo');
-            const location = settings.weatherLocation || 'London';
-            try {
-                const response = await fetch(`https://wttr.in/${encodeURIComponent(location)}?format=j1`);
-                if (!response.ok) throw new Error('Failed to fetch weather');
-                const data = await response.json();
-                const current = data.current_condition[0];
-                const weather = data.weather[0];
-                weatherInfo.innerHTML = `
-                    <div>${getWeatherEmoji(current.weatherCode)} ${current.temp_C}°C / ${current.temp_F}°F</div>
-                    <div>${current.weatherDesc[0].value}</div>
-                    <div>Location: ${location}</div>
-                    <div>High: ${weather.maxtempC}°C Low: ${weather.mintempC}°C</div>
-                `;
-            } catch (error) {
-                weatherInfo.innerHTML = `<div>Error loading weather: ${error.message}</div>`;
-            }
-        }
-
-        function getWeatherEmoji(code) {
-            const emojis = {
-                '113': '☀️', // Sunny
-                '116': '⛅', // Partly cloudy
-                '119': '☁️', // Cloudy
-                '122': '☁️', // Overcast
-                '143': '🌫️', // Mist
-                '176': '🌧️', // Patchy rain
-                '179': '🌨️', // Patchy snow
-                '182': '🌨️', // Patchy sleet
-                '185': '🌧️', // Patchy freezing drizzle
-                '200': '⛈️', // Thundery outbreaks
-                // Add more as needed
-            };
-            return emojis[code] || '🌤️';
-        }
-
-        function createImageSlideshowWidget() {
-            const container = document.getElementById('widgetsContainer');
-            const widget = document.createElement('div');
-            widget.className = 'widget';
-            widget.innerHTML = `
-                <h3>Image Slideshow</h3>
-                <div class="slideshow-widget" id="imageSlideshow"></div>
-            `;
-            container.appendChild(widget);
-            startImageSlideshow();
-        }
-
-        function createVideoSlideshowWidget() {
-            const container = document.getElementById('widgetsContainer');
-            const widget = document.createElement('div');
-            widget.className = 'widget';
-            widget.innerHTML = `
-                <h3>Video Slideshow</h3>
-                <div class="slideshow-widget" id="videoSlideshow"></div>
-            `;
-            container.appendChild(widget);
-            startVideoSlideshow();
-        }
-
-        function startImageSlideshow() {
-            const images = mediaMetadata.filter(item => item.type && item.type.startsWith('image'));
-            const slideshow = document.getElementById('imageSlideshow');
-            
-            if (!slideshow || images.length === 0) return;
-
-            let currentIndex = 0;
-            
-            function showImage() {
-                const img = document.createElement('img');
-                img.src = images[currentIndex].thumbnail;
-                img.className = 'slideshow-content';
-                img.style.objectFit = 'cover';
-                
-                slideshow.innerHTML = '';
-                slideshow.appendChild(img);
-                
-                currentIndex = (currentIndex + 1) % images.length;
-            }
-
-            showImage();
-            slideshowIntervals.image = setInterval(showImage, 5000);
-        }
-
-        function startVideoSlideshow() {
-            const videos = mediaMetadata.filter(item => item.type && item.type.startsWith('video'));
-            const slideshow = document.getElementById('videoSlideshow');
-            
-            if (!slideshow || videos.length === 0) return;
-
-            let currentIndex = 0;
-            
-            function showVideoThumbnail() {
-                const img = document.createElement('img');
-                img.src = videos[currentIndex].thumbnail;
-                img.className = 'slideshow-content';
-                img.style.objectFit = 'cover';
-                img.style.cursor = 'pointer';
-                img.onclick = () => showInViewer(videos[currentIndex]);
-                
-                slideshow.innerHTML = '';
-                slideshow.appendChild(img);
-                
-                // Add play button overlay
-                const playButton = document.createElement('div');
-                playButton.innerHTML = '▶️';
-                playButton.style.position = 'absolute';
-                playButton.style.top = '50%';
-                playButton.style.left = '50%';
-                playButton.style.transform = 'translate(-50%, -50%)';
-                playButton.style.fontSize = '2em';
-                playButton.style.cursor = 'pointer';
-                playButton.onclick = () => showInViewer(videos[currentIndex]);
-                slideshow.appendChild(playButton);
-                
-                currentIndex = (currentIndex + 1) % videos.length;
-            }
-
-            showVideoThumbnail();
-            slideshowIntervals.video = setInterval(showVideoThumbnail, 7000);
-        }
-
-        function createCalendarWidget() {
-            const container = document.getElementById('widgetsContainer');
-            const widget = document.createElement('div');
-            widget.className = 'widget calendar-widget';
-            widget.innerHTML = `<h3>Calendar</h3><table id="calendarTable"></table>`;
-            container.appendChild(widget);
-            buildCalendar();
-        }
-
-        function buildCalendar() {
-            const table = document.getElementById('calendarTable');
-            table.innerHTML = '';
-            const now = new Date();
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            const startingDay = firstDay.getDay();
-            
-            // Header
-            const header = table.createTHead();
-            const headerRow = header.insertRow();
-            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
-                const th = document.createElement('th');
-                th.textContent = day;
-                headerRow.appendChild(th);
-            });
-            
-            // Body
-            const tbody = table.createTBody();
-            let row = tbody.insertRow();
-            for (let i = 0; i < startingDay; i++) {
-                row.insertCell();
-            }
-            for (let day = 1; day <= daysInMonth; day++) {
-                if ((startingDay + day - 1) % 7 === 0 && day > 1) {
-                    row = tbody.insertRow();
-                }
-                const cell = row.insertCell();
-                cell.textContent = day;
-                if (day === now.getDate()) cell.classList.add('today');
-            }
-        }
-
-        function createRSSWidget() {
-            const container = document.getElementById('widgetsContainer');
-            const widget = document.createElement('div');
-            widget.className = 'widget rss-widget';
-            widget.innerHTML = `<h3>RSS Feeds</h3><div id="rssContent">Loading feeds...</div><button onclick="toggleWidgetFullscreen(this.parentElement)">Fullscreen</button>`;
-            container.appendChild(widget);
-            loadRSSFeeds();
-        }
-
-        async function loadRSSFeeds() {
-            const content = document.getElementById('rssContent');
-            content.innerHTML = '';
-            const urls = settings.rssUrls.split(',').map(u => u.trim()).filter(u => u);
-            if (urls.length === 0) {
-                content.innerHTML = '<p>No RSS feeds configured.</p>';
-                return;
-            }
-            for (const url of urls) {
-                try {
-                    const res = await fetch(url);
-                    const xml = await res.text();
-                    const doc = new DOMParser().parseFromString(xml, 'application/xml');
-                    const items = doc.querySelectorAll('item');
-                    items.forEach(item => {
-                        const title = item.querySelector('title').textContent;
-                        const link = item.querySelector('link').textContent;
-                        const desc = item.querySelector('description') ? item.querySelector('description').textContent : '';
-                        const div = document.createElement('div');
-                        div.className = 'rss-item';
-                        div.innerHTML = `<a href="${link}" target="_blank">${title}</a><p>${desc.substring(0,100)}...</p>`;
-                        content.appendChild(div);
-                    });
-                } catch (e) {
-                    content.innerHTML += `<p>Error loading ${url}: ${e.message}</p>`;
-                }
-            }
-        }
-
-        function toggleWidgetFullscreen(widget) {
-            if (widget.classList.contains('fullscreen')) {
-                widget.classList.remove('fullscreen');
-                widget.querySelector('button').textContent = 'Fullscreen';
-            } else {
-                widget.classList.add('fullscreen');
-                widget.querySelector('button').textContent = 'Restore';
-            }
-        }
-
-        // Bookmark functions
-        function addCurrentPageBookmark() {
-            const url = prompt('Enter URL to bookmark:');
-            const title = prompt('Enter bookmark title:') || url;
-            
-            if (url) {
-                bookmarks.push({
-                    id: Date.now(),
-                    title: title,
-                    url: url,
-                    dateAdded: new Date().toISOString()
-                });
-                localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
-                loadBookmarks();
-                showToast('Bookmark added!');
-            }
-        }
-
-        function addCustomBookmark() {
-            const url = prompt('Enter URL:');
-            const title = prompt('Enter title:') || url;
-            
-            if (url) {
-                bookmarks.push({
-                    id: Date.now(),
-                    title: title,
-                    url: url,
-                    dateAdded: new Date().toISOString()
-                });
-                localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
-                loadBookmarks();
-                showToast('Bookmark added!');
-            }
-        }
-
-        function loadBookmarks() {
-            const container = document.getElementById('bookmarkContainer');
-            container.innerHTML = '';
-
-            if (bookmarks.length === 0) {
-                container.innerHTML = '<p>No bookmarks yet.</p>';
-                return;
-            }
-
-            bookmarks.forEach(bookmark => {
-                const div = document.createElement('div');
-                div.className = 'bookmark-item';
-                div.innerHTML = `
-                    <div style="font-weight: bold;">${bookmark.title}</div>
-                    <div style="color: #ccc; font-size: 0.9em;">${bookmark.url}</div>
-                    <div style="color: #999; font-size: 0.8em;">${new Date(bookmark.dateAdded).toLocaleDateString()}</div>
-                `;
-                div.onclick = () => window.open(bookmark.url, '_blank');
-                container.appendChild(div);
-            });
-        }
-
-        function clearBookmarks() {
-            if (confirm('Clear all bookmarks?')) {
-                bookmarks = [];
-                localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
-                loadBookmarks();
-                showToast('Bookmarks cleared');
-            }
-        }
-
-        // Reminder functions
-        function addReminder() {
-            const dateTime = document.getElementById('reminderDateTime').value;
-            const task = document.getElementById('reminderTask').value;
-
-            if (!dateTime || !task) {
-                showToast('Please fill in all fields', 'error');
-                return;
-            }
-
-            reminders.push({
-                id: Date.now(),
-                dateTime: dateTime,
-                task: task,
-                completed: false,
-                notified: false,
-                dateAdded: new Date().toISOString()
-            });
-
-            localStorage.setItem('googokeReminders', JSON.stringify(reminders));
-            document.getElementById('reminderDateTime').value = '';
-            document.getElementById('reminderTask').value = '';
-            loadReminders();
-            showToast('Reminder added!');
-        }
-
-        function loadReminders() {
-            const container = document.getElementById('reminderContainer');
-            container.innerHTML = '';
-
-            if (reminders.length === 0) {
-                container.innerHTML = '<p>No reminders set.</p>';
-                return;
-            }
-
-            reminders.forEach((reminder, index) => {
-                const div = document.createElement('div');
-                div.className = 'reminder-item';
-                const reminderDate = new Date(reminder.dateTime);
-                const now = new Date();
-                const isOverdue = reminderDate < now;
-
-                div.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: bold;">${reminder.task}</div>
-                            <div style="color: #ccc; font-size: 0.9em;">${reminderDate.toLocaleString()}</div>
-                            ${isOverdue && !reminder.completed ? '<div style="color: #f44336;">⚠️ Overdue</div>' : ''}
-                        </div>
-                        <button onclick="removeReminder(${index})">Remove</button>
-                    </div>
-                `;
-                
-                if (isOverdue && !reminder.completed) {
-                    div.style.borderLeft = '4px solid #f44336';
-                }
-
-                container.appendChild(div);
-            });
-        }
-
-        function removeReminder(index) {
-            reminders.splice(index, 1);
-            localStorage.setItem('googokeReminders', JSON.stringify(reminders));
-            loadReminders();
-            showToast('Reminder removed');
-        }
-
-        function checkReminders() {
-            const now = new Date();
-            let changed = false;
-            
-            reminders.forEach(reminder => {
-                const reminderDate = new Date(reminder.dateTime);
-                const timeDiff = now.getTime() - reminderDate.getTime();
-                
-                if (!reminder.notified && timeDiff >= 0) {
-                    if (timeDiff < 60000) {
-                        showToast(reminder.task, 'success');
-                        reminder.notified = true;
-                        reminder.completed = true;
-                        changed = true;
-                    } else if (timeDiff >= 60000) {
-                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                        
-                        let overdueMsg = `You are `;
-                        if (days > 0) overdueMsg += `${days} day${days > 1 ? 's' : ''} `;
-                        if (hours > 0) overdueMsg += `${hours} hour${hours > 1 ? 's' : ''} `;
-                        if (minutes > 0) overdueMsg += `${minutes} minute${minutes > 1 ? 's' : ''} `;
-                        overdueMsg += `late!`;
-                        
-                        showToast(`${reminder.task}\n${overdueMsg}`, 'overdue');
-                        reminder.notified = true;
-                        reminder.completed = true;
-                        changed = true;
-                    }
-                }
-            });
-            
-            if (changed) {
-                localStorage.setItem('googokeReminders', JSON.stringify(reminders));
-            }
-        }
-
-        function showToast(message, type = 'success') {
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-                <div style="white-space: pre-line; padding-right: 30px;">${message}</div>
-            `;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                if (document.body.contains(toast)) {
-                    toast.remove();
-                }
-            }, 5000);
-        }
-
-        // History functions
-        function loadHistory() {
-            const container = document.getElementById('historyContainer');
-            const sortBy = document.getElementById('historySortBy').value;
-            
-            container.innerHTML = '';
-
-            if (historyItems.length === 0) {
-                container.innerHTML = '<p>No history yet.</p>';
-                return;
-            }
-
-            let sortedHistory = [...historyItems];
-            if (sortBy === 'oldest') {
-                sortedHistory.reverse();
-            }
-
-            sortedHistory.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'history-item';
-                const date = new Date(item.date);
-                
-                div.innerHTML = `
-                    <div class="history-url">${item.url}</div>
-                    <div class="history-date">${date.toLocaleString()}</div>
-                `;
-                
-                div.onclick = () => {
-                    window.open(item.url, '_blank');
-                    updateMostVisited(item.url);
-                };
-                container.appendChild(div);
-            });
-        }
-
-        function saveHistory(entry) {
-            if (!settings.enableHistory) return;
-            historyItems.push({ url: entry, date: new Date().toISOString() });
-            localStorage.setItem('googokeHistory', JSON.stringify(historyItems));
-            updateMostVisited(entry);
-        }
-
-        function clearHistory() {
-            if (confirm('Clear all history?')) {
-                historyItems = [];
-                localStorage.setItem('googokeHistory', JSON.stringify(historyItems));
-                loadHistory();
-                showToast('History cleared');
-            }
-        }
-
-        // Settings application
-        function applySettings() {
-            // Theme
-            document.body.classList.toggle('light-mode', settings.themeMode === 'light');
-            
-            // Search engine
-            let form = document.querySelector('form');
-            switch (settings.searchEngine) {
-                case 'bing':
-                    form.action = 'https://www.bing.com/search';
-                    break;
-                case 'duckduckgo':
-                    form.action = 'https://duckduckgo.com/';
-                    break;
-                default:
-                    form.action = 'https://www.google.com/search';
-            }
-
-            // Background
-            const body = document.body;
-            body.style.background = '';
-            if (settings.bgType === 'solid') {
-                body.style.background = settings.bgColor1;
-            } else if (settings.bgType === 'gradient') {
-                body.style.background = `linear-gradient(to right, ${settings.bgColor1}, ${settings.bgColor2})`;
-            } else if (settings.bgType === 'custom' && settings.customBgCss) {
-                body.style.background = settings.customBgCss;
-            }
-
-            // Input styling
-            const searchInput = document.getElementById('depu');
-            searchInput.style.background = '';
-            if (settings.inputBgType === 'solid') {
-                searchInput.style.background = settings.inputBgColor;
-            } else if (settings.inputBgType === 'gradient') {
-                searchInput.style.background = `linear-gradient(45deg, ${settings.inputBgColor}, ${settings.inputBgColor2})`;
-            } else if (settings.inputBgType === 'custom' && settings.customInputCss) {
-                searchInput.style.background = settings.customInputCss;
-            }
-            
-            searchInput.style.color = settings.inputTextColor;
-
-            // Menu background
-            const modals = document.querySelectorAll('#photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal');
-            modals.forEach(modal => {
-                modal.style.background = '';
-                if (settings.menuBgType === 'solid') {
-                    modal.style.background = settings.menuBgColor1;
-                } else if (settings.menuBgType === 'gradient') {
-                    modal.style.background = `linear-gradient(135deg, ${settings.menuBgColor1}, ${settings.menuBgColor2})`;
-                } else if (settings.menuBgType === 'custom' && settings.customMenuBgCss) {
-                    modal.style.background = settings.customMenuBgCss;
-                }
-            });
-        }
-
-        // Event listeners
-        document.getElementById('photos').addEventListener('click', () => {
-            closeAllModals();
-            document.getElementById('photoModal').style.display = 'block';
-            loadMedia();
-        });
-
-        document.getElementById('webapps').addEventListener('click', () => {
-            closeAllModals();
-            document.getElementById('webAppModal').style.display = 'block';
-            loadWebApps();
-        });
-
-        document.getElementById('homepage').addEventListener('click', () => {
-            closeAllModals();
-            document.getElementById('menuModal').style.display = 'block';
-        });
-
-        document.getElementById('bookmarksBtn').addEventListener('click', () => {
-            closeAllModals();
-            openLockedModal('bookmarksModal');
-        });
-
-        document.getElementById('openSettings').addEventListener('click', () => {
-            closeModal('menuModal');
-            openLockedModal('settingsModal');
-        });
-
-        document.getElementById('openHistory').addEventListener('click', () => {
-            closeModal('menuModal');
-            openLockedModal('historyModal');
-        });
-
-        document.getElementById('openBookmarks').addEventListener('click', () => {
-            closeModal('menuModal');
-            openLockedModal('bookmarksModal');
-        });
-
-        document.getElementById('openReminders').addEventListener('click', () => {
-            closeModal('menuModal');
-            document.getElementById('reminderModal').style.display = 'block';
-            loadReminders();
-        });
-
-        function openLockedModal(modalId) {
-            const isLocked = {
-                'historyModal': settings.lockHistory,
-                'bookmarksModal': settings.lockBookmarks,
-                'settingsModal': settings.lockSettings
-            }[modalId];
-
-            const modal = document.getElementById(modalId);
-            modal.style.display = 'block';
-
-            const passwordContainer = document.getElementById(`${modalId.replace('Modal', '')}PasswordContainer`);
-            const content = document.getElementById(`${modalId.replace('Modal', '')}Content`);
-
-            if (isLocked && !unlockedModals.has(modalId)) {
-                if (passwordContainer) passwordContainer.style.display = 'block';
-                if (content) content.style.display = 'none';
-            } else {
-                if (passwordContainer) passwordContainer.style.display = 'none';
-                if (content) content.style.display = 'block';
-                if (modalId === 'historyModal') loadHistory();
-                if (modalId === 'bookmarksModal') loadBookmarks();
-                if (modalId === 'settingsModal') {
-                    loadSettingsForm();
-                    attachSettingsListeners();
-                }
-            }
-        }
-
-        function verifyPassword(modalId) {
-            const input = document.getElementById(`${modalId.replace('Modal', '')}PasswordInput`);
-            if (input.value === settings.menuPassword) {
-                unlockedModals.add(modalId);
-                openLockedModal(modalId);
-            } else {
-                showToast('Incorrect password', 'error');
-            }
-        }
-
-        function handlePasswordKeydown(event, modalId) {
-            if (event.key === 'Enter') {
-                verifyPassword(modalId);
-            }
-        }
-
-        function loadSettingsForm() {
-            document.getElementById('themeMode').value = settings.themeMode;
-            document.getElementById('searchEngine').value = settings.searchEngine;
-            document.getElementById('bgType').value = settings.bgType;
-            document.getElementById('bgColor1').value = settings.bgColor1;
-            document.getElementById('bgColor2').value = settings.bgColor2;
-            document.getElementById('customBgCss').value = settings.customBgCss;
-            document.getElementById('inputBgType').value = settings.inputBgType;
-            document.getElementById('inputBgColor').value = settings.inputBgColor;
-            document.getElementById('inputBgColor2').value = settings.inputBgColor2;
-            document.getElementById('inputTextColor').value = settings.inputTextColor;
-            document.getElementById('customInputCss').value = settings.customInputCss;
-            document.getElementById('menuBgType').value = settings.menuBgType;
-            document.getElementById('menuBgColor1').value = settings.menuBgColor1;
-            document.getElementById('menuBgColor2').value = settings.menuBgColor2;
-            document.getElementById('customMenuBgCss').value = settings.customMenuBgCss;
-            document.getElementById('menuPassword').value = settings.menuPassword;
-            document.getElementById('lockHistory').checked = settings.lockHistory;
-            document.getElementById('lockBookmarks').checked = settings.lockBookmarks;
-            document.getElementById('lockSettings').checked = settings.lockSettings;
-            document.getElementById('enableHistory').checked = settings.enableHistory;
-            document.getElementById('showClock').checked = settings.showClock;
-            document.getElementById('showWeather').checked = settings.showWeather;
-            document.getElementById('weatherLocation').value = settings.weatherLocation;
-            document.getElementById('showImageSlideshow').checked = settings.showImageSlideshow;
-            document.getElementById('showVideoSlideshow').checked = settings.showVideoSlideshow;
-            document.getElementById('showCalendar').checked = settings.showCalendar;
-            document.getElementById('showRSS').checked = settings.showRSS;
-            document.getElementById('rssUrls').value = settings.rssUrls;
-            document.getElementById('clockTimeFormat').value = settings.clockTimeFormat;
-            document.getElementById('clockShowSeconds').checked = settings.clockShowSeconds;
-            document.getElementById('clockDateFormat').value = settings.clockDateFormat;
-        }
-
-        let debounceTimer;
-        function debouncedUpdate() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(updateSettings, 500);
-        }
-
-        function attachSettingsListeners() {
-            const elements = [
-                'themeMode', 'searchEngine', 'bgType', 'bgColor1', 'bgColor2', 'customBgCss',
-                'inputBgType', 'inputBgColor', 'inputBgColor2', 'inputTextColor', 'customInputCss',
-                'menuBgType', 'menuBgColor1', 'menuBgColor2', 'customMenuBgCss',
-                'menuPassword', 'lockHistory', 'lockBookmarks', 'lockSettings',
-                'enableHistory', 'showClock', 'showWeather', 'weatherLocation', 'showImageSlideshow', 'showVideoSlideshow',
-                'showCalendar', 'showRSS', 'rssUrls', 'clockTimeFormat', 'clockShowSeconds', 'clockDateFormat'
-            ];
-
-            elements.forEach(id => {
-                const elem = document.getElementById(id);
-                if (elem) {
-                    const eventType = (elem.tagName === 'TEXTAREA' || elem.type === 'text' || elem.type === 'password') ? 'input' : 'change';
-                    elem.addEventListener(eventType, debouncedUpdate);
-                }
-            });
-        }
-
-        function updateSettings() {
-            settings.themeMode = document.getElementById('themeMode').value;
-            settings.searchEngine = document.getElementById('searchEngine').value;
-            settings.bgType = document.getElementById('bgType').value;
-            settings.bgColor1 = document.getElementById('bgColor1').value;
-            settings.bgColor2 = document.getElementById('bgColor2').value;
-            settings.customBgCss = document.getElementById('customBgCss').value;
-            settings.inputBgType = document.getElementById('inputBgType').value;
-            settings.inputBgColor = document.getElementById('inputBgColor').value;
-            settings.inputBgColor2 = document.getElementById('inputBgColor2').value;
-            settings.inputTextColor = document.getElementById('inputTextColor').value;
-            settings.customInputCss = document.getElementById('customInputCss').value;
-            settings.menuBgType = document.getElementById('menuBgType').value;
-            settings.menuBgColor1 = document.getElementById('menuBgColor1').value;
-            settings.menuBgColor2 = document.getElementById('menuBgColor2').value;
-            settings.customMenuBgCss = document.getElementById('customMenuBgCss').value;
-            settings.menuPassword = document.getElementById('menuPassword').value;
-            settings.lockHistory = document.getElementById('lockHistory').checked;
-            settings.lockBookmarks = document.getElementById('lockBookmarks').checked;
-            settings.lockSettings = document.getElementById('lockSettings').checked;
-            settings.enableHistory = document.getElementById('enableHistory').checked;
-            settings.showClock = document.getElementById('showClock').checked;
-            settings.showWeather = document.getElementById('showWeather').checked;
-            settings.weatherLocation = document.getElementById('weatherLocation').value;
-            settings.showImageSlideshow = document.getElementById('showImageSlideshow').checked;
-            settings.showVideoSlideshow = document.getElementById('showVideoSlideshow').checked;
-            settings.showCalendar = document.getElementById('showCalendar').checked;
-            settings.showRSS = document.getElementById('showRSS').checked;
-            settings.rssUrls = document.getElementById('rssUrls').value;
-            settings.clockTimeFormat = document.getElementById('clockTimeFormat').value;
-            settings.clockShowSeconds = document.getElementById('clockShowSeconds').checked;
-            settings.clockDateFormat = document.getElementById('clockDateFormat').value;
-
+        localStorage.setItem('googokeSettings', JSON.stringify(settings));
+        applySettings();
+        loadSettingsForm();
+        loadWidgets();
+        showToast('Settings reset to defaults');
+    }
+}
+
+function exportSettings() {
+    const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'googoke_settings.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Settings exported');
+}
+
+function importSettings(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        try {
+            settings = JSON.parse(ev.target.result);
             localStorage.setItem('googokeSettings', JSON.stringify(settings));
             applySettings();
-            
-            // Clear existing intervals
-            Object.values(slideshowIntervals).forEach(interval => clearInterval(interval));
-            slideshowIntervals = {};
-            
             loadWidgets();
+            showToast('Settings imported');
+        } catch (err) {
+            showToast('Error importing settings: ' + err.message, 'error');
         }
+    };
+    reader.readAsText(file);
+}
 
-        function resetSettings() {
-            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
-                settings = {
-                    themeMode: 'dark',
-                    searchEngine: 'google',
-                    bgType: 'gradient',
-                    bgColor1: '#004675',
-                    bgColor2: '#006232',
-                    customBgCss: '',
-                    inputBgType: 'default',
-                    inputBgColor: '#333333',
-                    inputBgColor2: '#222222',
-                    inputTextColor: '#ffffff',
-                    customInputCss: '',
-                    menuBgType: 'gradient',
-                    menuBgColor1: '#1a1a1a',
-                    menuBgColor2: '#2d2d2d',
-                    customMenuBgCss: '',
-                    menuPassword: '',
-                    lockHistory: false,
-                    lockBookmarks: false,
-                    lockSettings: false,
-                    enableHistory: true,
-                    showClock: true,
-                    showWeather: false,
-                    weatherLocation: '',
-                    showImageSlideshow: false,
-                    showVideoSlideshow: false,
-                    showCalendar: false,
-                    showRSS: false,
-                    rssUrls: '',
-                    clockTimeFormat: '12',
-                    clockShowSeconds: true,
-                    clockDateFormat: 'short'
-                };
-                localStorage.setItem('googokeSettings', JSON.stringify(settings));
-                applySettings();
-                loadSettingsForm();
-                loadWidgets();
-                showToast('Settings reset to defaults');
-            }
+function clearAllStorage() {
+    if (confirm('Clear all cache and storage? This will delete all data.')) {
+        indexedDB.deleteDatabase('MediaManagerDB');
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+function suggestHistory(e) {
+    const val = e.target.value.toLowerCase();
+    const sug = document.getElementById('suggestions');
+    sug.innerHTML = '';
+    const allUrls = [...new Set([...Object.keys(mostVisited).map(k => mostVisited[k].url), ...historyItems.map(h => h.url)])];
+    const matches = allUrls.filter(u => u.toLowerCase().includes(val)).slice(0, 5);
+    matches.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        sug.appendChild(opt);
+    });
+}
+
+function GTY(event) {
+    event.preventDefault();
+    let url = document.getElementById('depu').value;
+    if (url) {
+        if (!url.startsWith('http')) url = 'https://' + url;
+        saveHistory(url);
+        window.open(url, '_blank');
+    }
+}
+
+let searchForm = document.querySelector('form');
+searchForm.addEventListener('submit', function(event) {
+    let query = document.getElementById('depu').value;
+    if (query) {
+        let param = '?q=';
+        let fullUrl = searchForm.action + param + encodeURIComponent(query);
+        saveHistory(fullUrl);
+    }
+});
+
+function closeAllModals() {
+    document.getElementById('photoModal').style.display = 'none';
+    document.getElementById('webAppModal').style.display = 'none';
+    document.getElementById('menuModal').style.display = 'none';
+    document.getElementById('settingsModal').style.display = 'none';
+    document.getElementById('historyModal').style.display = 'none';
+    document.getElementById('bookmarksModal').style.display = 'none';
+    document.getElementById('reminderModal').style.display = 'none';
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    unlockedModals.delete(id);
+    const inputId = id.replace('Modal', 'PasswordInput');
+    const input = document.getElementById(inputId);
+    if (input) input.value = '';
+}
+
+function closeViewer() {
+    const viewer = document.getElementById('viewerModal');
+    viewer.style.display = 'none';
+    const videoElements = document.querySelectorAll('#viewerContent video');
+    videoElements.forEach(video => {
+        if (video && typeof video.pause === 'function') {
+            video.pause();
         }
+    });
+    document.getElementById('viewerContent').innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+}
 
-        function exportSettings() {
-            const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'googoke_settings.json';
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Settings exported');
-        }
-
-        function importSettings(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                try {
-                    settings = JSON.parse(ev.target.result);
-                    localStorage.setItem('googokeSettings', JSON.stringify(settings));
-                    applySettings();
-                    loadWidgets();
-                    showToast('Settings imported');
-                } catch (err) {
-                    showToast('Error importing settings: ' + err.message, 'error');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function clearAllStorage() {
-            if (confirm('Clear all cache and storage? This will delete all data.')) {
-                indexedDB.deleteDatabase('MediaManagerDB');
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        function suggestHistory(e) {
-            const val = e.target.value.toLowerCase();
-            const sug = document.getElementById('suggestions');
-            sug.innerHTML = '';
-            const allUrls = [...new Set([...Object.keys(mostVisited).map(k => mostVisited[k].url), ...historyItems.map(h => h.url)])];
-            const matches = allUrls.filter(u => u.toLowerCase().includes(val)).slice(0, 5);
-            matches.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                sug.appendChild(opt);
-            });
-        }
-
-        function GTY(event) {
-            event.preventDefault();
-            let url = document.getElementById('depu').value;
-            if (url) {
-                if (!url.startsWith('http')) url = 'https://' + url;
-                saveHistory(url);
-                window.open(url, '_blank');
-            }
-        }
-
-        let searchForm = document.querySelector('form');
-        searchForm.addEventListener('submit', function(event) {
-            let query = document.getElementById('depu').value;
-            if (query) {
-                let param = '?q=';
-                let fullUrl = searchForm.action + param + encodeURIComponent(query);
-                saveHistory(fullUrl);
-            }
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable fullscreen: ${err.message}`);
         });
+    } else {
+        document.exitFullscreen();
+    }
+}
 
-        function closeAllModals() {
-            document.getElementById('photoModal').style.display = 'none';
-            document.getElementById('webAppModal').style.display = 'none';
-            document.getElementById('menuModal').style.display = 'none';
-            document.getElementById('settingsModal').style.display = 'none';
-            document.getElementById('historyModal').style.display = 'none';
-            document.getElementById('bookmarksModal').style.display = 'none';
-            document.getElementById('reminderModal').style.display = 'none';
+function initDB() {
+    const request = indexedDB.open('MediaManagerDB', 3);
+    request.onerror = function(event) {
+        console.error("Database error: " + event.target.errorCode);
+        showToast("Database error. Please try again.", 'error');
+    };
+    request.onupgradeneeded = function(event) {
+        db = event.target.result;
+        if (!db.objectStoreNames.contains('media')) {
+            const mediaStore = db.createObjectStore('media', { keyPath: 'id', autoIncrement: false });
+            mediaStore.createIndex('name', 'name', { unique: false });
+            mediaStore.createIndex('type', 'type', { unique: false });
         }
-
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-            unlockedModals.delete(id);
-            const inputId = id.replace('Modal', 'PasswordInput');
-            const input = document.getElementById(inputId);
-            if (input) input.value = '';
+        if (!db.objectStoreNames.contains('webapps')) {
+            const webappsStore = db.createObjectStore('webapps', { keyPath: 'id', autoIncrement: false });
+            webappsStore.createIndex('name', 'name', { unique: false });
+            webappsStore.createIndex('type', 'type', { unique: false });
         }
+    };
+    request.onsuccess = function(event) {
+        db = event.target.result;
+    };
+    request.onblocked = function(event) {
+        console.warn("Database blocked. Close other tabs/windows using this database and try again.");
+        showToast("Database blocked. Close other tabs/windows using this database and try again.", 'error');
+    };
+}
 
-        function closeViewer() {
-            const viewer = document.getElementById('viewerModal');
-            viewer.style.display = 'none';
-            const videoElements = document.querySelectorAll('#viewerContent video');
-            videoElements.forEach(video => {
-                if (video && typeof video.pause === 'function') {
-                    video.pause();
-                }
-            });
-            document.getElementById('viewerContent').innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+function loadMediaMetadata() {
+    mediaMetadata = JSON.parse(localStorage.getItem('mediaMetadata')) || [];
+}
+
+function loadWebappsMetadata() {
+    webappsMetadata = JSON.parse(localStorage.getItem('webappsMetadata')) || [];
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+    else return (bytes / 1048576).toFixed(2) + ' MB';
+}
+
+function updateProgress(percent) {
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    if (percent === 0) {
+        progressContainer.style.display = 'none';
+        progressBar.style.width = '0%';
+        return;
+    }
+    progressContainer.style.display = 'block';
+    progressBar.style.width = percent + '%';
+    if (percent === 100) {
+        setTimeout(() => {
+            progressContainer.style.display = 'none';
+        }, 1000);
+    }
+}
+
+function createVideoThumbnail(videoFile, callback) {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    const timeoutId = setTimeout(() => callback(null), 5000);
+    video.onloadedmetadata = function() {
+        clearTimeout(timeoutId);
+        if (video.duration === 0) {
+            callback(null);
+            return;
         }
+        video.currentTime = Math.min(video.duration * 0.25, 5.0);
+    };
+    video.onseeked = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 150;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+        callback(thumbnailUrl);
+        URL.revokeObjectURL(video.src);
+    };
+    video.onerror = function() {
+        clearTimeout(timeoutId);
+        callback(null);
+    };
+    video.src = URL.createObjectURL(videoFile);
+}
 
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+function createImageThumbnail(imageFile, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const maxWidth = 200;
+            const scale = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            callback(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = function() {
+            callback(null); // Skip on error
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        callback(null); // Skip on error
+    };
+    reader.readAsDataURL(imageFile);
+}
+
+function getDefaultPdfThumbnail() {
+    return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="100%" height="100%" fill="red"/><text x="50%" y="50%" font-family="Arial" font-size="20" fill="white" text-anchor="middle" dominant-baseline="middle">PDF</text></svg>';
+}
+
+async function uploadMedia() {
+    const input = document.getElementById('uploadInput');
+    const files = input.files;
+    if (files.length === 0) return;
+    showToast("Uploading files...");
+    updateProgress(0);
+    let totalFiles = files.length;
+    let processedFiles = 0;
+    let skippedFiles = 0;
+    for (const file of files) {
+        const fileSize = file.size;
+        const fileId = Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+        const metadataItem = {
+            id: fileId,
+            name: file.name,
+            type: file.type,
+            size: fileSize,
+            dateAdded: new Date().toISOString()
+        };
+        if (file.type.startsWith('video')) {
+            await new Promise(resolve => {
+                createVideoThumbnail(file, thumbnail => {
+                    if (thumbnail === null) {
+                        skippedFiles++;
+                        showToast(`Skipped corrupted video: ${file.name}`, 'error');
+                        processedFiles++;
+                        updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                        resolve();
+                        return;
+                    }
+                    metadataItem.thumbnail = thumbnail;
+                    addToDBAndMetadata(metadataItem, file, () => {
+                        processedFiles++;
+                        updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                        resolve();
+                    });
                 });
-            } else {
-                document.exitFullscreen();
-            }
-        }
-
-        function initDB() {
-            const request = indexedDB.open('MediaManagerDB', 3);
-            request.onerror = function(event) {
-                console.error("Database error: " + event.target.errorCode);
-                showToast("Database error. Please try again.", 'error');
-            };
-            request.onupgradeneeded = function(event) {
-                db = event.target.result;
-                if (!db.objectStoreNames.contains('media')) {
-                    const mediaStore = db.createObjectStore('media', { keyPath: 'id', autoIncrement: false });
-                    mediaStore.createIndex('name', 'name', { unique: false });
-                    mediaStore.createIndex('type', 'type', { unique: false });
-                }
-                if (!db.objectStoreNames.contains('webapps')) {
-                    const webappsStore = db.createObjectStore('webapps', { keyPath: 'id', autoIncrement: false });
-                    webappsStore.createIndex('name', 'name', { unique: false });
-                    webappsStore.createIndex('type', 'type', { unique: false });
-                }
-            };
-            request.onsuccess = function(event) {
-                db = event.target.result;
-            };
-            request.onblocked = function(event) {
-                console.warn("Database blocked. Close other tabs/windows using this database and try again.");
-                showToast("Database blocked. Close other tabs/windows using this database and try again.", 'error');
-            };
-        }
-
-        function loadMediaMetadata() {
-            mediaMetadata = JSON.parse(localStorage.getItem('mediaMetadata')) || [];
-        }
-        
-        function loadWebappsMetadata() {
-            webappsMetadata = JSON.parse(localStorage.getItem('webappsMetadata')) || [];
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-            else return (bytes / 1048576).toFixed(2) + ' MB';
-        }
-
-        function updateProgress(percent) {
-            const progressContainer = document.getElementById('progressContainer');
-            const progressBar = document.getElementById('progressBar');
-            if (percent === 0) {
-                progressContainer.style.display = 'none';
-                progressBar.style.width = '0%';
-                return;
-            }
-            progressContainer.style.display = 'block';
-            progressBar.style.width = percent + '%';
-            if (percent === 100) {
-                setTimeout(() => {
-                    progressContainer.style.display = 'none';
-                }, 1000);
-            }
-        }
-
-        function createVideoThumbnail(videoFile, callback) {
-            const video = document.createElement('video');
-            video.preload = 'metadata';
-            const timeoutId = setTimeout(() => callback(null), 5000);
-            video.onloadedmetadata = function() {
-                clearTimeout(timeoutId);
-                if (video.duration === 0) {
-                    callback(null);
-                    return;
-                }
-                video.currentTime = Math.min(video.duration * 0.25, 5.0);
-            };
-            video.onseeked = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 200;
-                canvas.height = 150;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
-                callback(thumbnailUrl);
-                URL.revokeObjectURL(video.src);
-            };
-            video.onerror = function() {
-                clearTimeout(timeoutId);
-                callback(null);
-            };
-            video.src = URL.createObjectURL(videoFile);
-        }
-
-        function createImageThumbnail(imageFile, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const maxWidth = 200;
-                    const scale = maxWidth / img.width;
-                    canvas.width = maxWidth;
-                    canvas.height = img.height * scale;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    callback(canvas.toDataURL('image/jpeg', 0.7));
-                };
-                img.onerror = function() {
-                    callback(null); // Skip on error
-                };
-                img.src = e.target.result;
-            };
-            reader.onerror = function() {
-                callback(null); // Skip on error
-            };
-            reader.readAsDataURL(imageFile);
-        }
-
-        function getDefaultPdfThumbnail() {
-            return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="100%" height="100%" fill="red"/><text x="50%" y="50%" font-family="Arial" font-size="20" fill="white" text-anchor="middle" dominant-baseline="middle">PDF</text></svg>';
-        }
-
-        async function uploadMedia() {
-            const input = document.getElementById('uploadInput');
-            const files = input.files;
-            if (files.length === 0) return;
-            showToast("Uploading files...");
-            updateProgress(0);
-            let totalFiles = files.length;
-            let processedFiles = 0;
-            let skippedFiles = 0;
-            for (const file of files) {
-                const fileSize = file.size;
-                const fileId = Date.now() + '_' + Math.random().toString(36).substring(2, 15);
-                const metadataItem = {
-                    id: fileId,
-                    name: file.name,
-                    type: file.type,
-                    size: fileSize,
-                    dateAdded: new Date().toISOString()
-                };
-                if (file.type.startsWith('video')) {
-                    await new Promise(resolve => {
-                        createVideoThumbnail(file, thumbnail => {
-                            if (thumbnail === null) {
-                                skippedFiles++;
-                                showToast(`Skipped corrupted video: ${file.name}`, 'error');
-                                processedFiles++;
-                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
-                                resolve();
-                                return;
-                            }
-                            metadataItem.thumbnail = thumbnail;
-                            addToDBAndMetadata(metadataItem, file, () => {
-                                processedFiles++;
-                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
-                                resolve();
-                            });
-                        });
+            });
+        } else if (file.type.startsWith('image')) {
+            await new Promise(resolve => {
+                createImageThumbnail(file, thumbnail => {
+                    if (thumbnail === null) {
+                        skippedFiles++;
+                        showToast(`Skipped corrupted image: ${file.name}`, 'error');
+                        processedFiles++;
+                        updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                        resolve();
+                        return;
+                    }
+                    metadataItem.thumbnail = thumbnail;
+                    addToDBAndMetadata(metadataItem, file, () => {
+                        processedFiles++;
+                        updateProgress(Math.round((processedFiles / totalFiles) * 100));
+                        resolve();
                     });
-                } else if (file.type.startsWith('image')) {
-                    await new Promise(resolve => {
-                        createImageThumbnail(file, thumbnail => {
-                            if (thumbnail === null) {
-                                skippedFiles++;
-                                showToast(`Skipped corrupted image: ${file.name}`, 'error');
-                                processedFiles++;
-                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
-                                resolve();
-                                return;
-                            }
-                            metadataItem.thumbnail = thumbnail;
-                            addToDBAndMetadata(metadataItem, file, () => {
-                                processedFiles++;
-                                updateProgress(Math.round((processedFiles / totalFiles) * 100));
-                                resolve();
-                            });
-                        });
-                    });
-                } else if (file.type === 'application/pdf') {
-                    metadataItem.thumbnail = getDefaultPdfThumbnail();
-                    await new Promise(resolve => {
-                        addToDBAndMetadata(metadataItem, file, () => {
-                            processedFiles++;
-                            updateProgress(Math.round((processedFiles / totalFiles) * 100));
-                            resolve();
-                        });
-                    });
-                } else {
+                });
+            });
+        } else if (file.type === 'application/pdf') {
+            metadataItem.thumbnail = getDefaultPdfThumbnail();
+            await new Promise(resolve => {
+                addToDBAndMetadata(metadataItem, file, () => {
                     processedFiles++;
                     updateProgress(Math.round((processedFiles / totalFiles) * 100));
-                }
-                if (processedFiles === totalFiles) {
-                    let message = "Upload complete!";
-                    if (skippedFiles > 0) {
-                        message += ` Skipped ${skippedFiles} corrupted file(s).`;
-                    }
-                    showToast(message);
-                    input.value = "";
-                    loadMedia();
-                    if (settings.showImageSlideshow || settings.showVideoSlideshow) {
-                        loadWidgets();
-                    }
-                }
-            }
-        }
-
-        function addToDBAndMetadata(metadata, file, callback) {
-            mediaMetadata.push(metadata);
-            localStorage.setItem('mediaMetadata', JSON.stringify(mediaMetadata));
-            const transaction = db.transaction(['media'], 'readwrite');
-            transaction.oncomplete = callback;
-            transaction.onerror = e => showToast('DB Error: ' + e.target.error.message, 'error');
-            const mediaStore = transaction.objectStore('media');
-            const request = mediaStore.add({
-                id: metadata.id,
-                name: metadata.name,
-                type: metadata.type,
-                size: metadata.size,
-                data: file
-            });
-            request.onerror = event => {
-                console.error("Error uploading file to IndexedDB: ", event.target.error);
-                showToast("Error uploading file: " + file.name + ". See console for details.", 'error');
-            };
-        }
-
-        function loadMedia() {
-            let container = document.getElementById('mediaContainer');
-            container.innerHTML = '';
-            if (mediaMetadata.length === 0) {
-                container.innerHTML = '<p>No media files yet. Upload some!</p>';
-                return;
-            }
-            mediaMetadata.forEach((item, index) => {
-                let div = document.createElement('div');
-                div.className = 'mediaItem';
-                if (index === selectedIndex) div.classList.add('selected');
-                let element = document.createElement('img');
-                element.src = item.thumbnail;
-                element.title = item.name;
-                let fileInfo = document.createElement('div');
-                fileInfo.textContent = item.name;
-                let fileSize = document.createElement('span');
-                fileSize.className = 'file-size';
-                fileSize.textContent = formatFileSize(item.size);
-                fileInfo.appendChild(fileSize);
-                div.addEventListener('click', () => {
-                    selectedIndex = index;
-                    loadMedia();
+                    resolve();
                 });
-                div.addEventListener('dblclick', () => showInViewer(item));
-                div.appendChild(element);
-                div.appendChild(fileInfo);
-                if (item.type.startsWith('video')) {
-                    let videoIndicator = document.createElement('div');
-                    videoIndicator.innerHTML = '▶️';
-                    videoIndicator.className = 'video-indicator';
-                    div.appendChild(videoIndicator);
-                } else if (item.type === 'application/pdf') {
-                    let pdfIndicator = document.createElement('div');
-                    pdfIndicator.innerHTML = '📄';
-                    pdfIndicator.className = 'pdf-indicator';
-                    div.appendChild(pdfIndicator);
-                }
-                container.appendChild(div);
             });
+        } else {
+            processedFiles++;
+            updateProgress(Math.round((processedFiles / totalFiles) * 100));
         }
-
-        function deleteMedia() {
-            if (selectedIndex === null) return;
-            const item = mediaMetadata[selectedIndex];
-            if (!item || !confirm(`Delete "${item.name}"?`)) return;
-            const transaction = db.transaction(['media'], 'readwrite');
-            const mediaStore = transaction.objectStore('media');
-            const request = mediaStore.delete(item.id);
-            request.onsuccess = function() {
-                mediaMetadata.splice(selectedIndex, 1);
-                localStorage.setItem('mediaMetadata', JSON.stringify(mediaMetadata));
-                selectedIndex = null;
-                loadMedia();
-                if (settings.showImageSlideshow || settings.showVideoSlideshow) {
-                    loadWidgets();
-                }
-                showToast("Media deleted successfully");
-            };
-            request.onerror = function(event) {
-                console.error("Error deleting from IndexedDB: ", event.target.error);
-                showToast("Error deleting media: " + event.target.error.message, 'error');
-            };
-        }
-
-        function openMedia() {
-            if (selectedIndex === null) return;
-            const item = mediaMetadata[selectedIndex];
-            if (item) {
-                showInViewer(item);
+        if (processedFiles === totalFiles) {
+            let message = "Upload complete!";
+            if (skippedFiles > 0) {
+                message += ` Skipped ${skippedFiles} corrupted file(s).`;
+            }
+            showToast(message);
+            input.value = "";
+            loadMedia();
+            if (settings.showImageSlideshow || settings.showVideoSlideshow) {
+                loadWidgets();
             }
         }
+    }
+}
 
-        function downloadMedia() {
-            if (selectedIndex === null) return;
-            const item = mediaMetadata[selectedIndex];
-            if (!item) return;
-            const transaction = db.transaction(['media'], 'readonly');
-            const mediaStore = transaction.objectStore('media');
-            const request = mediaStore.get(item.id);
-            request.onsuccess = function(event) {
-                const mediaFile = event.target.result;
-                if (mediaFile) {
-                    const url = URL.createObjectURL(mediaFile.data);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = item.name;
-                    a.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 5000);
-                }
-            };
-            request.onerror = function(event) {
-                console.error("Error downloading from IndexedDB: ", event.target.error);
-                showToast("Error downloading media: " + event.target.error.message, 'error');
-            };
+function addToDBAndMetadata(metadata, file, callback) {
+    mediaMetadata.push(metadata);
+    localStorage.setItem('mediaMetadata', JSON.stringify(mediaMetadata));
+    const transaction = db.transaction(['media'], 'readwrite');
+    transaction.oncomplete = callback;
+    transaction.onerror = e => showToast('DB Error: ' + e.target.error.message, 'error');
+    const mediaStore = transaction.objectStore('media');
+    const request = mediaStore.add({
+        id: metadata.id,
+        name: metadata.name,
+        type: metadata.type,
+        size: metadata.size,
+        data: file
+    });
+    request.onerror = event => {
+        console.error("Error uploading file to IndexedDB: ", event.target.error);
+        showToast("Error uploading file: " + file.name + ". See console for details.", 'error');
+    };
+}
+
+function loadMedia() {
+    let container = document.getElementById('mediaContainer');
+    container.innerHTML = '';
+    if (mediaMetadata.length === 0) {
+        container.innerHTML = '<p>No media files yet. Upload some!</p>';
+        return;
+    }
+    mediaMetadata.forEach((item, index) => {
+        let div = document.createElement('div');
+        div.className = 'mediaItem';
+        if (index === selectedIndex) div.classList.add('selected');
+        let element = document.createElement('img');
+        element.src = item.thumbnail;
+        element.title = item.name;
+        let fileInfo = document.createElement('div');
+        fileInfo.textContent = item.name;
+        let fileSize = document.createElement('span');
+        fileSize.className = 'file-size';
+        fileSize.textContent = formatFileSize(item.size);
+        fileInfo.appendChild(fileSize);
+        div.addEventListener('click', () => {
+            selectedIndex = index;
+            loadMedia();
+        });
+        div.addEventListener('dblclick', () => showInViewer(item));
+        div.appendChild(element);
+        div.appendChild(fileInfo);
+        if (item.type.startsWith('video')) {
+            let videoIndicator = document.createElement('div');
+            videoIndicator.innerHTML = '▶️';
+            videoIndicator.className = 'video-indicator';
+            div.appendChild(videoIndicator);
+        } else if (item.type === 'application/pdf') {
+            let pdfIndicator = document.createElement('div');
+            pdfIndicator.innerHTML = '📄';
+            pdfIndicator.className = 'pdf-indicator';
+            div.appendChild(pdfIndicator);
         }
+        container.appendChild(div);
+    });
+}
 
-        function showInViewer(item) {
-            const viewer = document.getElementById('viewerModal');
-            const viewerContent = document.getElementById('viewerContent');
-            viewerContent.innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
-            const transaction = db.transaction(['media'], 'readonly');
-            const mediaStore = transaction.objectStore('media');
-            const request = mediaStore.get(item.id);
-            request.onsuccess = function(event) {
-                const mediaFile = event.target.result;
-                if (mediaFile && mediaFile.data) {
-                    const url = URL.createObjectURL(mediaFile.data);
-                    if (item.type.startsWith('image')) {
-                        const element = document.createElement('img');
-                        element.src = url;
-                        viewerContent.appendChild(element);
-                        viewer.style.display = 'flex';
-                    } else if (item.type.startsWith('video')) {
-                        showToast("Loading video...");
-                        try {
-                            const element = document.createElement('video');
-                            element.controls = true;
-                            element.autoplay = true;
-                            element.loop = false;
-                            element.preload = "auto";
-                            element.addEventListener('loadstart', () => console.log('Video loadstart'));
-                            element.addEventListener('loadedmetadata', () => console.log('Video loadedmetadata'));
-                            element.addEventListener('loadeddata', () => console.log('Video loadeddata'));
-                            element.addEventListener('play', () => console.log('Video play event'));
-                            element.addEventListener('canplay', () => {
-                                console.log('Video canplay event');
-                                showToast("Video loaded", 'success');
-                            });
-                            element.addEventListener('error', (e) => {
-                                console.error('Video error:', e);
-                                showToast("Error playing video: " + (element.error ? element.error.message : "Unknown error"), 'error');
-                            });
-                            element.src = url;
-                            const source = document.createElement('source');
-                            source.src = url;
-                            source.type = mediaFile.type;
-                            element.appendChild(source);
-                            element.onended = function() {
-                                console.log('Video ended');
-                            };
-                            viewerContent.appendChild(element);
-                            viewer.style.display = 'flex';
-                        } catch (error) {
-                            console.error('Error setting up video:', error);
-                            showToast("Error setting up video: " + error.message, 'error');
-                        }
-                    } else if (item.type === 'application/pdf') {
-                        const element = document.createElement('embed');
-                        element.src = `${url}#toolbar=0`;
-                        element.type = 'application/pdf';
-                        viewerContent.appendChild(element);
-                        viewer.style.display = 'flex';
-                    }
-                } else {
-                    showToast("File not found in database", 'error');
-                }
-            };
-            request.onerror = function(event) {
-                console.error("Database error in showInViewer:", event.target.error);
-                showToast("Error loading file from database", 'error');
-            };
+function deleteMedia() {
+    if (selectedIndex === null) return;
+    const item = mediaMetadata[selectedIndex];
+    if (!item || !confirm(`Delete "${item.name}"?`)) return;
+    const transaction = db.transaction(['media'], 'readwrite');
+    const mediaStore = transaction.objectStore('media');
+    const request = mediaStore.delete(item.id);
+    request.onsuccess = function() {
+        mediaMetadata.splice(selectedIndex, 1);
+        localStorage.setItem('mediaMetadata', JSON.stringify(mediaMetadata));
+        selectedIndex = null;
+        loadMedia();
+        if (settings.showImageSlideshow || settings.showVideoSlideshow) {
+            loadWidgets();
         }
+        showToast("Media deleted successfully");
+    };
+    request.onerror = function(event) {
+        console.error("Error deleting from IndexedDB: ", event.target.error);
+        showToast("Error deleting media: " + event.target.error.message, 'error');
+    };
+}
 
-        async function uploadWebApp() {
-            const input = document.getElementById('webAppInput');
-            const files = input.files;
-            if (files.length === 0) return;
-            showToast("Uploading apps...");
-            let totalFiles = files.length;
-            let processedFiles = 0;
-            for (const file of files) {
-                const fileSize = file.size;
-                const fileId = Date.now() + '_' + Math.random().toString(36).substring(2, 15);
-                const metadataItem = {
-                    id: fileId,
-                    name: file.name,
-                    type: file.type,
-                    size: fileSize,
-                    dateAdded: new Date().toISOString()
-                };
-                webappsMetadata.push(metadataItem);
-                localStorage.setItem('webappsMetadata', JSON.stringify(webappsMetadata));
-                const transaction = db.transaction(['webapps'], 'readwrite');
-                transaction.oncomplete = () => {
-                    processedFiles++;
-                    if (processedFiles === totalFiles) {
-                        showToast("Upload complete!");
-                        input.value = "";
-                        loadWebApps();
-                    }
-                };
-                transaction.onerror = e => showToast('DB Error: ' + e.target.error.message, 'error');
-                const store = transaction.objectStore('webapps');
-                const request = store.add({
-                    id: fileId,
-                    name: file.name,
-                    type: file.type,
-                    size: fileSize,
-                    data: file
-                });
-                request.onerror = function(event) {
-                    console.error("Error uploading web app to IndexedDB: ", event.target.error);
-                    showToast("Error uploading app: " + file.name + ". See console for details.", 'error');
-                };
-            }
+function openMedia() {
+    if (selectedIndex === null) return;
+    const item = mediaMetadata[selectedIndex];
+    if (item) {
+        showInViewer(item);
+    }
+}
+
+function downloadMedia() {
+    if (selectedIndex === null) return;
+    const item = mediaMetadata[selectedIndex];
+    if (!item) return;
+    const transaction = db.transaction(['media'], 'readonly');
+    const mediaStore = transaction.objectStore('media');
+    const request = mediaStore.get(item.id);
+    request.onsuccess = function(event) {
+        const mediaFile = event.target.result;
+        if (mediaFile) {
+            const url = URL.createObjectURL(mediaFile.data);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.name;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
         }
+    };
+    request.onerror = function(event) {
+        console.error("Error downloading from IndexedDB: ", event.target.error);
+        showToast("Error downloading media: " + event.target.error.message, 'error');
+    };
+}
 
-        function loadWebApps() {
-            let container = document.getElementById('appContainer');
-            container.innerHTML = '';
-            if (webappsMetadata.length === 0) {
-                container.innerHTML = '<p>No web apps yet. Upload some HTML files!</p>';
-                return;
-            }
-            webappsMetadata.forEach((item, index) => {
-                let div = document.createElement('div');
-                div.className = 'appItem';
-                if (index === selectedAppIndex) div.classList.add('selected');
-                div.textContent = item.name;
-                let fileSizeSpan = document.createElement('span');
-                fileSizeSpan.className = 'file-size';
-                fileSizeSpan.textContent = formatFileSize(item.size);
-                div.appendChild(fileSizeSpan);
-                div.addEventListener('click', () => {
-                    selectedAppIndex = index;
-                    loadWebApps();
-                });
-                div.addEventListener('dblclick', () => showWebAppInViewer(item));
-                container.appendChild(div);
-            });
-        }
-
-        function deleteWebApp() {
-            if (selectedAppIndex === null) return;
-            const item = webappsMetadata[selectedAppIndex];
-            if (!item || !confirm(`Delete "${item.name}"?`)) return;
-            const transaction = db.transaction(['webapps'], 'readwrite');
-            const store = transaction.objectStore('webapps');
-            const request = store.delete(item.id);
-            request.onsuccess = function() {
-                webappsMetadata.splice(selectedAppIndex, 1);
-                localStorage.setItem('webappsMetadata', JSON.stringify(webappsMetadata));
-                selectedAppIndex = null;
-                loadWebApps();
-                showToast("Web app deleted successfully");
-            };
-            request.onerror = function(event) {
-                console.error("Error deleting web app from IndexedDB: ", event.target.error);
-                showToast("Error deleting web app: " + event.target.error.message, 'error');
-            };
-        }
-
-        function openWebApp() {
-            if (selectedAppIndex === null) return;
-            const item = webappsMetadata[selectedAppIndex];
-            if (item) {
-                showWebAppInViewer(item);
-            }
-        }
-
-        function downloadWebApp() {
-            if (selectedAppIndex === null) return;
-            const item = webappsMetadata[selectedAppIndex];
-            if (!item) return;
-            const transaction = db.transaction(['webapps'], 'readonly');
-            const store = transaction.objectStore('webapps');
-            const request = store.get(item.id);
-            request.onsuccess = function(event) {
-                const appFile = event.target.result;
-                if (appFile) {
-                    const url = URL.createObjectURL(appFile.data);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = item.name;
-                    a.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 5000);
-                }
-            };
-            request.onerror = function(event) {
-                console.error("Error downloading web app from IndexedDB: ", event.target.error);
-                showToast("Error downloading web app: " + event.target.error.message, 'error');
-            };
-        }
-
-        function showWebAppInViewer(item) {
-            const viewer = document.getElementById('viewerModal');
-            const viewerContent = document.getElementById('viewerContent');
-            viewerContent.innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
-            const transaction = db.transaction(['webapps'], 'readonly');
-            const store = transaction.objectStore('webapps');
-            const request = store.get(item.id);
-            request.onsuccess = function(event) {
-                const appFile = event.target.result;
-                if (appFile && appFile.data) {
-                    const url = URL.createObjectURL(appFile.data);
-                    const element = document.createElement('iframe');
+function showInViewer(item) {
+    const viewer = document.getElementById('viewerModal');
+    const viewerContent = document.getElementById('viewerContent');
+    viewerContent.innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+    const transaction = db.transaction(['media'], 'readonly');
+    const mediaStore = transaction.objectStore('media');
+    const request = mediaStore.get(item.id);
+    request.onsuccess = function(event) {
+        const mediaFile = event.target.result;
+        if (mediaFile && mediaFile.data) {
+            const url = URL.createObjectURL(mediaFile.data);
+            if (item.type.startsWith('image')) {
+                const element = document.createElement('img');
+                element.src = url;
+                viewerContent.appendChild(element);
+                viewer.style.display = 'flex';
+            } else if (item.type.startsWith('video')) {
+                showToast("Loading video...");
+                try {
+                    const element = document.createElement('video');
+                    element.controls = true;
+                    element.autoplay = true;
+                    element.loop = false;
+                    element.preload = "auto";
+                    element.addEventListener('loadstart', () => console.log('Video loadstart'));
+                    element.addEventListener('loadedmetadata', () => console.log('Video loadedmetadata'));
+                    element.addEventListener('loadeddata', () => console.log('Video loadeddata'));
+                    element.addEventListener('play', () => console.log('Video play event'));
+                    element.addEventListener('canplay', () => {
+                        console.log('Video canplay event');
+                        showToast("Video loaded", 'success');
+                    });
+                    element.addEventListener('error', (e) => {
+                        console.error('Video error:', e);
+                        showToast("Error playing video: " + (element.error ? element.error.message : "Unknown error"), 'error');
+                    });
                     element.src = url;
+                    const source = document.createElement('source');
+                    source.src = url;
+                    source.type = mediaFile.type;
+                    element.appendChild(source);
+                    element.onended = function() {
+                        console.log('Video ended');
+                    };
                     viewerContent.appendChild(element);
                     viewer.style.display = 'flex';
-                } else {
-                    showToast("Web app file not found in database", 'error');
+                } catch (error) {
+                    console.error('Error setting up video:', error);
+                    showToast("Error setting up video: " + error.message, 'error');
                 }
-            };
-            request.onerror = function(event) {
-                console.error("Database error in showWebAppInViewer:", event.target.error);
-                showToast("Error loading web app from database", 'error');
-            };
+            } else if (item.type === 'application/pdf') {
+                const element = document.createElement('embed');
+                element.src = `${url}#toolbar=0`;
+                element.type = 'application/pdf';
+                viewerContent.appendChild(element);
+                viewer.style.display = 'flex';
+            }
+        } else {
+            showToast("File not found in database", 'error');
         }
+    };
+    request.onerror = function(event) {
+        console.error("Database error in showInViewer:", event.target.error);
+        showToast("Error loading file from database", 'error');
+    };
+}
+
+async function uploadWebApp() {
+    const input = document.getElementById('webAppInput');
+    const files = input.files;
+    if (files.length === 0) return;
+    showToast("Uploading apps...");
+    let totalFiles = files.length;
+    let processedFiles = 0;
+    for (const file of files) {
+        const fileSize = file.size;
+        const fileId = Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+        const metadataItem = {
+            id: fileId,
+            name: file.name,
+            type: file.type,
+            size: fileSize,
+            dateAdded: new Date().toISOString()
+        };
+        webappsMetadata.push(metadataItem);
+        localStorage.setItem('webappsMetadata', JSON.stringify(webappsMetadata));
+        const transaction = db.transaction(['webapps'], 'readwrite');
+        transaction.oncomplete = () => {
+            processedFiles++;
+            if (processedFiles === totalFiles) {
+                showToast("Upload complete!");
+                input.value = "";
+                loadWebApps();
+            }
+        };
+        transaction.onerror = e => showToast('DB Error: ' + e.target.error.message, 'error');
+        const store = transaction.objectStore('webapps');
+        const request = store.add({
+            id: fileId,
+            name: file.name,
+            type: file.type,
+            size: fileSize,
+            data: file
+        });
+        request.onerror = function(event) {
+            console.error("Error uploading web app to IndexedDB: ", event.target.error);
+            showToast("Error uploading app: " + file.name + ". See console for details.", 'error');
+        };
+    }
+}
+
+function loadWebApps() {
+    let container = document.getElementById('appContainer');
+    container.innerHTML = '';
+    if (webappsMetadata.length === 0) {
+        container.innerHTML = '<p>No web apps yet. Upload some HTML files!</p>';
+        return;
+    }
+    webappsMetadata.forEach((item, index) => {
+        let div = document.createElement('div');
+        div.className = 'appItem';
+        if (index === selectedAppIndex) div.classList.add('selected');
+        div.textContent = item.name;
+        let fileSizeSpan = document.createElement('span');
+        fileSizeSpan.className = 'file-size';
+        fileSizeSpan.textContent = formatFileSize(item.size);
+        div.appendChild(fileSizeSpan);
+        div.addEventListener('click', () => {
+            selectedAppIndex = index;
+            loadWebApps();
+        });
+        div.addEventListener('dblclick', () => showWebAppInViewer(item));
+        container.appendChild(div);
+    });
+}
+
+function deleteWebApp() {
+    if (selectedAppIndex === null) return;
+    const item = webappsMetadata[selectedAppIndex];
+    if (!item || !confirm(`Delete "${item.name}"?`)) return;
+    const transaction = db.transaction(['webapps'], 'readwrite');
+    const store = transaction.objectStore('webapps');
+    const request = store.delete(item.id);
+    request.onsuccess = function() {
+        webappsMetadata.splice(selectedAppIndex, 1);
+        localStorage.setItem('webappsMetadata', JSON.stringify(webappsMetadata));
+        selectedAppIndex = null;
+        loadWebApps();
+        showToast("Web app deleted successfully");
+    };
+    request.onerror = function(event) {
+        console.error("Error deleting web app from IndexedDB: ", event.target.error);
+        showToast("Error deleting web app: " + event.target.error.message, 'error');
+    };
+}
+
+function openWebApp() {
+    if (selectedAppIndex === null) return;
+    const item = webappsMetadata[selectedAppIndex];
+    if (item) {
+        showWebAppInViewer(item);
+    }
+}
+
+function downloadWebApp() {
+    if (selectedAppIndex === null) return;
+    const item = webappsMetadata[selectedAppIndex];
+    if (!item) return;
+    const transaction = db.transaction(['webapps'], 'readonly');
+    const store = transaction.objectStore('webapps');
+    const request = store.get(item.id);
+    request.onsuccess = function(event) {
+        const appFile = event.target.result;
+        if (appFile) {
+            const url = URL.createObjectURL(appFile.data);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.name;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+    };
+    request.onerror = function(event) {
+        console.error("Error downloading web app from IndexedDB: ", event.target.error);
+        showToast("Error downloading web app: " + event.target.error.message, 'error');
+    };
+}
+
+function showWebAppInViewer(item) {
+    const viewer = document.getElementById('viewerModal');
+    const viewerContent = document.getElementById('viewerContent');
+    viewerContent.innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+    const transaction = db.transaction(['webapps'], 'readonly');
+    const store = transaction.objectStore('webapps');
+    const request = store.get(item.id);
+    request.onsuccess = function(event) {
+        const appFile = event.target.result;
+        if (appFile && appFile.data) {
+            const url = URL.createObjectURL(appFile.data);
+            const element = document.createElement('iframe');
+            element.src = url;
+            viewerContent.appendChild(element);
+            viewer.style.display = 'flex';
+        } else {
+            showToast("Web app file not found in database", 'error');
+        }
+    };
+    request.onerror = function(event) {
+        console.error("Database error in showWebAppInViewer:", event.target.error);
+        showToast("Error loading web app from database", 'error');
+    };
+}
         
     </script>
 </body>
