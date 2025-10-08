@@ -12,6 +12,8 @@
         button {
             font-family: Franklin Gothic;
         }
+        body.light-mode button {
+        }
         body {
             font-family: Franklin Gothic;
             text-align: center;
@@ -38,7 +40,6 @@
         
         body.light-mode .widget {
             background: rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(0, 0, 0, 0.2);
         }
         
         body.light-mode #photoModal, body.light-mode #webAppModal, body.light-mode #menuModal, body.light-mode #settingsModal, body.light-mode #historyModal, body.light-mode #bookmarksModal, body.light-mode #reminderModal {
@@ -51,9 +52,18 @@
         }
         
         body.light-mode .setting-item input, body.light-mode .setting-item select, body.light-mode .setting-item textarea {
-            background: rgba(0, 0, 0, 0.1);
+            background: #fff;
             color: black;
-            border: 1px solid rgba(0, 0, 0, 0.3);
+        }
+        
+        body.light-mode select {
+            background: #fff;
+            color: black;
+        }
+        
+        body.light-mode select option {
+            background: #fff;
+            color: black;
         }
         
         body.light-mode .reminder-item {
@@ -88,21 +98,22 @@
         .search-container {
             position: relative;
             margin: 20px auto 10px; /* Adjusted margin */
-            max-width: 600px;
+            max-width: 800px;
             z-index: 10; /* High z-index for regular search over widgets */
         }
         
         form {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
+            flex-wrap: nowrap;
         }
         
         input[type="search"] {
             width: 100%;
             padding: 12px 15px;
             font-size: 16px;
-            border: none;
             background-color: #33333394;
             color: white;
             border-radius: 5px;
@@ -143,7 +154,6 @@
             font-size: 14px;
             border-radius: 20px;
             background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
             cursor: pointer;
             transition: 0.3s ease;
@@ -159,7 +169,6 @@
             margin: 5px;
             padding: 8px 15px;
             background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
             color: white;
             text-decoration: none;
@@ -187,7 +196,6 @@
             border-radius: 15px;
             padding: 20px;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .widget.fullscreen {
@@ -262,7 +270,6 @@
         }
         
         .calendar-widget th, .calendar-widget td {
-            border: 1px solid rgba(255,255,255,0.2);
             padding: 5px;
             text-align: center;
         }
@@ -292,7 +299,6 @@
             font-size: 16px;
             cursor: pointer;
             border-radius: 10px;
-            border: none;
             background-color: transparent;
             color: white;
             transition: ease-in-out 0.3s;
@@ -306,11 +312,25 @@
         #searchBtn {
             background-color: transparent;
             color: white;
-            border-radius: 20px;
+            border-radius: 5px;
+            backdrop-filter: blur(3px);
         }
         
         #searchBtn:hover {
             background-color: rgb(154, 249, 209);
+            color: black;
+        }
+
+        #goBtn {
+            background-color: transparent;
+            color: white;
+            border-radius: 10px;
+            backdrop-filter: blur(3px);
+            
+        }
+        
+        #goBtn:hover {
+            background-color: rgb(241, 241, 241);
             color: black;
         }
         
@@ -335,7 +355,6 @@
             width: 100%;
             padding: 12px 15px;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-family: Franklin Gothic;
@@ -345,7 +364,6 @@
 
         .settings-search input:focus {
             outline: none;
-            border-color: #4CAF50;
             background: rgba(255, 255, 255, 0.15);
         }
 
@@ -354,7 +372,7 @@
         }
         
         /* Modal Styles - Non-transparent */
-        #photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal {
+        #photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal, #bgSelectModal {
             display: none;
             position: fixed;
             top: 0;
@@ -370,12 +388,19 @@
             z-index: 1000;
         }
         
+        @media (min-width: 768px) {
+            #reminderModal {
+                max-width: 600px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+        
         .close-btn {
             position: absolute;
             top: 15px;
             left: 15px;
             background: rgba(255, 255, 255, 0.1);
-            border: none;
             color: white;
             padding: 10px;
             font-size: 20px;
@@ -386,7 +411,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1001; /* High z-index for X buttons */
+            z-index: 1002; /* High z-index for X buttons */
         }
         
         .close-btn:hover {
@@ -422,17 +447,15 @@
         .setting-item input, .setting-item select, .setting-item textarea {
             padding: 10px 15px;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-family: Franklin Gothic;
-            font-size: 14px;
+            font-size: 16px;
             transition: all 0.3s ease;
         }
         
         .setting-item input:focus, .setting-item select:focus, .setting-item textarea:focus {
             outline: none;
-            border-color: #4CAF50;
             background: rgba(255, 255, 255, 0.15);
             box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
@@ -449,24 +472,20 @@
             width: 60px;
             height: 40px;
             padding: 2px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
             cursor: pointer;
         }
         
         .setting-item input[type="color"]::-webkit-color-swatch-wrapper {
             padding: 0;
-            border: none;
             border-radius: 6px;
             overflow: hidden;
         }
         
         .setting-item input[type="color"]::-webkit-color-swatch {
-            border: none;
             border-radius: 4px;
         }
         
         .setting-item input[type="color"]::-moz-color-swatch {
-            border: none;
             border-radius: 4px;
         }
         
@@ -474,7 +493,6 @@
         .setting-item select {
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
@@ -495,13 +513,19 @@
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             font-family: Franklin Gothic;
             appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
             background-position: right 10px center;
             background-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .sort-controls select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
         
         .sort-controls select option {
@@ -544,17 +568,15 @@
             margin: 8px 0 15px 0;
             box-sizing: border-box;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-family: Franklin Gothic;
-            font-size: 14px;
+            font-size: 16px;
             transition: all 0.3s ease;
         }
         
         .reminder-form input[type="datetime-local"]:focus {
             outline: none;
-            border-color: #4CAF50;
             background: rgba(255, 255, 255, 0.15);
             box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
@@ -570,11 +592,10 @@
             box-sizing: border-box;
             padding: 12px 15px;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-family: Franklin Gothic;
-            font-size: 14px;
+            font-size: 16px;
             resize: vertical;
             min-height: 100px;
             line-height: 1.5;
@@ -583,7 +604,6 @@
         
         .reminder-form textarea:focus {
             outline: none;
-            border-color: #4CAF50;
             background: rgba(255, 255, 255, 0.15);
             box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
@@ -595,7 +615,6 @@
         .reminder-form button {
             background: #4CAF50;
             color: white;
-            border: none;
             padding: 12px 25px;
             border-radius: 8px;
             font-family: Franklin Gothic;
@@ -640,7 +659,6 @@
         .toast-close {
             float: right;
             background: none;
-            border: none;
             color: white;
             font-size: 18px;
             cursor: pointer;
@@ -718,7 +736,6 @@
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             font-family: Franklin Gothic;
             font-size: 14px;
             appearance: none;
@@ -731,7 +748,6 @@
         
         .sort-controls select:focus {
             outline: none;
-            border-color: #4CAF50;
             background: rgba(255, 255, 255, 0.15);
             box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
@@ -755,7 +771,6 @@
             border-radius: 10px;
             overflow: hidden;
             max-width: 200px;
-            border: 2px solid transparent;
             background-color: #444;
             padding: 10px;
             color: white;
@@ -769,7 +784,6 @@
         
         .mediaItem.selected, .appItem.selected {
             background: linear-gradient(#1563b6, rgb(8, 156, 77));
-            border: none;
         }
         
         .mediaItem img, .mediaItem video {
@@ -829,7 +843,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border: none;
             position: relative;
         }
         
@@ -838,7 +851,6 @@
             height: 90%;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(5, 83, 70, 0.96);
-            border: none;
         }
         
         #viewerContent video {
@@ -846,7 +858,6 @@
             max-height: 90%;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(5, 83, 70, 0.96);
-            border: none;
         }
 
         #fullscreenBtn {
@@ -854,7 +865,6 @@
             top: 10px;
             right: 10px;
             background: rgba(255, 255, 255, 0.1);
-            border: none;
             color: white;
             padding: 5px 10px;
             cursor: pointer;
@@ -977,7 +987,6 @@
             width: 100%;
             padding: 12px 15px;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-family: Franklin Gothic;
@@ -987,13 +996,11 @@
         }
         .password-input:focus {
             outline: none;
-            border-color: #4CAF50;
             background: rgba(255, 255, 255, 0.15);
         }
         .verify-btn {
             background: #4CAF50;
             color: white;
-            border: none;
             padding: 12px 25px;
             border-radius: 8px;
             font-family: Franklin Gothic;
@@ -1076,6 +1083,77 @@
         padding: 8px;
     }
 }
+
+.floating-search-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.floating-search-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.menu-title {
+    text-align: center;
+    margin-bottom: 20px;
+}
+        * {
+            border: none !important;
+        }
+
+        #photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal, #bgSelectModal {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.5) transparent;
+        }
+
+        #photoModal::-webkit-scrollbar, #webAppModal::-webkit-scrollbar, #menuModal::-webkit-scrollbar, #settingsModal::-webkit-scrollbar, #historyModal::-webkit-scrollbar, #bookmarksModal::-webkit-scrollbar, #reminderModal::-webkit-scrollbar, #bgSelectModal::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #photoModal::-webkit-scrollbar-track, #webAppModal::-webkit-scrollbar-track, #menuModal::-webkit-scrollbar-track, #settingsModal::-webkit-scrollbar-track, #historyModal::-webkit-scrollbar-track, #bookmarksModal::-webkit-scrollbar-track, #reminderModal::-webkit-scrollbar-track, #bgSelectModal::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #photoModal::-webkit-scrollbar-thumb, #webAppModal::-webkit-scrollbar-thumb, #menuModal::-webkit-scrollbar-thumb, #settingsModal::-webkit-scrollbar-thumb, #historyModal::-webkit-scrollbar-thumb, #bookmarksModal::-webkit-scrollbar-thumb, #reminderModal::-webkit-scrollbar-thumb, #bgSelectModal::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.5);
+            border-radius: 3px;
+        }
+
+        .hide-scrollbar {
+            scrollbar-width: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            width: 0px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        #searchBtn, #goBtn {
+            width: auto;
+            min-width: 150px;
+        }
+        #bookmarksBtn {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -1088,16 +1166,18 @@
             <form action="https://www.google.com/search" method="GET" target="_blank">
                 <input type="search" id="depu" name="q" placeholder="Search Google or open an URL" list="suggestions">
                 <datalist id="suggestions"></datalist>
-                <button type="submit" id="searchBtn" >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="20" height="18" fill="currentColor">
-                            <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                        </svg>
-                    </button>
-                    <button type="button" onclick="GTY(event)" >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" width="20" height="18" fill="currentColor">
-                            <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
-                        </svg>
-                    </button>
+                <div class="button-row">
+                    <button type="submit" id="searchBtn" >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="20" height="18" fill="currentColor">
+                                <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                            </svg> Search
+                        </button>
+                        <button type="button" id="goBtn" onclick="GTY(event)" >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" width="20" height="18" fill="currentColor">
+                                <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                            </svg> Open
+                        </button>
+                </div>
             </form>
             
             <div class="quick-access">
@@ -1122,6 +1202,9 @@
     <div id="photoModal">
         <button class="close-btn" onclick="closeModal('photoModal')" style.hover="">&times;</button>
         <h2>Your Media</h2>
+        <div class="settings-search">
+            <input type="text" id="mediaSearchInput" placeholder="Search media..." oninput="searchMedia()">
+        </div>
         <div class="upload-buttons">
             <button onclick="document.getElementById('uploadInput').click()">Choose Media</button>
             <button onclick="uploadMedia()">Upload Media</button>
@@ -1143,6 +1226,9 @@
     <div id="webAppModal">
         <button class="close-btn" onclick="closeModal('webAppModal')" style.hover="">&times;</button>
         <h2>Your Web Apps</h2>
+        <div class="settings-search">
+            <input type="text" id="appSearchInput" placeholder="Search apps..." oninput="searchApps()">
+        </div>
         <div class="upload-buttons">
             <button onclick="document.getElementById('webAppInput').click()">Choose HTML App</button>
             <button onclick="uploadWebApp()">Upload App</button>
@@ -1163,13 +1249,19 @@
             <button id="openSettings">Settings</button>
             <button id="openHistory">History</button>
             <button id="openBookmarks">Bookmarks</button>
-            <button id="openReminders" hidden>Reminders</button>
+            <button id="openReminders">Reminders</button>
         </div>
     </div>
 
     <div id="settingsModal">
         <button class="close-btn" onclick="closeModal('settingsModal')" style.hover="">&times;</button>
+        <button class="floating-search-btn" id="settingsFloatingSearch" onclick="focusSearchAndScroll('settingsSearchInput', 'settingsModal')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="20" height="18" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+        </button>
         <div class="password-container" id="settingsPasswordContainer">
+            <h2 class="menu-title">Settings</h2>
             <h2>Enter Password</h2>
             <input type="password" class="password-input" id="settingsPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'settingsModal')">
             <button class="verify-btn" onclick="verifyPassword('settingsModal')">Verify</button>
@@ -1208,6 +1300,8 @@
                         <option value="gradient">Gradient</option>
                         <option value="solid">Solid Color</option>
                         
+                        <option value="image">Single Image from Media</option>
+                        <option value="slideshow">Slideshow from Media</option>
                     </select>
                 </div>
                 <div class="setting-item">
@@ -1217,6 +1311,15 @@
                 <div class="setting-item">
                     <label for="bgColor2">Background Color 2:</label>
                     <input type="color" id="bgColor2" value="#006232">
+                </div>
+                <div class="setting-item" id="bgMediaSelect" style="display:none;">
+                    <label>Selected Media:</label>
+                    <span id="selectedMediaName">None selected</span>
+                    <button onclick="openBgSelectModal()">Select</button>
+                </div>
+                <div class="setting-item" id="slideshowInterval" style="display:none;">
+                    <label for="slideshowInt">Interval (seconds):</label>
+                    <input type="number" id="slideshowInt" min="1" step="1" value="5">
                 </div>
                 <div class="setting-item">
                     <label for="customBgCss" hidden>Custom Background CSS:</label>
@@ -1370,7 +1473,13 @@
 
     <div id="historyModal">
         <button class="close-btn" onclick="closeModal('historyModal')">&times;</button>
+        <button class="floating-search-btn" id="historyFloatingSearch" onclick="focusSearchAndScroll('historySearchInput', 'historyModal')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="20" height="18" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.5 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+        </button>
         <div class="password-container" id="historyPasswordContainer">
+            <h2 class="menu-title">Browsing History</h2>
             <h2>Enter Password</h2>
             <input type="password" class="password-input" id="historyPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'historyModal')">
             <button class="verify-btn" onclick="verifyPassword('historyModal')">Verify</button>
@@ -1394,7 +1503,13 @@
 
     <div id="bookmarksModal">
         <button class="close-btn" onclick="closeModal('bookmarksModal')">&times;</button>
+        <button class="floating-search-btn" id="bookmarksFloatingSearch" onclick="focusSearchAndScroll('bookmarksSearchInput', 'bookmarksModal')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="20" height="18" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.5 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+        </button>
         <div class="password-container" id="bookmarksPasswordContainer">
+            <h2 class="menu-title">Bookmarks</h2>
             <h2>Enter Password</h2>
             <input type="password" class="password-input" id="bookmarksPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'bookmarksModal')">
             <button class="verify-btn" onclick="verifyPassword('bookmarksModal')">Verify</button>
@@ -1428,6 +1543,15 @@
         <div id="viewerContent" onclick="event.stopPropagation();">
             <button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>
         </div>
+    </div>
+
+    <div id="bgSelectModal">
+        <button class="close-btn" onclick="closeBgSelectModal()">&times;</button>
+        <h2>Select Media</h2>
+        <div class="settings-search">
+            <input type="text" id="bgMediaSearchInput" placeholder="Search media..." oninput="searchBgMedia()">
+        </div>
+        <div id="bgMediaContainer" style="display: flex; flex-wrap: wrap; justify-content: center; margin-top: 20px;"></div>
     </div>
 
     <script>
@@ -1468,7 +1592,9 @@
             rssUrls: '',
             clockTimeFormat: '12',
             clockShowSeconds: true,
-            clockDateFormat: 'short'
+            clockDateFormat: 'short',
+            bgMediaId: '',
+            slideshowInterval: 5000
         };
         let historyItems = JSON.parse(localStorage.getItem('googokeHistory')) || [];
         let bookmarks = JSON.parse(localStorage.getItem('googokeBookmarks')) || [];
@@ -1476,17 +1602,23 @@
         let slideshowIntervals = {};
         let mostVisited = JSON.parse(localStorage.getItem('googokeMostVisited')) || {};
         let unlockedModals = new Set();
+        let currentBgUrl = null;
+        let currentBgUrls = null;
+        let currentBgInterval = null;
+        let bgSelectType = '';
+        let selectedBgIndex = null;
 
         // Initialize everything
-        window.addEventListener('load', () => {
+        window.addEventListener('load', onLoad);
+
+        async function onLoad() {
             loadMediaMetadata();
             loadWebappsMetadata();
-            initDB();
-            applySettings();
+            await initDB();
+            await applySettings();
             loadWidgets();
             loadMostVisited();
-            checkReminders();
-            setInterval(checkReminders, 60000); // Check reminders every minute
+            scheduleAllReminders();
             document.getElementById('depu').addEventListener('input', suggestHistory);
             document.getElementById('importSettingsInput').addEventListener('change', importSettings);
             // Drag drop for photoModal
@@ -1505,7 +1637,58 @@
                 document.getElementById('webAppInput').files = e.dataTransfer.files;
                 uploadWebApp();
             });
-        });
+            setupFloatingSearch('settingsModal', 'settingsFloatingSearch', 100);
+            setupFloatingSearch('historyModal', 'historyFloatingSearch', 100);
+            setupFloatingSearch('bookmarksModal', 'bookmarksFloatingSearch', 100);
+            setupScrollbarHiding();
+        }
+
+        function setupScrollbarHiding() {
+            const modals = ['photoModal', 'webAppModal', 'menuModal', 'settingsModal', 'historyModal', 'bookmarksModal', 'reminderModal', 'bgSelectModal'];
+            modals.forEach(id => {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    let timer;
+                    modal.addEventListener('scroll', () => {
+                        modal.classList.remove('hide-scrollbar');
+                        clearTimeout(timer);
+                        timer = setTimeout(() => {
+                            modal.classList.add('hide-scrollbar');
+                        }, 2000);
+                    });
+                    modal.addEventListener('mousemove', () => {
+                        modal.classList.remove('hide-scrollbar');
+                        clearTimeout(timer);
+                        timer = setTimeout(() => {
+                            modal.classList.add('hide-scrollbar');
+                        }, 2000);
+                    });
+                }
+            });
+        }
+
+        function setupFloatingSearch(modalId, btnId, threshold) {
+            const modal = document.getElementById(modalId);
+            const btn = document.getElementById(btnId);
+            if (modal && btn) {
+                modal.addEventListener('scroll', () => {
+                    if (modal.scrollTop > threshold) {
+                        btn.style.display = 'flex';
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        function focusSearchAndScroll(inputId, modalId) {
+            const input = document.getElementById(inputId);
+            const modal = document.getElementById(modalId);
+            if (input && modal) {
+                input.focus();
+                modal.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
 
         // Settings search functionality
         function searchSettings() {
@@ -1659,9 +1842,8 @@
             `;
             container.appendChild(widget);
             loadWeather();
-        }
-
-         function loadWeather() {
+         }
+        async function loadWeather() {
             const weatherInfo = document.getElementById('weatherInfo');
             if (!settings.weatherLocation) {
                 weatherInfo.innerHTML = 'Please set a location in settings';
@@ -1972,30 +2154,74 @@
         }
 
         // Reminder functions
+        let reminderTimeouts = {};
         function addReminder() {
             const dateTime = document.getElementById('reminderDateTime').value;
             const task = document.getElementById('reminderTask').value;
-            scheduleAllReminders();
 
             if (!dateTime || !task) {
                 showToast('Please fill in all fields', 'error');
                 return;
             }
 
-            reminders.push({
+            const newReminder = {
                 id: Date.now(),
                 dateTime: dateTime,
                 task: task,
                 completed: false,
                 notified: false,
                 dateAdded: new Date().toISOString()
-            });
+            };
 
+            reminders.push(newReminder);
             localStorage.setItem('googokeReminders', JSON.stringify(reminders));
             document.getElementById('reminderDateTime').value = '';
             document.getElementById('reminderTask').value = '';
             loadReminders();
             showToast('Reminder added!');
+            scheduleReminder(newReminder);
+        }
+
+        function scheduleAllReminders() {
+            reminders.forEach(scheduleReminder);
+        }
+
+        function scheduleReminder(reminder) {
+            if (reminder.notified) return;
+            if (reminderTimeouts[reminder.id]) clearTimeout(reminderTimeouts[reminder.id]);
+            const reminderTime = new Date(reminder.dateTime).getTime();
+            const now = Date.now();
+            const timeDiff = reminderTime - now;
+            if (timeDiff <= 0) {
+                notifyReminder(reminder);
+            } else {
+                reminderTimeouts[reminder.id] = setTimeout(() => notifyReminder(reminder), timeDiff);
+            }
+        }
+
+        function notifyReminder(reminder) {
+            const now = Date.now();
+            const reminderTime = new Date(reminder.dateTime).getTime();
+            const delay = now - reminderTime;
+            let message = reminder.task;
+            let type = 'success';
+            if (delay > 0) {
+                const days = Math.floor(delay / (86400000));
+                const hours = Math.floor((delay % 86400000) / 3600000);
+                const minutes = Math.floor((delay % 3600000) / 60000);
+                let overdueMsg = '\nYou are ';
+                if (days > 0) overdueMsg += `${days} day${days > 1 ? 's' : ''} `;
+                if (hours > 0) overdueMsg += `${hours} hour${hours > 1 ? 's' : ''} `;
+                if (minutes > 0) overdueMsg += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+                overdueMsg += 'late!';
+                message += overdueMsg;
+                type = 'overdue';
+            }
+            showToast(message, type);
+            reminder.notified = true;
+            reminder.completed = true;
+            localStorage.setItem('googokeReminders', JSON.stringify(reminders));
+            if (document.getElementById('reminderModal').style.display === 'block') loadReminders();
         }
 
         function loadReminders() {
@@ -2012,20 +2238,20 @@
                 div.className = 'reminder-item';
                 const reminderDate = new Date(reminder.dateTime);
                 const now = new Date();
-                const isOverdue = reminderDate < now;
+                const isOverdue = reminderDate < now && !reminder.completed;
 
                 div.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <div style="font-weight: bold;">${reminder.task}</div>
                             <div style="color: #ccc; font-size: 0.9em;">${reminderDate.toLocaleString()}</div>
-                            ${isOverdue && !reminder.completed ? '<div style="color: #f44336;">⚠️ Overdue</div>' : ''}
+                            ${isOverdue ? '<div style="color: #f44336;">⚠️ Overdue</div>' : ''}
                         </div>
                         <button onclick="removeReminder(${index})">Remove</button>
                     </div>
                 `;
                 
-                if (isOverdue && !reminder.completed) {
+                if (isOverdue) {
                     div.style.borderLeft = '4px solid #f44336';
                 }
 
@@ -2034,49 +2260,11 @@
         }
 
         function removeReminder(index) {
+            if (reminderTimeouts[reminders[index].id]) clearTimeout(reminderTimeouts[reminders[index].id]);
             reminders.splice(index, 1);
             localStorage.setItem('googokeReminders', JSON.stringify(reminders));
             loadReminders();
             showToast('Reminder removed');
-            scheduleAllReminders();
-        }
-
-        function checkReminders() {
-            const now = new Date();
-            let changed = false;
-            
-            reminders.forEach(reminder => {
-                const reminderDate = new Date(reminder.dateTime);
-                const timeDiff = now.getTime() - reminderDate.getTime();
-                
-                if (!reminder.notified && timeDiff >= 0) {
-                    if (timeDiff < 60000) {
-                        showToast(reminder.task, 'success');
-                        reminder.notified = true;
-                        reminder.completed = true;
-                        changed = true;
-                    } else if (timeDiff >= 60000) {
-                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                        
-                        let overdueMsg = `You are `;
-                        if (days > 0) overdueMsg += `${days} day${days > 1 ? 's' : ''} `;
-                        if (hours > 0) overdueMsg += `${hours} hour${hours > 1 ? 's' : ''} `;
-                        if (minutes > 0) overdueMsg += `${minutes} minute${minutes > 1 ? 's' : ''} `;
-                        overdueMsg += `late!`;
-                        
-                        showToast(`${reminder.task}\n${overdueMsg}`, 'overdue');
-                        reminder.notified = true;
-                        reminder.completed = true;
-                        changed = true;
-                    }
-                }
-            });
-            
-            if (changed) {
-                localStorage.setItem('googokeReminders', JSON.stringify(reminders));
-            }
         }
 
         function showToast(message, type = 'success') {
@@ -2175,7 +2363,23 @@
         }
 
         // Settings application
-        function applySettings() {
+        async function applySettings() {
+            // Clear previous background elements and intervals
+            document.querySelectorAll('.bg-element').forEach(el => el.remove());
+            if (currentBgInterval) clearInterval(currentBgInterval);
+            if (currentBgUrl) {
+                URL.revokeObjectURL(currentBgUrl);
+                currentBgUrl = null;
+            }
+            if (currentBgUrls) {
+                currentBgUrls.forEach(URL.revokeObjectURL);
+                currentBgUrls = null;
+            }
+            document.body.style.backgroundImage = '';
+            document.body.style.backgroundSize = '';
+            document.body.style.backgroundPosition = '';
+            document.body.style.backgroundRepeat = '';
+
             // Theme
             document.body.classList.toggle('light-mode', settings.themeMode === 'light');
             
@@ -2195,11 +2399,65 @@
             // Background
             const body = document.body;
             body.style.background = '';
-            if (settings.bgType === 'solid') {
+            const type = settings.bgType;
+            if (type === 'solid') {
                 body.style.background = settings.bgColor1;
-            } else if (settings.bgType === 'gradient') {
+            } else if (type === 'gradient') {
                 body.style.background = `linear-gradient(to right, ${settings.bgColor1}, ${settings.bgColor2})`;
-            } else if (settings.bgType === 'custom' && settings.customBgCss) {
+            } else if (type === 'video' && settings.bgMediaId) {
+                try {
+                    const url = await fetchUrl(settings.bgMediaId);
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.className = 'bg-element';
+                    video.style.position = 'fixed';
+                    video.style.top = '0';
+                    video.style.left = '0';
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    video.style.objectFit = 'cover';
+                    video.style.zIndex = '-1';
+                    body.appendChild(video);
+                    currentBgUrl = url;
+                } catch (err) {
+                    console.error('Error setting video bg:', err);
+                }
+            } else if (type === 'image' && settings.bgMediaId) {
+                try {
+                    const url = await fetchUrl(settings.bgMediaId);
+                    body.style.backgroundImage = `url(${url})`;
+                    body.style.backgroundSize = 'cover';
+                    body.style.backgroundPosition = 'center';
+                    body.style.backgroundRepeat = 'no-repeat';
+                    currentBgUrl = url;
+                } catch (err) {
+                    console.error('Error setting image bg:', err);
+                }
+            } else if (type === 'slideshow') {
+                try {
+                    const imageIds = mediaMetadata.filter(m => m.type.startsWith('image')).map(m => m.id);
+                    if (imageIds.length > 0) {
+                        const urls = await Promise.all(imageIds.map(id => fetchUrl(id)));
+                        currentBgUrls = urls;
+                        let idx = 0;
+                        function changeBg() {
+                            body.style.backgroundImage = `url(${urls[idx]})`;
+                            body.style.backgroundSize = 'cover';
+                            body.style.backgroundPosition = 'center';
+                            body.style.backgroundRepeat = 'no-repeat';
+                            idx = (idx + 1) % urls.length;
+                        }
+                        changeBg();
+                        currentBgInterval = setInterval(changeBg, settings.slideshowInterval);
+                    }
+                } catch (err) {
+                    console.error('Error setting slideshow bg:', err);
+                }
+            } else if (settings.customBgCss) {
                 body.style.background = settings.customBgCss;
             }
 
@@ -2217,7 +2475,7 @@
             searchInput.style.color = settings.inputTextColor;
 
             // Menu background
-            const modals = document.querySelectorAll('#photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal');
+            const modals = document.querySelectorAll('#photoModal, #webAppModal, #menuModal, #settingsModal, #historyModal, #bookmarksModal, #reminderModal, #bgSelectModal');
             modals.forEach(modal => {
                 modal.style.background = '';
                 if (settings.menuBgType === 'solid') {
@@ -2309,6 +2567,7 @@
                 openLockedModal(modalId);
             } else {
                 showToast('Incorrect password', 'error');
+                input.value = '';
             }
         }
 
@@ -2350,6 +2609,120 @@
             document.getElementById('clockTimeFormat').value = settings.clockTimeFormat;
             document.getElementById('clockShowSeconds').checked = settings.clockShowSeconds;
             document.getElementById('clockDateFormat').value = settings.clockDateFormat;
+            document.getElementById('slideshowInt').value = settings.slideshowInterval / 1000;
+
+            updateSelectedMediaName();
+            showConditionalBgOptions();
+        }
+
+        function updateSelectedMediaName() {
+            const selectedNameSpan = document.getElementById('selectedMediaName');
+            if (['video', 'image'].includes(settings.bgType) && settings.bgMediaId) {
+                const item = mediaMetadata.find(m => m.id === settings.bgMediaId);
+                selectedNameSpan.textContent = item ? item.name : 'None selected';
+            } else {
+                selectedNameSpan.textContent = 'None selected';
+            }
+        }
+
+        function showConditionalBgOptions() {
+            const type = document.getElementById('bgType').value;
+            const color1Item = document.getElementById('bgColor1').parentElement;
+            const color2Item = document.getElementById('bgColor2').parentElement;
+            color1Item.style.display = ['gradient', 'solid'].includes(type) ? 'flex' : 'none';
+            color2Item.style.display = type === 'gradient' ? 'flex' : 'none';
+
+            document.getElementById('bgMediaSelect').style.display = ['video', 'image'].includes(type) ? 'flex' : 'none';
+            document.getElementById('slideshowInterval').style.display = type === 'slideshow' ? 'flex' : 'none';
+        }
+
+        function openBgSelectModal() {
+            bgSelectType = document.getElementById('bgType').value;
+            if (!['video', 'image'].includes(bgSelectType)) return;
+            selectedBgIndex = mediaMetadata.findIndex(m => m.id === settings.bgMediaId);
+            document.getElementById('bgSelectModal').style.display = 'block';
+            loadBgMedia();
+        }
+
+        function closeBgSelectModal() {
+            document.getElementById('bgSelectModal').style.display = 'none';
+            document.getElementById('bgMediaSearchInput').value = '';
+        }
+
+        function loadBgMedia() {
+            const container = document.getElementById('bgMediaContainer');
+            container.innerHTML = '';
+            const filteredMedia = mediaMetadata.filter(item => item.type.startsWith(bgSelectType === 'video' ? 'video' : 'image'));
+            if (filteredMedia.length === 0) {
+                container.innerHTML = '<p>No suitable media found.</p>';
+                return;
+            }
+            filteredMedia.forEach((item, index) => {
+                let div = document.createElement('div');
+                div.className = 'mediaItem';
+                if (index === selectedBgIndex) div.classList.add('selected');
+                let element = document.createElement('img');
+                element.src = item.thumbnail;
+                element.title = item.name;
+                let fileInfo = document.createElement('div');
+                fileInfo.textContent = item.name;
+                let fileSize = document.createElement('span');
+                fileSize.className = 'file-size';
+                fileSize.textContent = formatFileSize(item.size);
+                fileInfo.appendChild(fileSize);
+                div.addEventListener('click', () => {
+                    selectedBgIndex = index;
+                    confirmBgSelection();
+                });
+                div.appendChild(element);
+                div.appendChild(fileInfo);
+                if (item.type.startsWith('video')) {
+                    let videoIndicator = document.createElement('div');
+                    videoIndicator.innerHTML = '▶️';
+                    videoIndicator.className = 'video-indicator';
+                    div.appendChild(videoIndicator);
+                }
+                container.appendChild(div);
+            });
+        }
+
+        function confirmBgSelection() {
+            if (selectedBgIndex !== null) {
+                const filteredMedia = mediaMetadata.filter(item => item.type.startsWith(bgSelectType === 'video' ? 'video' : 'image'));
+                settings.bgMediaId = filteredMedia[selectedBgIndex].id;
+                updateSelectedMediaName();
+                debouncedUpdate();
+                closeBgSelectModal();
+            }
+        }
+
+        function searchBgMedia() {
+            const searchTerm = document.getElementById('bgMediaSearchInput').value.toLowerCase();
+            const items = document.querySelectorAll('#bgMediaContainer .mediaItem');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        function searchMedia() {
+            const searchTerm = document.getElementById('mediaSearchInput').value.toLowerCase();
+            const items = document.querySelectorAll('#mediaContainer .mediaItem');
+            
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        function searchApps() {
+            const searchTerm = document.getElementById('appSearchInput').value.toLowerCase();
+            const items = document.querySelectorAll('#appContainer .appItem');
+            
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
         }
 
         let debounceTimer;
@@ -2365,19 +2738,22 @@
                 'menuBgType', 'menuBgColor1', 'menuBgColor2', 'customMenuBgCss',
                 'menuPassword', 'lockHistory', 'lockBookmarks', 'lockSettings',
                 'enableHistory', 'showClock', 'showWeather', 'weatherLocation', 'showImageSlideshow', 'showVideoSlideshow',
-                'showCalendar', 'showRSS', 'rssUrls', 'clockTimeFormat', 'clockShowSeconds', 'clockDateFormat'
+                'showCalendar', 'showRSS', 'rssUrls', 'clockTimeFormat', 'clockShowSeconds', 'clockDateFormat',
+                'slideshowInt'
             ];
 
             elements.forEach(id => {
                 const elem = document.getElementById(id);
                 if (elem) {
-                    const eventType = (elem.tagName === 'TEXTAREA' || elem.type === 'text' || elem.type === 'password') ? 'input' : 'change';
+                    const eventType = (elem.tagName === 'TEXTAREA' || elem.type === 'text' || elem.type === 'password' || elem.type === 'number') ? 'input' : 'change';
                     elem.addEventListener(eventType, debouncedUpdate);
                 }
             });
+
+            document.getElementById('bgType').addEventListener('change', showConditionalBgOptions);
         }
 
-        function updateSettings() {
+        async function updateSettings() {
             settings.themeMode = document.getElementById('themeMode').value;
             settings.searchEngine = document.getElementById('searchEngine').value;
             settings.bgType = document.getElementById('bgType').value;
@@ -2409,9 +2785,10 @@
             settings.clockTimeFormat = document.getElementById('clockTimeFormat').value;
             settings.clockShowSeconds = document.getElementById('clockShowSeconds').checked;
             settings.clockDateFormat = document.getElementById('clockDateFormat').value;
+            settings.slideshowInterval = parseInt(document.getElementById('slideshowInt').value || 5) * 1000;
 
             localStorage.setItem('googokeSettings', JSON.stringify(settings));
-            applySettings();
+            await applySettings();
             
             // Clear existing intervals
             Object.values(slideshowIntervals).forEach(interval => clearInterval(interval));
@@ -2453,7 +2830,9 @@
                     rssUrls: '',
                     clockTimeFormat: '12',
                     clockShowSeconds: true,
-                    clockDateFormat: 'short'
+                    clockDateFormat: 'short',
+                    bgMediaId: '',
+                    slideshowInterval: 5000
                 };
                 localStorage.setItem('googokeSettings', JSON.stringify(settings));
                 applySettings();
@@ -2530,6 +2909,7 @@
                 let param = '?q=';
                 let fullUrl = searchForm.action + param + encodeURIComponent(query);
                 saveHistory(fullUrl);
+                window.open(fullUrl, '_blank');
             }
         });
 
@@ -2541,6 +2921,7 @@
             document.getElementById('historyModal').style.display = 'none';
             document.getElementById('bookmarksModal').style.display = 'none';
             document.getElementById('reminderModal').style.display = 'none';
+            document.getElementById('bgSelectModal').style.display = 'none';
         }
 
         function closeModal(id) {
@@ -2574,31 +2955,70 @@
         }
 
         function initDB() {
-            const request = indexedDB.open('MediaManagerDB', 3);
-            request.onerror = function(event) {
-                console.error("Database error: " + event.target.errorCode);
-                showToast("Database error. Please try again.", 'error');
-            };
-            request.onupgradeneeded = function(event) {
-                db = event.target.result;
-                if (!db.objectStoreNames.contains('media')) {
-                    const mediaStore = db.createObjectStore('media', { keyPath: 'id', autoIncrement: false });
-                    mediaStore.createIndex('name', 'name', { unique: false });
-                    mediaStore.createIndex('type', 'type', { unique: false });
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('MediaManagerDB', 3);
+                request.onerror = (event) => {
+                    console.error("Database error: " + event.target.errorCode);
+                    showToast("Database error. Please try again.", 'error');
+                    reject(event.target.errorCode);
+                };
+                request.onupgradeneeded = function(event) {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains('media')) {
+                        const mediaStore = db.createObjectStore('media', { keyPath: 'id', autoIncrement: false });
+                        mediaStore.createIndex('name', 'name', { unique: false });
+                        mediaStore.createIndex('type', 'type', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('webapps')) {
+                        const webappsStore = db.createObjectStore('webapps', { keyPath: 'id', autoIncrement: false });
+                        webappsStore.createIndex('name', 'name', { unique: false });
+                        webappsStore.createIndex('type', 'type', { unique: false });
+                    }
+                };
+                request.onsuccess = function(event) {
+                    db = event.target.result;
+                    resolve();
+                };
+                request.onblocked = function(event) {
+                    console.warn("Database blocked. Close other tabs/windows using this database and try again.");
+                    showToast("Database blocked. Close other tabs/windows using this database and try again.", 'error');
+                };
+            });
+        }
+
+        function getMediaIds(mediaType) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('DB not initialized'));
+                    return;
                 }
-                if (!db.objectStoreNames.contains('webapps')) {
-                    const webappsStore = db.createObjectStore('webapps', { keyPath: 'id', autoIncrement: false });
-                    webappsStore.createIndex('name', 'name', { unique: false });
-                    webappsStore.createIndex('type', 'type', { unique: false });
-                }
-            };
-            request.onsuccess = function(event) {
-                db = event.target.result;
-            };
-            request.onblocked = function(event) {
-                console.warn("Database blocked. Close other tabs/windows using this database and try again.");
-                showToast("Database blocked. Close other tabs/windows using this database and try again.", 'error');
-            };
+                const transaction = db.transaction(['media'], 'readonly');
+                const store = transaction.objectStore('media');
+                const request = store.getAll();
+                request.onsuccess = (event) => {
+                    const items = event.target.result;
+                    const ids = items.filter(item => item.type.startsWith(mediaType)).map(item => item.id);
+                    resolve(ids);
+                };
+                request.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        async function fetchUrl(id) {
+            if (!db) throw new Error('DB not initialized');
+            const transaction = db.transaction(['media'], 'readonly');
+            const store = transaction.objectStore('media');
+            const request = store.get(id);
+            return new Promise((resolve, reject) => {
+                request.onsuccess = (e) => {
+                    if (e.target.result && e.target.result.data) {
+                        resolve(URL.createObjectURL(e.target.result.data));
+                    } else {
+                        reject(new Error('File not found'));
+                    }
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
         }
 
         function loadMediaMetadata() {
@@ -2835,6 +3255,7 @@
                 }
                 container.appendChild(div);
             });
+            searchMedia(); // Apply initial search if any
         }
 
         function deleteMedia() {
@@ -3026,6 +3447,7 @@
                 div.addEventListener('dblclick', () => showWebAppInViewer(item));
                 container.appendChild(div);
             });
+            searchApps(); // Apply initial search if any
         }
 
         function deleteWebApp() {
@@ -3104,63 +3526,6 @@
                 showToast("Error loading web app from database", 'error');
             };
         }
-        
-        // Add this at the top with other variables
-let reminderTimeouts = {};
-
-// Remove this from window.addEventListener('load')
- // Remove: setInterval(checkReminders, 60000);
- // Remove: checkReminders();
-
-// Add this after reminders = JSON.parse... in window.load
-scheduleAllReminders();
-
-// Replace the entire checkReminders function with these new functions
-function scheduleAllReminders() {
-    Object.values(reminderTimeouts).forEach(clearTimeout);
-    reminderTimeouts = {};
-    reminders.forEach(reminder => {
-        if (!reminder.notified) {
-            const reminderTime = new Date(reminder.dateTime).getTime();
-            const now = Date.now();
-            const timeDiff = reminderTime - now;
-            if (timeDiff <= 0) {
-                notifyReminder(reminder, now);
-            } else {
-                reminderTimeouts[reminder.id] = setTimeout(() => {
-                    notifyReminder(reminder, Date.now());
-                }, timeDiff);
-            }
-        }
-    });
-}
-
-function notifyReminder(reminder, currentTime) {
-    const reminderTime = new Date(reminder.dateTime).getTime();
-    const delay = currentTime - reminderTime;
-    let message = reminder.task;
-    if (delay >= 60000) {
-        const days = Math.floor(delay / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((delay % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((delay % (1000 * 60 * 60)) / (1000 * 60));
-        let overdueMsg = `\nYou are `;
-        if (days > 0) overdueMsg += `${days} day${days > 1 ? 's' : ''} `;
-        if (hours > 0) overdueMsg += `${hours} hour${hours > 1 ? 's' : ''} `;
-        if (minutes > 0) overdueMsg += `${minutes} minute${minutes > 1 ? 's' : ''} `;
-        overdueMsg += `late!`;
-        message += overdueMsg;
-        showToast(message, 'overdue');
-    } else {
-        showToast(message, 'success');
-    }
-    reminder.notified = true;
-    reminder.completed = true;
-    localStorage.setItem('googokeReminders', JSON.stringify(reminders));
-    loadReminders(); // Refresh UI if modal is open
-}
-
-// In addReminder, after localStorage.setItem and before showToast
-
     </script>
 </body>
 </html>
