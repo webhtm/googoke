@@ -3171,7 +3171,7 @@ font-family: 'Courier New', Courier, monospace;
         <div id="viewerContent" onclick="event.stopPropagation();">
 
             <button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>
-            <button class="close-btn" onclick="closeViewer()" style="top: 10px; right: 50px;">&times;</button>
+            <button class="close-btn" onclick="closeViewer()" style="top: 10px; right: 50px; padding:10px;">&times;</button>
 
         </div>
 
@@ -5719,9 +5719,9 @@ async function registerPasskey() {
   try {
     const publicKey = {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
-      rp: { name: 'Googoke' },
+      rp: { name: 'GKE' },
       user: {
-        id: crypto.getRandomValues(new Uint8Array(16)),
+        id: crypto.getRandomValues(new Uint8Array(32)),
         name: 'webhtm.github.io/googoke',  // Customize or prompt
         displayName: 'Googoke Verification Passkey',
       },
@@ -5733,7 +5733,7 @@ async function registerPasskey() {
     localStorage.setItem('googokeSettings', JSON.stringify(settings));
     showToast('Passkey registered successfully!');
   } catch (err) {
-    showToast('Passkey registration failed: ' + err.message, 'error');
+    showToast('Passkey registration failed', 'error');
     document.getElementById('usePasskey').checked = false;  // Revert on fail
   }
 }
@@ -5759,7 +5759,7 @@ async function authenticatePasskey(modalId) {
       
     }
   } catch (err) {
-    showToast('Passkey authentication failed');
+    showToast('Passkey authentication failed', 'error');
   }
 }
         async function updateSettings() {
