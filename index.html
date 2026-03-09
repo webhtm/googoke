@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -156,7 +158,51 @@ h1 {
     background: rgba(0, 0, 0, 0.2);
     
     }
-    
+    /* Responsive for different aspect ratios */
+@media (max-aspect-ratio: 16/9) {  /* Taller devices like Galaxy M14 */
+  .widgets-container {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));  /* Smaller widgets */
+  }
+  .slideshow-widget {
+    height: 150px;  /* Adjust height */
+  }
+  .viewerContent img, .viewerContent video, .viewerContent embed, .viewerContent iframe {
+    max-width: 100vw !important;
+    max-height: 80vh !important;
+    object-fit: contain !important;  /* Prevent cropping */
+  }
+}
+@media (min-aspect-ratio: 16/9) {  /* Wider/landscape */
+  .viewerContent img, .viewerContent video {
+    max-height: 100vh !important;
+    max-width: 90vw !important;
+    object-fit: contain !important;
+  }
+}
+/* Ensure modal overlay is clickable */
+#viewerModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+#viewerContent {
+  position: relative;
+  width: auto;
+  height: auto;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+// For image/video/pdf: Add style for contain
+element.style.objectFit = 'contain';
+element.style.maxWidth = '90vw';
+element.style.maxHeight = '90vh';
     body.light-mode .mediaItem,
     
     body.light-mode .appItem {
@@ -1664,7 +1710,13 @@ font-family: 'Courier New', Courier, monospace;
     align-items: center;
     
     }
-    
+    /* Firefox-specific scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.5) transparent;
+}
+
+
     #statusMessage {
     
     display: none;
@@ -1921,6 +1973,8 @@ font-family: 'Courier New', Courier, monospace;
     
     transition: all 0.3s ease;
     
+    
+    
     }
     
     .verify-btn:hover {
@@ -2079,6 +2133,29 @@ font-family: 'Courier New', Courier, monospace;
     
     }
     
+    .verify-btn-ps {
+        background: #4CAF50;
+    
+    color: white;
+    
+    padding: 12px 25px;
+    
+    border-radius: 8px;
+    
+    font-family: Franklin Gothic, sans-serif;
+    
+    font-size: 16px;
+    
+    cursor: pointer;
+    
+    transition: all 0.3s ease;
+    display: flex;
+  justify-content: center; /* Horizontal */
+  align-items: center;     /* Vertical (Optional) */
+       margin-left:27%;
+       margin-top:10px;
+    }
+    
     .hide-scrollbar::-webkit-scrollbar {
     
     width: 0px;
@@ -2181,7 +2258,6 @@ font-family: 'Courier New', Courier, monospace;
     
     
     
-    
     z-index: 9999; /* Ensures the overlay is on top of other content */
     
     
@@ -2191,7 +2267,30 @@ font-family: 'Courier New', Courier, monospace;
     align-items: center;
     
     }
+    
+#viewerContent .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 50px;  /* Position next to fullscreen btn */
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 5px 10px;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s ease;
+  padding:10.0px;
+}
 
+#viewerContent .close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  padding:10px;
+}
     </style>
 
 </head>
@@ -2306,6 +2405,7 @@ font-family: 'Courier New', Courier, monospace;
             <input type="password" class="password-input" id="photoPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'photoModal')">
 
             <button class="verify-btn" onclick="verifyPassword('photoModal')">Verify</button>
+            <button class="verify-btn-ps" onclick="authenticatePasskey('photoModal')">Use Passkey</button>  <!-- Replace 'photoModal' with the modal's ID -->
 
         </div>
         <div class="modal-content" id="photoContent">
@@ -2385,6 +2485,7 @@ font-family: 'Courier New', Courier, monospace;
             <input type="password" class="password-input" id="webAppPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'webAppModal')">
 
             <button class="verify-btn" onclick="verifyPassword('webAppModal')">Verify</button>
+            <button class="verify-btn-ps" onclick="authenticatePasskey('webAppModal')">Use Passkey</button>  <!-- Replace 'photoModal' with the modal's ID -->
 
         </div>
         <div class="modal-content" id="webAppContent">
@@ -2837,6 +2938,10 @@ font-family: 'Courier New', Courier, monospace;
                     <label for="menuPassword">Menu Password:</label>
 
                     <input type="password" id="menuPassword" placeholder="Set password">
+                    <div class="widget-checkbox">
+  <input type="checkbox" id="usePasskey">
+  <label for="usePasskey">Use Passkey (biometric/PIN instead of password)</label>
+</div>
 
                 </div>
 
@@ -2936,6 +3041,7 @@ font-family: 'Courier New', Courier, monospace;
             <input type="password" class="password-input" id="historyPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'historyModal')">
 
             <button class="verify-btn" onclick="verifyPassword('historyModal')">Verify</button>
+            <button class="verify-btn-ps" onclick="authenticatePasskey('historyModal')">Use Passkey</button>  <!-- Replace 'photoModal' with the modal's ID -->
 
         </div>
 
@@ -2994,6 +3100,7 @@ font-family: 'Courier New', Courier, monospace;
             <input type="password" class="password-input" id="bookmarksPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'bookmarksModal')">
 
             <button class="verify-btn" onclick="verifyPassword('bookmarksModal')">Verify</button>
+            <button class="verify-btn-ps" onclick="authenticatePasskey('bookmarksModal')">Use Passkey</button>  <!-- Replace 'photoModal' with the modal's ID -->
 
         </div>
 
@@ -3034,6 +3141,7 @@ font-family: 'Courier New', Courier, monospace;
             <input type="password" class="password-input" id="reminderPasswordInput" placeholder="Password" onkeydown="handlePasswordKeydown(event, 'reminderModal')">
 
             <button class="verify-btn" onclick="verifyPassword('reminderModal')">Verify</button>
+            <button class="verify-btn-ps" onclick="authenticatePasskey('reminderModal')">Use Passkey</button>  <!-- Replace 'photoModal' with the modal's ID -->
 
         </div>
 
@@ -3063,6 +3171,7 @@ font-family: 'Courier New', Courier, monospace;
         <div id="viewerContent" onclick="event.stopPropagation();">
 
             <button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>
+            <button class="close-btn" onclick="closeViewer()" style="top: 10px; right: 50px;">&times;</button>
 
         </div>
 
@@ -3126,6 +3235,9 @@ font-family: 'Courier New', Courier, monospace;
 
         let settings = JSON.parse(localStorage.getItem('googokeSettings')) || {
 
+            // Add to settings defaults
+usePasskey: false,
+passkeyCredentialId: null,  // Will store base64-encoded credential ID
             searchEngine: 'google',
 
             bgType: 'gradient',
@@ -3773,7 +3885,10 @@ showNotes: false,
             });
 
         }
-
+if (!navigator.credentials) {
+  showToast('Passkeys not supported in this browser', 'error');
+  document.getElementById('usePasskey').disabled = true;
+}
         function createClockWidget() {
 
             const container = document.getElementById('widgetsContainer');
@@ -5190,7 +5305,11 @@ function createNotesWidget() {
             const content = document.getElementById(`${modalId.replace('Modal', '')}Content`);
 
             if (isLocked && !unlockedModals.has(modalId)) {
-
+// Add inside the if (isLocked && !unlockedModals.has(modalId)) block
+const passkeyBtn = passwordContainer.querySelector('button[onclick^="authenticatePasskey"]');
+if (passkeyBtn) {
+  passkeyBtn.style.display = settings.usePasskey ? 'block' : 'none';
+}
                 if (passwordContainer) passwordContainer.style.display = 'block';
 
                 if (content) content.style.display = 'none';
@@ -5259,6 +5378,7 @@ function createNotesWidget() {
 
         function loadSettingsForm() {
 
+            document.getElementById('usePasskey').checked = settings.usePasskey;
             document.getElementById('themeMode').value = settings.themeMode;
 
             document.getElementById('searchEngine').value = settings.searchEngine;
@@ -5560,7 +5680,7 @@ document.getElementById('showNotes').checked = settings.showNotes;
 
             const elements = [
 
-                'themeMode', 'searchEngine', 'bgType', 'bgColor1', 'bgColor2', 'customBgCss',
+                'themeMode', 'usePasskey', 'searchEngine', 'bgType', 'bgColor1', 'bgColor2', 'customBgCss',
 
                 'inputBgType', 'inputBgColor', 'inputBgColor2', 'inputTextColor', 'customInputCss',
 
@@ -5595,9 +5715,60 @@ document.getElementById('showNotes').checked = settings.showNotes;
             document.getElementById('bgType').addEventListener('change', showConditionalBgOptions);
 
         }
+async function registerPasskey() {
+  try {
+    const publicKey = {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { name: 'Googoke' },
+      user: {
+        id: crypto.getRandomValues(new Uint8Array(16)),
+        name: 'webhtm.github.io/googoke',  // Customize or prompt
+        displayName: 'Googoke Verification Passkey',
+      },
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+      authenticatorSelection: { userVerification: 'preferred' },
+    };
+    const credential = await navigator.credentials.create({ publicKey });
+    settings.passkeyCredentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+    localStorage.setItem('googokeSettings', JSON.stringify(settings));
+    showToast('Passkey registered successfully!');
+  } catch (err) {
+    showToast('Passkey registration failed: ' + err.message, 'error');
+    document.getElementById('usePasskey').checked = false;  // Revert on fail
+  }
+}
 
+async function authenticatePasskey(modalId) {
+  if (!settings.passkeyCredentialId) {
+    showToast('No passkey registered', 'error');
+    return;
+  }
+  try {
+    const publicKey = {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: [{
+        id: Uint8Array.from(atob(settings.passkeyCredentialId), c => c.charCodeAt(0)),
+        type: 'public-key',
+      }],
+      userVerification: 'preferred',
+    };
+    const assertion = await navigator.credentials.get({ publicKey });
+    if (assertion) {
+      unlockedModals.add(modalId);
+      openLockedModal(modalId);
+      
+    }
+  } catch (err) {
+    showToast('Passkey authentication failed');
+  }
+}
         async function updateSettings() {
 
+            const usePasskeyChecked = document.getElementById('usePasskey').checked;
+if (usePasskeyChecked && !settings.usePasskey) {
+  registerPasskey();  // Register on enable
+}
+settings.usePasskey = usePasskeyChecked;
             settings.themeMode = document.getElementById('themeMode').value;
 
             settings.searchEngine = document.getElementById('searchEngine').value;
@@ -6690,7 +6861,10 @@ showNotes: false,
 
             const viewerContent = document.getElementById('viewerContent');
 
-            viewerContent.innerHTML = '<button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>';
+           viewerContent.innerHTML = `
+  <button id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>
+  <button class="close-btn" onclick="closeViewer()">&times;</button>
+`;
 
             const transaction = db.transaction(['media'], 'readonly');
 
