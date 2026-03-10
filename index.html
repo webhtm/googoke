@@ -2935,12 +2935,12 @@ font-family: 'Courier New', Courier, monospace;
 
                 <div class="setting-item">
 
-                    <label for="menuPassword">Menu Password:</label>
+                    <label for="menuPassword">Lock menus with password</label>
 
-                    <input type="password" id="menuPassword" placeholder="Set password">
+                    <input type="password" id="menuPassword" placeholder="Leave blank to disable">
                     <div class="widget-checkbox">
   <input type="checkbox" id="usePasskey">
-  <label for="usePasskey">Use Passkey (biometric/PIN instead of password)</label>
+  <label for="usePasskey">Use Passkey (device lock instead of password)</label>
 </div>
 
                 </div>
@@ -7271,7 +7271,97 @@ showNotes: false,
             };
 
         }
+        document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('viewerModal').style.display === 'flex') {
+    closeViewer();
+  }
+});
 
+// ────────────────────────────────────────────────
+//   Lock checkboxes logic: require menu password
+// ────────────────────────────────────────────────
+
+(function setupLockCheckboxRules() {
+    const lockCheckboxes = [
+        'lockHistory',
+        'lockBookmarks',
+        'lockSettings',
+        'lockReminders',
+        'lockMedia',
+        'lockWebApps'
+    ];
+
+    const pwInput = document.getElementById('menuPassword');
+
+    // When password field changes → reset locks if password becomes empty
+    pwInput.addEventListener('input', function() {
+        const pw = this.value.trim();
+
+        if (pw === '') {
+            // Password was cleared → force-uncheck all locks + save
+            lockCheckboxes.forEach(id => {
+                const cb = document.getElementById(id);
+                if (cb) {
+                    cb.checked = false;
+                    settings[id] = false;
+                }
+            });
+            localStorage.setItem('googokeSettings', JSON.stringify(settings));
+            showToast("Menu locks disabled");
+        }
+        // Always save the password itself
+        settings.menuPassword = pw;
+        localStorage.setItem('googokeSettings', JSON.stringify(settings));
+    });
+
+    // When any lock checkbox is clicked/changed
+    lockCheckboxes.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (!checkbox) return;
+
+        checkbox.addEventListener('change', function(e) {
+            const wantsToEnable = this.checked;
+
+            if (wantsToEnable && (!settings.menuPassword || settings.menuPassword.trim() === '')) {
+                // Trying to enable lock without password → block it
+                e.preventDefault();
+                this.checked = false;
+                showToast("Set a menu password first to lock menus", 'error');
+                return;
+            }
+
+            // Allowed change → save it
+            settings[id] = this.checked;
+            localStorage.setItem('googokeSettings', JSON.stringify(settings));
+        });
+    });
+
+    // Also enforce on page load / settings modal open (in case of inconsistency)
+    function enforceLockRulesOnLoad() {
+        const hasPassword = settings.menuPassword && settings.menuPassword.trim() !== '';
+
+        lockCheckboxes.forEach(id => {
+            const cb = document.getElementById(id);
+            if (cb) {
+                if (!hasPassword && cb.checked) {
+                    cb.checked = false;
+                    settings[id] = false;
+                }
+            }
+        });
+
+        // Save any forced changes
+        if (!hasPassword) {
+            localStorage.setItem('googokeSettings', JSON.stringify(settings));
+        }
+    }
+
+    // Run once now + when settings modal opens
+    enforceLockRulesOnLoad();
+
+    // If you already have a function that runs when settings modal opens, call it there too:
+    // Example: if you have loadSettingsForm() → add enforceLockRulesOnLoad(); inside it
+})();
     </script>
 
 </body>
