@@ -2291,6 +2291,10 @@ font-family: 'Courier New', Courier, monospace;
   background: rgba(255, 255, 255, 0.2);
   padding:10px;
 }
+#cancel:hover {
+    background-color:white;
+    color:black;
+}
     </style>
 
 </head>
@@ -2624,9 +2628,9 @@ font-family: 'Courier New', Courier, monospace;
 
                 <div class="setting-item">
 
-                    <label for="themeMode">Theme:</label>
+                    <label for="themeMode" hidden>Theme:</label>
 
-                    <select id="themeMode">
+                    <select id="themeMode" hidden>
 
                         <option value="dark">Dark</option>
 
@@ -2646,7 +2650,7 @@ font-family: 'Courier New', Courier, monospace;
 
                         <option value="solid">Solid Color</option>
 
-                        
+                        <option value="video">Single Video from Media</option>
 
                         <option value="image">Single Image from Media</option>
 
@@ -3106,7 +3110,28 @@ font-family: 'Courier New', Courier, monospace;
         </div>
 
         <div class="modal-content" id="bookmarksContent">
-
+<!-- === 3. ADD THIS NEW REAL MODAL (paste anywhere inside <body>, best right after the #bgSelectModal closing tag) === -->
+<div id="addBookmarkModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10001; justify-content:center; align-items:center;" onclick="closeAddBookmarkModal()">
+    <div onclick="event.stopPropagation()" style="background:linear-gradient(135deg, #1a1a1a, #2d2d2d); color:white; padding:30px; border-radius:15px; max-width:420px; width:90%; max-height:85vh; overflow-y:auto; box-shadow:0 0 40px rgba(0,0,0,0.6); position:relative;">
+        <button class="close-btn" onclick="closeAddBookmarkModal()" style="position:absolute; top:15px; right:15px;">&times;</button>
+        <h2 style="text-align:center; margin:0 0 25px 0; color:#4CAF50;">Add New Bookmark</h2>
+        
+        <div class="setting-item">
+            <label for="modalBookmarkTitle" style="min-width:70px;">Title</label>
+            <input type="text" id="modalBookmarkTitle" placeholder="Bookmark title" style="flex:1; padding:12px 15px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; font-size:16px;">
+        </div>
+        
+        <div class="setting-item">
+            <label for="modalBookmarkUrl" style="min-width:70px;">URL</label>
+            <input type="text" id="modalBookmarkUrl" placeholder="https://example.com" style="flex:1; padding:12px 15px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; font-size:16px;">
+        </div>
+        
+        <div style="display:flex; gap:15px; justify-content:center; margin-top:25px;">
+            <button type="button" id="ok" onclick="saveNewBookmarkModal()" style="background:#4CAF50; color:white; padding:12px 30px; border-radius:8px; font-size:16px; cursor:pointer; transition:0.3s ease;">Save Bookmark</button>
+            <button type="button" id="cancel" onclick="closeAddBookmarkModal()" style="background:transparent; color:white; border:2px solid #666; padding:12px 30px; border-radius:8px; font-size:16px; cursor:pointer; transition:0.3s ease;">Cancel</button>
+        </div>
+    </div>
+</div>
             <h2>Bookmarks</h2>
 
             <div class="settings-search">
@@ -3117,13 +3142,14 @@ font-family: 'Courier New', Courier, monospace;
 
             <div class="upload-buttons">
 
-                <button onclick="addCustomBookmark()">Add Custom Bookmark</button>
+                <button onclick="showAddBookmarkModal()">Add New Bookmark</button>
 
             </div>
 
             <div id="bookmarkContainer"></div>
 
             <button onclick="clearBookmarks()">Clear All Bookmarks</button>
+            
 
         </div>
 
@@ -5051,71 +5077,41 @@ function createNotesWidget() {
 
                 body.style.background = `linear-gradient(to right, ${settings.bgColor1}, ${settings.bgColor2})`;
 
-            } else if (type === 'video' && settings.bgMediaId) {
-
-                try {
-
-                    const url = await fetchUrl(settings.bgMediaId);
-
-                    const video = document.createElement('video');
-
-                    video.src = url;
-
-                    video.autoplay = true;
-
-                    video.loop = true;
-
-                    video.muted = true;
-
-                    video.playsInline = true;
-
-                    video.className = 'bg-element';
-
-                    video.style.position = 'fixed';
-
-                    video.style.top = '0';
-
-                    video.style.left = '0';
-
-                    video.style.width = '100%';
-
-                    video.style.height = '100%';
-
-                    video.style.objectFit = 'cover';
-
-                    video.style.zIndex = '-1';
-
-                    body.appendChild(video);
-
-                    currentBgUrl = url;
-
-                } catch (err) {
-
-                    console.error('Error setting video bg:', err);
-
-                }
-
             } else if (type === 'image' && settings.bgMediaId) {
+    try {
+        const url = await fetchUrl(settings.bgMediaId);
+        body.style.backgroundImage = `url(${url})`;
+        body.style.backgroundSize = 'cover';
+        body.style.backgroundPosition = 'center';
+        body.style.backgroundRepeat = 'no-repeat';
+        currentBgUrl = url;
+    } catch (err) {
+        console.error('Error setting image bg:', err);
+    }
+} else if (type === 'video' && settings.bgMediaId) {
+    try {
+        const url = await fetchUrl(settings.bgMediaId);
+        const video = document.createElement('video');
+        video.src = url;
+        video.autoplay = true;
+        video.loop = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.className = 'bg-element';
+        video.style.position = 'fixed';
+        video.style.top = '0';
+        video.style.left = '0';
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        video.style.zIndex = '-1';
+        body.appendChild(video);
+        currentBgUrl = url;
+    } catch (err) {
+        console.error('Error setting video bg:', err);
+    }
 
-                try {
-
-                    const url = await fetchUrl(settings.bgMediaId);
-
-                    body.style.backgroundImage = `url(${url})`;
-
-                    body.style.backgroundSize = 'cover';
-
-                    body.style.backgroundPosition = 'center';
-
-                    body.style.backgroundRepeat = 'no-repeat';
-
-                    currentBgUrl = url;
-
-                } catch (err) {
-
-                    console.error('Error setting image bg:', err);
-
-                }
+           
 
             } else if (type === 'slideshow') {
 
@@ -7343,6 +7339,44 @@ showNotes: false,
     // If you already have a function that runs when settings modal opens, call it there too:
     // Example: if you have loadSettingsForm() → add enforceLockRulesOnLoad(); inside it
 })();
+
+
+function showAddBookmarkModal() {
+    const modal = document.getElementById('addBookmarkModal');
+    modal.style.display = 'flex';
+    document.getElementById('modalBookmarkTitle').focus();
+}
+
+function closeAddBookmarkModal() {
+    const modal = document.getElementById('addBookmarkModal');
+    modal.style.display = 'none';
+    document.getElementById('modalBookmarkTitle').value = '';
+    document.getElementById('modalBookmarkUrl').value = '';
+}
+
+function saveNewBookmarkModal() {
+    let title = document.getElementById('modalBookmarkTitle').value.trim();
+    let url = document.getElementById('modalBookmarkUrl').value.trim();
+    
+    if (!url) {
+        showToast('URL is required', 'error');
+        return;
+    }
+    if (!url.startsWith('http')) url = 'https://' + url;
+    if (!title) title = url.replace(/^https?:\/\//, '').split('/')[0];
+
+    bookmarks.push({
+        id: Date.now(),
+        title: title,
+        url: url,
+        dateAdded: new Date().toISOString()
+    });
+
+    localStorage.setItem('googokeBookmarks', JSON.stringify(bookmarks));
+    loadBookmarks();
+    closeAddBookmarkModal();
+    showToast('Bookmark added successfully!');
+}
     </script>
 
 </body>
