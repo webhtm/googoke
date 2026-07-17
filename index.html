@@ -339,6 +339,14 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 /* ── FILES MANAGER ── */
 .files-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--bg-card);border-radius:12px}
 .files-toolbar button{padding:10px 16px;font-size:.85em;border-radius:8px}
+/* Icon-only file management buttons */
+.files-icon-btn{width:40px;height:40px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);color:#fff;border-radius:8px;cursor:pointer;transition:.2s;position:relative}
+.files-icon-btn:hover{background:rgba(255,255,255,.22)}
+.files-icon-btn svg{width:20px;height:20px;fill:currentColor;pointer-events:none}
+.files-icon-btn.btn-danger{background:var(--danger)!important}
+.files-icon-btn.btn-danger:hover{background:#d32f2f!important}
+.files-icon-btn.has-caret::after{content:'';position:absolute;right:3px;bottom:3px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;opacity:.75}
+.files-icon-btn .sel-badge{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:10px;line-height:1;padding:3px 5px;border-radius:10px;font-weight:600;min-width:16px;text-align:center}
 .breadcrumb{display:flex;align-items:center;gap:6px;flex:1;min-width:180px;flex-wrap:wrap;font-size:.95em;opacity:.95}
 .breadcrumb .nav-icon-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);color:#fff;width:34px;height:34px;padding:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:.18s}
 .breadcrumb .nav-icon-btn:hover:not(.disabled){background:rgba(255,255,255,.18);color:var(--accent)}
@@ -611,7 +619,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 @keyframes popIn{from{transform:translateY(8px) scale(.96);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
 
 /* ── SEARCH BARS ── */
-.search-bar-wrapper{margin:18px 0 16px;padding:6px 4px}
+.search-bar-wrapper{margin:18px auto 16px;padding:6px 4px;max-width:680px}
 .search-bar-wrapper input{width:100%;max-width:100%;padding:16px 20px;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-family:var(--font);font-size:.95em;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .search-bar-wrapper input:focus{outline:none;background:rgba(255,255,255,.16)}
 
@@ -664,6 +672,61 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .tn-cfg-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
 .tn-cfg-row .tn-cfg-label{flex:1;font-size:.9em}
 .tn-cfg-row .tn-cfg-hint{font-size:.72em;opacity:.5}
+
+/* ── MENU MODAL: stacked full-width left-aligned buttons ── */
+#menuModal .menu-buttons{display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;gap:8px!important;justify-content:flex-start!important;align-items:stretch!important;width:100%;max-width:520px;max-height:70vh;overflow-y:auto;margin:14px auto 0;padding:4px}
+#menuModal .menu-buttons button{width:100%!important;min-width:0!important;text-align:left!important;justify-content:flex-start!important;padding:14px 20px!important;font-size:15px;border-radius:10px;background:rgba(255,255,255,.08)!important;color:#fff!important;font-family:var(--font);cursor:pointer;transition:.2s;border:1px solid rgba(255,255,255,.05)}
+#menuModal .menu-buttons button:hover{background:rgba(255,255,255,.16)!important;border-color:rgba(255,255,255,.12)!important;transform:translateX(3px)}
+/* Custom scrollbar for the menu list */
+#menuModal .menu-buttons::-webkit-scrollbar{width:6px}
+#menuModal .menu-buttons::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+
+/* ── FILES/MEDIA/WEBAPPS: wider content on desktop ── */
+#photoModal .modal-content-area,
+#webAppModal .modal-content-area,
+#filesModal .modal-content-area{max-width:1600px;width:100%}
+@media(min-width:1700px){
+  #photoModal .modal-content-area,
+  #webAppModal .modal-content-area,
+  #filesModal .modal-content-area{max-width:100%;padding:0 20px}
+}
+
+/* ── VIEWER NAV DROPDOWN (top-left menu) ── */
+.viewer-nav-menu{position:absolute;top:100%;left:0;margin-top:6px;background:rgba(20,26,38,.98);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:6px;box-shadow:0 12px 40px rgba(0,0,0,.55);display:none;flex-direction:column;gap:2px;min-width:200px;z-index:10002}
+.viewer-nav-menu.open{display:flex;animation:vnmIn .16s ease}
+@keyframes vnmIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.viewer-nav-menu button{background:transparent!important;border:0!important;color:#fff!important;padding:10px 14px!important;text-align:left!important;justify-content:flex-start!important;font-size:.9em;border-radius:8px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:10px;width:100%;transition:background .15s}
+.viewer-nav-menu button:hover:not(:disabled){background:rgba(255,255,255,.14)!important}
+.viewer-nav-menu button:disabled{opacity:.35;cursor:not-allowed}
+.viewer-nav-menu button svg{width:16px;height:16px;fill:currentColor;flex-shrink:0}
+.viewer-nav-menu .vnm-sep{height:1px;background:rgba(255,255,255,.1);margin:3px 4px}
+.floating-back-group{position:fixed;top:14px;left:14px;z-index:10001}
+.floating-back-group.has-menu{position:fixed}
+
+/* Long-press feedback */
+.long-press-active{outline:2px solid var(--accent);outline-offset:2px;transform:scale(.98)}
+
+/* Confirm-external popup styles */
+#confirmExternalPopup .cx-url{font-family:'SF Mono','Menlo',monospace;font-size:.82em;background:rgba(0,0,0,.35);padding:10px 12px;border-radius:8px;word-break:break-all;margin-bottom:14px;max-height:100px;overflow-y:auto;text-align:left;border:1px solid rgba(255,255,255,.08)}
+#confirmExternalPopup .cx-choice{margin-bottom:10px;text-align:left}
+#confirmExternalPopup .cx-remember{display:flex;align-items:center;gap:8px;margin:12px 0 8px;font-size:.85em;opacity:.85;text-align:left}
+#confirmExternalPopup .cx-remember input{width:16px;height:16px;accent-color:var(--accent)}
+
+/* Lock inactivity status hint */
+.inactivity-hint{font-size:.78em;opacity:.55;margin-top:6px;font-style:italic}
+
+/* Markdown preview polish (uses .rich-content already) */
+.rich-content pre{background:rgba(0,0,0,.4);padding:14px 16px;border-radius:8px;overflow-x:auto;font-family:'SF Mono','Menlo',monospace;font-size:.85em;border:1px solid rgba(255,255,255,.06)}
+.rich-content code{background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:'SF Mono','Menlo',monospace;font-size:.88em}
+.rich-content pre code{background:transparent;padding:0}
+.rich-content blockquote{border-left:3px solid var(--accent);padding-left:16px;margin:14px 0;opacity:.85;font-style:italic}
+.rich-content table{border-collapse:collapse;margin:12px 0;font-size:.9em;width:100%}
+.rich-content th,.rich-content td{border:1px solid rgba(255,255,255,.15);padding:8px 12px;text-align:left}
+.rich-content th{background:rgba(255,255,255,.08);font-weight:600}
+.rich-content ul,.rich-content ol{padding-left:26px;margin:10px 0}
+.rich-content li{margin:4px 0}
+.rich-content h1,.rich-content h2,.rich-content h3{color:var(--accent);margin-top:18px;margin-bottom:10px}
+.rich-content hr{border:0;border-top:1px solid rgba(255,255,255,.14);margin:18px 0}
 
 </style>
 </head>
@@ -816,9 +879,9 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
     <div id="filesContent">
       <div class="files-toolbar">
         <div class="breadcrumb" id="filesBreadcrumb"></div>
-        <button class="btn-primary" onclick="showNewFolderDialog()">+ New Folder</button>
+        <button class="files-icon-btn" onclick="showNewFolderDialog()" title="New Folder" aria-label="New Folder"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg></button>
         <div class="files-upload-wrap" id="filesUploadWrap">
-          <button class="btn-ghost files-upload-trigger" onclick="toggleFilesUploadMenu(event)">Upload ▾</button>
+          <button class="files-icon-btn has-caret files-upload-trigger" onclick="toggleFilesUploadMenu(event)" title="Upload" aria-label="Upload"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg></button>
           <div class="files-upload-menu">
             <button onclick="closeFilesUploadMenu();document.getElementById('filesUploadInput').click()">Upload Files</button>
             <button onclick="closeFilesUploadMenu();showNewFileDialog()">New File</button>
@@ -830,17 +893,17 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
       <div class="search-bar-wrapper" id="filesSearchWrapper"><input type="text" id="filesSearchInput" placeholder="Search files..." oninput="searchFiles()"></div>
       <div class="files-actions">
         <div class="files-select-wrap" id="filesSelectWrap">
-          <button id="filesSelectBtn" onclick="toggleFilesSelectMenu(event)">Select ▾</button>
+          <button id="filesSelectBtn" class="files-icon-btn has-caret" onclick="toggleFilesSelectMenu(event)" title="Select" aria-label="Select"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .89-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></button>
           <div class="files-select-menu">
             <button onclick="startFilesSelectMode()">Select</button>
             <button onclick="filesSelectAll()">Select all</button>
           </div>
         </div>
-        <button id="filesMoveBtn" onclick="showFilesCopyDialog('move')" style="display:none">Move</button>
-        <button id="filesCopyBtn" onclick="showFilesCopyDialog('copy')" style="display:none">Copy</button>
-        <button id="filesDlBtn" onclick="downloadSelectedFiles()" style="display:none">Download</button>
-        <button id="filesDelBtn" class="btn-danger" onclick="deleteSelectedFiles()" style="display:none">Delete</button>
-        <button id="filesCancelBtn" onclick="cancelFilesSelectMode()" style="display:none">Cancel</button>
+        <button id="filesMoveBtn" class="files-icon-btn" onclick="showFilesCopyDialog('move')" title="Move" aria-label="Move" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg></button>
+        <button id="filesCopyBtn" class="files-icon-btn" onclick="showFilesCopyDialog('copy')" title="Copy" aria-label="Copy" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+        <button id="filesDlBtn" class="files-icon-btn" onclick="downloadSelectedFiles()" title="Download" aria-label="Download" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
+        <button id="filesDelBtn" class="files-icon-btn btn-danger" onclick="deleteSelectedFiles()" title="Delete" aria-label="Delete" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+        <button id="filesCancelBtn" class="files-icon-btn" onclick="cancelFilesSelectMode()" title="Cancel selection" aria-label="Cancel" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
       <div id="filesGrid"></div>
     </div>
@@ -966,6 +1029,31 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
           <button class="btn-ghost" onclick="clearMasterPassword()" id="clearPwBtn">Clear Password</button>
         </div>
         <div style="font-size:.78em;opacity:.65;margin-top:8px" id="masterPwStatus">No password set — locks are disabled.</div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+          <div class="setting-item"><label>Auto-lock after inactivity</label>
+            <select id="autoLockMinutes">
+              <option value="0">Off</option>
+              <option value="1">1 minute</option>
+              <option value="2.5" selected>2.5 minutes</option>
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="30">30 minutes</option>
+            </select>
+          </div>
+          <div class="inactivity-hint">When any locked section (Files, Media, Settings, etc.) is open and idle for this long, it will lock itself automatically.</div>
+        </div>
+      </div>
+      <!-- External Links -->
+      <div class="settings-section" data-keywords="external links viewer open new tab browser">
+        <h3>External Links</h3>
+        <div class="setting-item"><label>When opening a link</label>
+          <select id="externalLinkBehavior">
+            <option value="ask" selected>Ask each time</option>
+            <option value="viewer">Always open in Page Viewer</option>
+            <option value="external">Always open in new tab</option>
+          </select>
+        </div>
+        <div class="inactivity-hint">This applies to links from bookmarks, history, RSS articles, most-visited, and clickable link elements throughout the app.</div>
       </div>
       <!-- Notifications -->
       <div class="settings-section" data-keywords="notifications push alerts reminders">
@@ -1159,16 +1247,48 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
 <!-- ═══ VIEWER (Page Viewer + files/media) ═══ -->
 <div id="viewerModal" onclick="closeViewer()">
-  <!-- Top-left: grouped back + reload pill (reload shown only for web pages via JS) -->
+  <!-- Top-left: back + menu-dropdown pill (menu shown for all viewer surfaces) -->
   <div class="floating-back-group" id="viewerBackGroup" onclick="event.stopPropagation()">
-    <button onclick="closeViewer()" title="Back" aria-label="Back">
+    <button onclick="closeViewer()" title="Back (close viewer)" aria-label="Back">
       <!-- Material Design: arrow_back -->
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </button>
-    <button id="viewerReloadBtn" onclick="reloadCurrentViewer(this)" title="Reload" aria-label="Reload" style="display:none">
-      <!-- Material Design: refresh -->
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    <button id="viewerNavMenuBtn" onclick="event.stopPropagation();toggleViewerNavMenu()" title="Menu" aria-label="Menu">
+      <!-- Material Design: expand_more (dropdown chevron) -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
     </button>
+    <!-- Dropdown: back, forward, reload, save url, open original -->
+    <div class="viewer-nav-menu" id="viewerNavMenu" onclick="event.stopPropagation()">
+      <button id="vnmBack" onclick="viewerHistoryBack()" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        <span>Back</span>
+      </button>
+      <button id="vnmForward" onclick="viewerHistoryForward()" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11h12.17l-5.59-5.59L12 4l8 8-8 8-1.41-1.41L16.17 13H4v-2z"/></svg>
+        <span>Forward</span>
+      </button>
+      <button id="vnmReload" onclick="reloadCurrentViewer(this);closeViewerNavMenu()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        <span>Reload</span>
+      </button>
+      <div class="vnm-sep"></div>
+      <button id="vnmSaveUrl" onclick="viewerSaveCurrentUrl();closeViewerNavMenu()" style="display:none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        <span>Save URL</span>
+      </button>
+      <button id="vnmOpenOriginal" onclick="viewerOpenOriginal();closeViewerNavMenu()" style="display:none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+        <span>Open original</span>
+      </button>
+      <button id="vnmToggleView" onclick="vnmToggleViewMode();closeViewerNavMenu()" style="display:none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+        <span id="vnmToggleViewLabel">Toggle preview</span>
+      </button>
+      <button id="vnmSaveFile" onclick="saveViewerFile();closeViewerNavMenu()" style="display:none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+        <span id="vnmSaveFileLabel">Save file</span>
+      </button>
+    </div>
   </div>
   <!-- Top-right: fullscreen only -->
   <div class="viewer-toolbar">
@@ -1425,11 +1545,30 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 <!-- Context Menu -->
 <div class="ctx-menu" id="ctxMenu" style="display:none"></div>
 
+<!-- Confirm External Link popup -->
+<div class="popup-overlay" id="confirmExternalPopup">
+  <div class="popup-box" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closePopup('confirmExternalPopup')" style="position:absolute;top:14px;right:14px;left:auto">&times;</button>
+    <h3>Open this link</h3>
+    <div class="cx-url" id="cxUrl"></div>
+    <div class="cx-choice" style="font-size:.88em;opacity:.85;margin-bottom:4px">How would you like to open it?</div>
+    <label class="cx-remember"><input type="checkbox" id="cxRemember"> Remember my choice (change later in Settings)</label>
+    <div class="popup-btn-row" style="flex-direction:column;gap:8px">
+      <button class="btn-primary" onclick="confirmExternalOpen('viewer')" style="width:100%;text-align:left;padding:12px 16px">Open in Page Viewer</button>
+      <button class="btn-ghost" onclick="confirmExternalOpen('external')" style="width:100%;text-align:left;padding:12px 16px">Open in new tab (external)</button>
+      <button class="btn-ghost" onclick="closePopup('confirmExternalPopup')" style="width:100%;text-align:left;padding:12px 16px">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Floating search bar -->
 <div class="floating-search-bar" id="floatingSearchBar">
   <input type="text" id="floatingSearchInput" placeholder="Search...">
   <button class="fs-close" onclick="closeFloatingSearch()" title="Close">&times;</button>
 </div>
+
+<!-- ═══ Markdown parser (loaded async; graceful fallback if blocked) ═══ -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" onerror="console.warn('marked.js failed to load — using fallback parser');"></script>
 
 <!-- ═══ SCRIPT ═══ -->
 <script>
@@ -1708,7 +1847,11 @@ const DEFAULT_SETTINGS = {
   fontSizeChoice: '16px', animSpeed: 'normal',
   widgetLayout: null, // { clock:{w:1,order:0}, weather:{w:2,order:1} ... }
   widgetTintType: 'none', // 'none' | 'solid' | 'gradient'
-  widgetTintColor1: '#2e8b3d', widgetTintColor2: '#004675', widgetTintOpacity: 30
+  widgetTintColor1: '#2e8b3d', widgetTintColor2: '#004675', widgetTintOpacity: 30,
+  // External-link handling: 'ask' | 'viewer' | 'external'
+  externalLinkBehavior: 'ask',
+  // Auto-lock inactivity (minutes; 0 = disabled)
+  autoLockMinutes: 2.5
 };
 
 // ═══════════════════════════════════════════════════════
@@ -1770,6 +1913,21 @@ window.addEventListener('load', async () => {
 function bindTopNav() {
   const _bind = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
   _bind('homepageBtn', () => { closeAllModals(); openModal('menuModal'); });
+  // Intercept search form: save the search URL to history, honor external-link policy
+  const _searchForm = document.getElementById('searchForm');
+  if (_searchForm && !_searchForm._interceptAttached){
+    _searchForm._interceptAttached = true;
+    _searchForm.addEventListener('submit', (e)=>{
+      const q = (document.getElementById('depu')||{}).value?.trim();
+      if(!q) return; // let native handler no-op
+      e.preventDefault();
+      const engines = { google:'https://www.google.com/search?q=', bing:'https://www.bing.com/search?q=', duckduckgo:'https://duckduckgo.com/?q=' };
+      const base = engines[settings.searchEngine] || engines.google;
+      const url = base + encodeURIComponent(q);
+      saveHistory(url); updateMostVisited(url);
+      openExternalLink(url);
+    });
+  }
   _bind('photosBtn',   () => { closeAllModals(); openLockedModal('photoModal'); });
   _bind('webappsBtn',  () => { closeAllModals(); openLockedModal('webAppModal'); });
   _bind('filesBtn',    () => { closeAllModals(); openLockedModal('filesModal'); });
@@ -1779,7 +1937,7 @@ function bindTopNav() {
     const q = document.getElementById('depu').value;
     if (!q) return;
     const url = 'https://en.wikipedia.org/w/index.php?search=' + encodeURIComponent(q);
-    saveHistory(url); window.open(url, '_blank');
+    saveHistory(url); openExternalLink(url);
   });
   _bind('openSettings',      () => { closeModal('menuModal'); openLockedModal('settingsModal'); });
   _bind('openHistory',       () => { closeModal('menuModal'); openLockedModal('historyModal'); });
@@ -2155,6 +2313,7 @@ async function updateSettings() {
     if (!el) continue;
     if (el.type === 'checkbox') settings[k] = el.checked;
     else if (el.type === 'number' || el.type === 'range') settings[k] = Number(el.value);
+    else if (typeof DEFAULT_SETTINGS[k] === 'number' && el.tagName === 'SELECT') settings[k] = Number(el.value);
     else settings[k] = el.value;
   }
   settings.slideshowInterval = (settings.slideshowInt || 5) * 1000;
@@ -2269,6 +2428,9 @@ async function applySettings() {
 
   // Font size
   if(settings.fontSizeChoice) document.documentElement.style.fontSize = settings.fontSizeChoice;
+
+  // Re-arm the inactivity auto-lock (no-op if disabled)
+  if (typeof _setupInactivityAutoLock === 'function') _setupInactivityAutoLock();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2717,7 +2879,7 @@ function loadMostVisited() {
   sorted.forEach(site => {
     const el = document.createElement('div'); el.className='most-visited-item';
     try { el.textContent = new URL(site.url).hostname.replace('www.',''); } catch { el.textContent=site.url.substring(0,20); }
-    el.title = site.url; el.onclick=()=>window.open(site.url,'_blank');
+    el.title = site.url; el.onclick=()=>{ saveHistory(site.url); openExternalLink(site.url); };
     c.appendChild(el);
   });
 }
@@ -2730,7 +2892,7 @@ function GTY(e) {
   let url = document.getElementById('depu').value.trim();
   if (!url) return;
   if (!url.startsWith('http')) url = 'https://'+url;
-  saveHistory(url); updateMostVisited(url); window.open(url,'_blank');
+  saveHistory(url); updateMostVisited(url); openExternalLink(url);
 }
 function suggestHistory(e) {
   const val = e.target.value.toLowerCase();
@@ -2771,7 +2933,7 @@ function loadHistory() {
     div.onclick = (e) => {
       if(e.target === cb || e.target.closest('.hb-delete-btn')) return;
       if(inSelect){ cb.checked = !cb.checked; toggleItemSelect('history', origIdx, cb.checked); div.classList.toggle('selected', cb.checked); }
-      else { window.open(item.url,'_blank'); updateMostVisited(item.url); }
+      else { openExternalLink(item.url); updateMostVisited(item.url); }
     };
     c.appendChild(div);
   });
@@ -2823,7 +2985,7 @@ function loadBookmarks() {
     div.onclick = (e) => {
       if(e.target === cb || e.target.closest('.hb-delete-btn')) return;
       if(inSelect){ cb.checked = !cb.checked; toggleItemSelect('bookmarks', idx, cb.checked); div.classList.toggle('selected', cb.checked); }
-      else window.open(bk.url,'_blank');
+      else { saveHistory(bk.url); openExternalLink(bk.url); }
     };
     c.appendChild(div);
   });
@@ -3461,7 +3623,7 @@ function openRSSArticle(article) {
     `<div class="article-body rich-content">${cleanBody}</div>`+
     `<div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">`+
       `<button class="btn-primary" onclick="openUrlInViewer('${_escapeAttr(article.link||article.source||'')}')">Open in Viewer</button>`+
-      `<a href="${_escapeAttr(article.link||article.source||'')}" target="_blank" rel="noopener" style="color:var(--accent);align-self:center;font-size:.9em">Open original ↗</a>`+
+      `<button class="btn-ghost" onclick="openExternalLink('${_escapeAttr(article.link||article.source||'')}')" style="color:var(--accent);align-self:center;font-size:.9em">Open original ↗</button>`+
     `</div>`;
   // Scroll to top when opening
   const rc = document.getElementById('rssReaderContent'); if (rc) rc.scrollTop = 0;
@@ -4118,7 +4280,7 @@ function renderFilesGrid(){
     div.onclick=(e)=>{
       if(filesSelectMode){ toggleFileSelect(node.id); return; }
       // Ctrl/Cmd-click: enter select mode automatically so the "Select" dropdown
-      // reflects the active selection ("Selected: N ▾") and action buttons appear.
+      // reflects the active selection and action buttons appear.
       if(e.ctrlKey||e.metaKey){
         filesSelectMode = true;
         toggleFileSelect(node.id);
@@ -4130,22 +4292,22 @@ function renderFilesGrid(){
         _filesRangeSelectTo(node.id);
         return;
       }
-      // Detect double-click manually so the single-click re-render (which
-      // destroys this DOM element) doesn't swallow the browser's dblclick.
+      // Detect double-click manually. Because a single click just toggles the
+      // .selected class on this node (no full re-render of the whole grid),
+      // the second click still lands on the same DOM element and this branch
+      // fires reliably.
       const now = Date.now();
       if(div._lastClickTime && (now - div._lastClickTime) < 400){
         div._lastClickTime = 0;
-        if(div._pendingClickTimer){ clearTimeout(div._pendingClickTimer); div._pendingClickTimer = null; }
         if(node.type==='folder') openFolder(node.id);
         else openFileViewer(node);
         return;
       }
       div._lastClickTime = now;
-      // Defer the select-and-rerender so a follow-up click within 400ms can cancel it.
-      div._pendingClickTimer = setTimeout(()=>{
-        div._pendingClickTimer = null;
-        selectFile(node.id);
-      }, 400);
+      // Single click = select immediately (no deferred timer). The double-click
+      // opens the item; the second click reads _lastClickTime and takes the
+      // branch above.
+      _selectFileInPlace(node.id, div);
     };
     div.ondblclick=(e)=>{
       // Fallback in the rare case the browser's native dblclick still fires
@@ -4266,6 +4428,19 @@ function goForwardFolder(){
 }
 function selectFile(id){ selectedFileIds.clear(); selectedFileIds.add(id); renderFilesGrid(); }
 function toggleFileSelect(id){ if(selectedFileIds.has(id)) selectedFileIds.delete(id); else selectedFileIds.add(id); renderFilesGrid(); }
+// In-place single selection — updates just the .selected class on visible file
+// nodes without re-rendering the whole grid. Keeps the clicked DOM element
+// alive so a follow-up click within 400ms is detected as a dblclick.
+function _selectFileInPlace(id, clickedEl){
+  selectedFileIds.clear();
+  selectedFileIds.add(id);
+  const grid = document.getElementById('filesGrid');
+  if(grid){
+    grid.querySelectorAll('.file-node.selected').forEach(n=>{ if(n!==clickedEl) n.classList.remove('selected'); });
+    if(clickedEl) clickedEl.classList.add('selected');
+  }
+  updateFilesActionButtons();
+}
 function _filesRangeSelectTo(id){
   const folder = filesTree[currentFolderId]; if(!folder) return;
   const kids = (folder.children||[]).filter(x=>filesTree[x]);
@@ -4412,14 +4587,23 @@ function filesSelectAll(){
 function updateFilesActionButtons(){
   const anySel = selectedFileIds.size>0;
   const inSelect = filesSelectMode;
-  const show = (id, cond)=>{ const b=document.getElementById(id); if(b) b.style.display = cond ? 'inline-block' : 'none'; };
+  const show = (id, cond)=>{ const b=document.getElementById(id); if(b) b.style.display = cond ? 'inline-flex' : 'none'; };
   show('filesMoveBtn', anySel);
   show('filesCopyBtn', anySel);
   show('filesDlBtn', anySel);
   show('filesDelBtn', anySel);
   show('filesCancelBtn', inSelect);
+  // Icon-only Select button: show count as a badge instead of changing text
   const sb = document.getElementById('filesSelectBtn');
-  if(sb) sb.textContent = inSelect ? `Selected: ${selectedFileIds.size} ▾` : 'Select ▾';
+  if(sb){
+    let badge = sb.querySelector('.sel-badge');
+    if(inSelect && selectedFileIds.size>0){
+      if(!badge){ badge=document.createElement('span'); badge.className='sel-badge'; sb.appendChild(badge); }
+      badge.textContent = selectedFileIds.size;
+    } else if(badge){ badge.remove(); }
+    sb.title = inSelect ? `Selected: ${selectedFileIds.size}` : 'Select';
+    sb.setAttribute('aria-label', sb.title);
+  }
 }
 
 function deleteSelectedFiles(){
@@ -5453,7 +5637,501 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 })();
 
+// ═══════════════════════════════════════════════════════
+//  ENHANCED EDITION — new features (2026)
+// ═══════════════════════════════════════════════════════
+
+// ─── External-link routing ────────────────────────────
+// Every "open a URL" callsite goes through openExternalLink(url).
+// Behavior is settings.externalLinkBehavior: 'ask' | 'viewer' | 'external'.
+// When 'ask', a confirm popup pops with a "Remember my choice" checkbox.
+let _pendingExternalUrl = null;
+function openExternalLink(url){
+  if(!url) return;
+  if(!/^https?:\/\//i.test(url) && !/^mailto:|^tel:/i.test(url)) url = 'https://' + url;
+  const behavior = (settings && settings.externalLinkBehavior) || 'ask';
+  if (behavior === 'viewer') { _doOpenExternal(url, 'viewer'); return; }
+  if (behavior === 'external') { _doOpenExternal(url, 'external'); return; }
+  // 'ask' — show popup
+  _pendingExternalUrl = url;
+  const urlBox = document.getElementById('cxUrl'); if(urlBox) urlBox.textContent = url;
+  const rem = document.getElementById('cxRemember'); if(rem) rem.checked = false;
+  openPopup('confirmExternalPopup');
+}
+function confirmExternalOpen(choice){
+  const url = _pendingExternalUrl;
+  const remember = document.getElementById('cxRemember')?.checked;
+  closePopup('confirmExternalPopup');
+  if(!url) return;
+  if(remember){
+    settings.externalLinkBehavior = choice;
+    saveSettings();
+    // Reflect in the settings form if it's live
+    const el = document.getElementById('externalLinkBehavior');
+    if(el) el.value = choice;
+    showToast('Choice remembered — change it in Settings > External Links');
+  }
+  _doOpenExternal(url, choice);
+  _pendingExternalUrl = null;
+}
+function _doOpenExternal(url, kind){
+  if (kind === 'viewer') {
+    // The Page Viewer only supports http(s); fall back to external for mailto/tel
+    if (/^https?:\/\//i.test(url)) { openUrlInViewer(url); return; }
+  }
+  try { window.open(url, '_blank', 'noopener,noreferrer'); }
+  catch { location.href = url; }
+}
+
+// Intercept clicks on <a target="_blank"> inside RSS reader / viewer content so
+// they route through openExternalLink instead of doing a raw new-tab open.
+document.addEventListener('click', function(e){
+  const a = e.target.closest && e.target.closest('a[href]');
+  if(!a) return;
+  const href = a.getAttribute('href');
+  if(!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+  // Skip our internal UI buttons (they use <button>, not <a>) — only real anchors reach here.
+  // Only route http(s) links; leave data:/blob: alone.
+  if(!/^https?:\/\//i.test(href)) return;
+  // Don't hijack anchors inside sandboxed iframes (they run in their own context).
+  if (a.ownerDocument !== document) return;
+  e.preventDefault();
+  openExternalLink(href);
+}, true);
+
+// ─── Auto-lock on inactivity ──────────────────────────
+// Applies only to modals that CAN be locked and are currently unlocked. Idle
+// timer restarts on any user input inside the app. Configured minutes = 0
+// disables the feature entirely.
+let _inactivityTimer = null;
+function _setupInactivityAutoLock(){
+  if (_inactivityTimer) { clearTimeout(_inactivityTimer); _inactivityTimer = null; }
+  const mins = Number(settings.autoLockMinutes);
+  if (!mins || mins <= 0) return; // Off
+  const ms = mins * 60 * 1000;
+  const bump = () => {
+    if (_inactivityTimer) clearTimeout(_inactivityTimer);
+    _inactivityTimer = setTimeout(_lockAllUnlockedModals, ms);
+  };
+  // Attach once
+  if (!window._inactivityBound){
+    window._inactivityBound = true;
+    ['mousemove','mousedown','keydown','touchstart','scroll','wheel'].forEach(evt=>{
+      window.addEventListener(evt, bump, { passive:true });
+    });
+  }
+  bump();
+}
+function _lockAllUnlockedModals(){
+  if (!settings.menuPassword) return; // no password → nothing to lock
+  const anyLockedOpen = [...unlockedModals].some(id => {
+    const el = document.getElementById(id);
+    return el && el.classList.contains('active');
+  });
+  if (!anyLockedOpen) { _setupInactivityAutoLock(); return; }
+  // Lock everything
+  [...unlockedModals].forEach(id => {
+    // Only lock modals that actually have a lock config
+    const lockKey = MODAL_LOCKS[id];
+    if (!lockKey || !settings[lockKey]) return;
+    unlockedModals.delete(id);
+    // Show the password screen again
+    const pwScreen = document.getElementById(MODAL_SCREENS[id]);
+    const contentEl = document.getElementById(MODAL_CONTENTS[id]);
+    if (pwScreen) pwScreen.style.display = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    const searchIcon = document.querySelector('#'+id+' .modal-search-toggle');
+    if (searchIcon) searchIcon.classList.remove('visible');
+    const inp = pwScreen ? pwScreen.querySelector('.password-input') : null;
+    if (inp) inp.value = '';
+  });
+  showToast('Locked due to inactivity','warn');
+  _setupInactivityAutoLock();
+}
+
+// ─── Viewer nav dropdown ──────────────────────────────
+function toggleViewerNavMenu(){
+  const m = document.getElementById('viewerNavMenu');
+  if(!m) return;
+  const isOpen = m.classList.contains('open');
+  if (isOpen) { closeViewerNavMenu(); return; }
+  refreshViewerNavMenu();
+  m.classList.add('open');
+  // Listen on the capture phase so ancestor stopPropagation() (e.g. on
+  // #viewerBackGroup or #viewerNavMenu itself) cannot swallow the outside
+  // click. Only remove-and-close when the click truly lands outside.
+  setTimeout(()=>document.addEventListener('mousedown', _closeVnmOnOutside, true), 0);
+}
+function _closeVnmOnOutside(e){
+  const m = document.getElementById('viewerNavMenu');
+  if(!m) return;
+  // Click inside the menu itself, or on the trigger button — leave open.
+  if(m.contains(e.target)) return;
+  if(e.target.id === 'viewerNavMenuBtn' || (e.target.closest && e.target.closest('#viewerNavMenuBtn'))) return;
+  closeViewerNavMenu();
+}
+function closeViewerNavMenu(){
+  const m = document.getElementById('viewerNavMenu');
+  if(m) m.classList.remove('open');
+  document.removeEventListener('mousedown', _closeVnmOnOutside, true);
+}
+// Viewer's own back/forward history (for URL-viewer navigation)
+let _viewerUrlHistory = [];
+let _viewerUrlFuture = [];
+function refreshViewerNavMenu(){
+  const isWeb = _viewerCurrentMode === 'web';
+  const isFile = !!_viewerCurrentNode;
+  const back = document.getElementById('vnmBack');
+  const fwd = document.getElementById('vnmForward');
+  const rel = document.getElementById('vnmReload');
+  const sav = document.getElementById('vnmSaveUrl');
+  const orig = document.getElementById('vnmOpenOriginal');
+  const tog = document.getElementById('vnmToggleView');
+  const togLbl = document.getElementById('vnmToggleViewLabel');
+  const savFile = document.getElementById('vnmSaveFile');
+  const savFileLbl = document.getElementById('vnmSaveFileLabel');
+  if(back) back.disabled = _viewerUrlHistory.length === 0;
+  if(fwd) fwd.disabled = _viewerUrlFuture.length === 0;
+  if(rel) rel.disabled = !(isWeb || isFile);
+  // Save URL / Open original — only for web
+  if(sav){
+    if (isWeb && _viewerCurrentUrl){
+      const already = (_getSavedUrls()||[]).some(s => s.url === _viewerCurrentUrl);
+      sav.style.display = already ? 'none' : 'flex';
+    } else sav.style.display = 'none';
+  }
+  if(orig) orig.style.display = (isWeb && _viewerCurrentUrl) ? 'flex' : 'none';
+  // Toggle view — html source ↔ app, md source ↔ preview
+  if(tog){
+    if (_viewerCurrentMode === 'html-source' || _viewerCurrentMode === 'html-app'){
+      tog.style.display = 'flex';
+      if(togLbl) togLbl.textContent = _viewerCurrentMode === 'html-source' ? 'View HTML app' : 'Edit HTML source';
+    } else if (_viewerCurrentMode === 'md-preview' || _viewerCurrentMode === 'md-source'){
+      tog.style.display = 'flex';
+      if(togLbl) togLbl.textContent = _viewerCurrentMode === 'md-source' ? 'Preview markdown' : 'Edit markdown source';
+    } else {
+      tog.style.display = 'none';
+    }
+  }
+  if(savFile){
+    const hasText = _viewerTextArea != null;
+    savFile.style.display = hasText ? 'flex' : 'none';
+    if(savFileLbl) savFileLbl.textContent = _viewerDirty ? '● Save file*' : 'Save file';
+  }
+}
+function vnmToggleViewMode(){
+  if (_viewerCurrentMode === 'html-source' || _viewerCurrentMode === 'html-app') {
+    toggleHtmlViewerMode();
+  } else if (_viewerCurrentMode === 'md-preview' || _viewerCurrentMode === 'md-source') {
+    toggleMarkdownViewerMode();
+  }
+}
+function viewerSaveCurrentUrl(){
+  if (_viewerCurrentUrl) saveRecentUrl(_viewerCurrentUrl);
+}
+function viewerOpenOriginal(){
+  if (_viewerCurrentUrl){
+    // Force new-tab open (user explicitly asked for original)
+    try { window.open(_viewerCurrentUrl, '_blank', 'noopener,noreferrer'); }
+    catch { location.href = _viewerCurrentUrl; }
+  }
+}
+function viewerHistoryBack(){
+  if(!_viewerUrlHistory.length) return;
+  const target = _viewerUrlHistory.pop();
+  if (_viewerCurrentUrl) _viewerUrlFuture.push(_viewerCurrentUrl);
+  _openUrlInViewerNoHistory(target);
+  setTimeout(refreshViewerNavMenu, 100);
+}
+function viewerHistoryForward(){
+  if(!_viewerUrlFuture.length) return;
+  const target = _viewerUrlFuture.pop();
+  if (_viewerCurrentUrl) _viewerUrlHistory.push(_viewerCurrentUrl);
+  _openUrlInViewerNoHistory(target);
+  setTimeout(refreshViewerNavMenu, 100);
+}
+// Wrap openUrlInViewer so entering a new URL pushes to _viewerUrlHistory
+(function(){
+  const _origOpenUrl = window.openUrlInViewer;
+  if (typeof _origOpenUrl !== 'function') return;
+  window.openUrlInViewer = function(url){
+    if (_viewerCurrentUrl && _viewerCurrentUrl !== url) {
+      _viewerUrlHistory.push(_viewerCurrentUrl);
+      _viewerUrlFuture = []; // new nav clears forward
+    }
+    return _origOpenUrl.call(this, url);
+  };
+  window._openUrlInViewerNoHistory = _origOpenUrl;
+})();
+// Reset viewer history when viewer closes
+(function(){
+  const _origClose = window.closeViewer;
+  if (typeof _origClose !== 'function') return;
+  window.closeViewer = function(){
+    _viewerUrlHistory = [];
+    _viewerUrlFuture = [];
+    closeViewerNavMenu();
+    return _origClose.apply(this, arguments);
+  };
+})();
+
+// ─── Hide the bottom viewer-extra-bar (everything moved to top-left menu) ───
+(function(){
+  const _origSet = window.setViewerExtraToolbar;
+  if (typeof _origSet !== 'function') return;
+  window.setViewerExtraToolbar = function(html){
+    // Always empty — the top-left nav dropdown owns these actions now
+    return _origSet.call(this, '');
+  };
+})();
+
+// ─── Fix the HTML preview / Save toggle: the buttons moved to the top-left menu.
+//     The old ones inside a bottom bar are gone, but the underlying toggle
+//     functions still work.
+//
+//     One click-swallowing bug: clicking inside code-viewer-wrap / html-app-iframe
+//     currently propagates to viewerModal's onclick=closeViewer(). We need to
+//     stop propagation for those containers so the toggle button click, which
+//     lives in the nav menu (outside the content), stays closable but interior
+//     clicks don't close the viewer.
+// The viewerModal already has onclick=closeViewer and viewerContent has
+// onclick=event.stopPropagation. The nav menu buttons live INSIDE
+// viewerBackGroup which already stopsPropagation. Fine.
+// So the "toggle just closes" bug the user reported is actually because the
+// old floating bar-btn was outside viewerContent AND outside viewerBackGroup,
+// so a click on it walked up to viewerModal and closed everything.
+// The fix: the toolbar is now empty (see above), and toggles live in the
+// dropdown menu (which stops propagation), so the bug is gone by construction.
+
+// ─── Long-press → context menu, and long-press cancels drag ───
+// For touch devices: press-and-hold on any file-management surface opens the
+// right-click menu instead of starting a drag. Applies to Files, Media, Web Apps.
+(function(){
+  const LONG_PRESS_MS = 500;
+  let lpTimer = null, lpTarget = null, lpFired = false, lpStartXY = null;
+  const LP_MOVE_TOLERANCE = 8; // px
+
+  function _cancelLp(){
+    if(lpTimer){ clearTimeout(lpTimer); lpTimer = null; }
+    if(lpTarget) lpTarget.classList.remove('long-press-active');
+    lpTarget = null; lpFired = false; lpStartXY = null;
+  }
+
+  function _findLpTarget(el){
+    if(!el || !el.closest) return null;
+    return el.closest('.file-node, .mediaItem, .appItem');
+  }
+
+  document.addEventListener('touchstart', (e)=>{
+    const t = _findLpTarget(e.target);
+    if(!t) return;
+    lpTarget = t;
+    lpFired = false;
+    const touch = e.touches[0];
+    lpStartXY = { x: touch.clientX, y: touch.clientY };
+    // While the long-press timer is pending, block drag from starting: set draggable=false transiently.
+    t.dataset._prevDraggable = t.getAttribute('draggable') || '';
+    t.setAttribute('draggable','false');
+    t.classList.add('long-press-active');
+    lpTimer = setTimeout(()=>{
+      if(!lpTarget) return;
+      lpFired = true;
+      lpTarget.classList.remove('long-press-active');
+      _fireCtxForTarget(lpTarget, touch.clientX, touch.clientY);
+    }, LONG_PRESS_MS);
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e)=>{
+    if(!lpTarget || !lpStartXY) return;
+    const t = e.touches[0];
+    const dx = t.clientX - lpStartXY.x, dy = t.clientY - lpStartXY.y;
+    if (Math.hypot(dx, dy) > LP_MOVE_TOLERANCE) {
+      // User is scrolling / swiping — cancel the long-press. Restore draggable.
+      if(lpTarget.dataset._prevDraggable !== undefined){
+        if(lpTarget.dataset._prevDraggable) lpTarget.setAttribute('draggable', lpTarget.dataset._prevDraggable);
+        else lpTarget.removeAttribute('draggable');
+        // Re-set draggable=true for file-node afterward (which is the default)
+        if(lpTarget.classList.contains('file-node')) lpTarget.setAttribute('draggable','true');
+        delete lpTarget.dataset._prevDraggable;
+      }
+      _cancelLp();
+    }
+  }, { passive: true });
+
+  const endHandler = (e)=>{
+    if(!lpTarget) return;
+    // Restore draggable
+    if(lpTarget.dataset._prevDraggable !== undefined){
+      if(lpTarget.dataset._prevDraggable) lpTarget.setAttribute('draggable', lpTarget.dataset._prevDraggable);
+      else lpTarget.removeAttribute('draggable');
+      if(lpTarget.classList.contains('file-node')) lpTarget.setAttribute('draggable','true');
+      delete lpTarget.dataset._prevDraggable;
+    }
+    // If long-press fired, prevent the trailing tap from selecting the item.
+    if (lpFired && e && e.cancelable) { try { e.preventDefault(); } catch{} }
+    _cancelLp();
+  };
+  document.addEventListener('touchend', endHandler, { passive: false });
+  document.addEventListener('touchcancel', endHandler, { passive: false });
+
+  // Mouse long-press — hold left mouse button on a file/media/webapp for 500ms
+  // to open its context menu and suppress drag-and-drop for that press.
+  let mlpTimer = null, mlpTarget = null, mlpFired = false, mlpStart = null;
+  document.addEventListener('mousedown', (e)=>{
+    if (e.button !== 0) return;
+    const t = _findLpTarget(e.target);
+    if(!t) return;
+    mlpTarget = t; mlpFired = false; mlpStart = { x:e.clientX, y:e.clientY };
+    t.dataset._prevDraggableM = t.getAttribute('draggable') || '';
+    t.setAttribute('draggable','false');
+    t.classList.add('long-press-active');
+    mlpTimer = setTimeout(()=>{
+      if(!mlpTarget) return;
+      mlpFired = true;
+      mlpTarget.classList.remove('long-press-active');
+      _fireCtxForTarget(mlpTarget, e.clientX, e.clientY);
+    }, LONG_PRESS_MS);
+  });
+  document.addEventListener('mousemove', (e)=>{
+    if(!mlpTarget || !mlpStart) return;
+    if (Math.hypot(e.clientX - mlpStart.x, e.clientY - mlpStart.y) > LP_MOVE_TOLERANCE) {
+      _restoreMlp();
+    }
+  });
+  const mUp = (e)=>{
+    if(!mlpTarget) return;
+    _restoreMlp();
+    if (mlpFired) { try { e.preventDefault(); e.stopPropagation(); } catch{} }
+    mlpFired = false;
+  };
+  document.addEventListener('mouseup', mUp);
+  document.addEventListener('mouseleave', mUp);
+  function _restoreMlp(){
+    if(mlpTimer){ clearTimeout(mlpTimer); mlpTimer = null; }
+    if(mlpTarget){
+      mlpTarget.classList.remove('long-press-active');
+      if(mlpTarget.dataset._prevDraggableM !== undefined){
+        if(mlpTarget.dataset._prevDraggableM) mlpTarget.setAttribute('draggable', mlpTarget.dataset._prevDraggableM);
+        else mlpTarget.removeAttribute('draggable');
+        if(mlpTarget.classList.contains('file-node')) mlpTarget.setAttribute('draggable','true');
+        delete mlpTarget.dataset._prevDraggableM;
+      }
+    }
+    mlpTarget = null; mlpStart = null;
+  }
+
+  function _fireCtxForTarget(t, x, y){
+    const evt = { preventDefault(){}, clientX: x, clientY: y };
+    if (t.classList.contains('file-node')){
+      const nodeId = t.dataset.nodeId;
+      const node = nodeId ? filesTree[nodeId] : null;
+      if(node) showFileCtxMenu(evt, node);
+      return;
+    }
+    if (t.classList.contains('mediaItem')){
+      // Media list is keyed by index. Find the item's index within the current DOM order.
+      const list = [...document.querySelectorAll('#mediaContainer .mediaItem')];
+      const idx = list.indexOf(t);
+      if (idx >= 0 && mediaMetadata[idx]) { selectedIndex = idx; loadMedia(); showMediaCtxMenu(evt, mediaMetadata[idx], idx); }
+      return;
+    }
+    if (t.classList.contains('appItem')){
+      const list = [...document.querySelectorAll('#appContainer .appItem')];
+      const idx = list.indexOf(t);
+      if (idx >= 0 && webappsMetadata[idx]) { selectedAppIndex = idx; loadWebApps(); showAppCtxMenu(evt, webappsMetadata[idx], idx); }
+      return;
+    }
+  }
+})();
+
+// ─── RSS: incremental feed load (no full reload when adding a feed) ───
+// Store per-feed results so adding one feed doesn't refetch the others.
+const _rssPerFeedCache = {}; // url -> [articles]
+async function _fetchOneFeedAndMerge(url){
+  try {
+    const items = await fetchRSSFeed(url);
+    _rssPerFeedCache[url] = items || [];
+    // Update the master list: drop any old entries from this feed, then append new ones
+    allRSSArticles = allRSSArticles.filter(a => (a.source||'') !== url);
+    allRSSArticles.push(...(items||[]));
+    allRSSArticles.sort((a,b)=>{ try{ return new Date(b.date)-new Date(a.date); }catch{return 0;} });
+    renderRSSArticles();
+    // Widget too
+    if (typeof loadRSSForWidget === 'function') { _rssWidgetCache = allRSSArticles.slice(); _renderRssWidgetItems(document.getElementById('rssWidgetContent'), _rssWidgetCache); }
+  } catch(e){
+    console.warn('RSS single-feed fetch failed:', url, e && e.message);
+  }
+}
+// Override addRSSFeed so it fetches ONLY the new feed and merges into place —
+// no full "reload every feed" cycle.
+(function(){
+  const _origAdd = window.addRSSFeed;
+  window.addRSSFeed = function(){
+    const input = document.getElementById('rssAddInput');
+    if(!input) return;
+    let url = input.value.trim();
+    if (!url) { showToast('Enter a URL','error'); return; }
+    if (!url.startsWith('http')) url = 'https://'+url;
+    if (rssFeeds.includes(url)) { showToast('Feed already added','warn'); return; }
+    rssFeeds.push(url);
+    settings.rssUrls = rssFeeds.join('\n');
+    saveSettings(); localStorage.setItem('googokeRSSFeeds', JSON.stringify(rssFeeds));
+    input.value = '';
+    closePopup('addRSSPopup');
+    loadRSSFeedTags(); // refresh tag chips only
+    showToast('Feed added — fetching…');
+    _fetchOneFeedAndMerge(url);
+  };
+})();
+// Override removeRSSFeed so it drops that feed's articles without refetching everyone else.
+(function(){
+  const _origRemove = window.removeRSSFeed;
+  window.removeRSSFeed = function(url){
+    rssFeeds = rssFeeds.filter(f => f !== url);
+    settings.rssUrls = rssFeeds.join('\n');
+    saveSettings(); localStorage.setItem('googokeRSSFeeds', JSON.stringify(rssFeeds));
+    delete _rssPerFeedCache[url];
+    allRSSArticles = allRSSArticles.filter(a => (a.source||'') !== url);
+    renderRSSArticles();
+    loadRSSFeedTags();
+    if (typeof loadRSSForWidget === 'function') { _rssWidgetCache = allRSSArticles.slice(); _renderRssWidgetItems(document.getElementById('rssWidgetContent'), _rssWidgetCache); }
+  };
+})();
+// When the RSS widget renders new items and a feed was newly added, refresh the
+// widget too — no user reload needed. (Widget already reads from allRSSArticles
+// via the modified add/remove above, so this is automatic.)
+
+// ─── Markdown parser upgrade: use marked.js when available ────
+(function(){
+  const _origMdToHtml = window.markdownToRichHtml;
+  window.markdownToRichHtml = function(md){
+    if (!md) return '';
+    // Prefer marked.js if it loaded
+    if (typeof window.marked !== 'undefined' && typeof window.marked.parse === 'function'){
+      try {
+        // GFM + breaks; sanitizeRichHtml will scrub any hostile output when injected
+        const html = window.marked.parse(String(md), { gfm:true, breaks:true });
+        // Route through sanitizer for safety
+        return typeof sanitizeRichHtml === 'function' ? sanitizeRichHtml(html) : html;
+      } catch(e){
+        console.warn('[marked] parse failed, using fallback', e);
+      }
+    }
+    // Fallback: use the built-in mini parser
+    return _origMdToHtml ? _origMdToHtml.call(this, md) : String(md);
+  };
+})();
+
+// ─── "New File" popup: make .md a first-class quick pick ──────
+// (The existing New File popup already accepts any name; nothing to do here —
+// this comment is intentional documentation for the next maintainer.)
+
+// ─── Auto-lock kickoff on first idle after load ───────────────
+setTimeout(()=>{ try { _setupInactivityAutoLock(); } catch{} }, 500);
+
 </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
