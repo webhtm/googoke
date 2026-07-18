@@ -345,6 +345,8 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .files-icon-btn svg{width:20px;height:20px;fill:currentColor;pointer-events:none}
 .files-icon-btn.btn-danger{background:var(--danger)!important}
 .files-icon-btn.btn-danger:hover{background:#d32f2f!important}
+.files-icon-btn.active{background:var(--accent);color:#fff}
+.files-icon-btn.active:hover{background:var(--accent-hover)}
 .files-icon-btn.has-caret::after{content:'';position:absolute;right:3px;bottom:3px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;opacity:.75}
 .files-icon-btn .sel-badge{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:10px;line-height:1;padding:3px 5px;border-radius:10px;font-weight:600;min-width:16px;text-align:center}
 .breadcrumb{display:flex;align-items:center;gap:6px;flex:1;min-width:180px;flex-wrap:wrap;font-size:.95em;opacity:.95}
@@ -728,6 +730,225 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .rich-content h1,.rich-content h2,.rich-content h3{color:var(--accent);margin-top:18px;margin-bottom:10px}
 .rich-content hr{border:0;border-top:1px solid rgba(255,255,255,.14);margin:18px 0}
 
+/* ═══════════════════════════════════════════════
+   NOTES APP
+   ═══════════════════════════════════════════════ */
+#notesModal .modal-content-area{max-width:1200px;width:100%}
+@media(max-width:900px){ #notesModal .modal-content-area{max-width:100%;padding:0 16px} }
+.notes-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--bg-card);border-radius:12px}
+.notes-toolbar .notes-search{flex:1;min-width:180px;background:rgba(255,255,255,.1);border:none;border-radius:8px;padding:10px 14px;font-size:.9em;color:#fff;font-family:var(--font)}
+.notes-toolbar .notes-search:focus{outline:none;background:rgba(255,255,255,.16)}
+.notes-icon-btn{width:40px;height:40px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);color:#fff;border-radius:8px;cursor:pointer;transition:.2s;border:none;flex-shrink:0}
+.notes-icon-btn:hover{background:rgba(255,255,255,.22)}
+.notes-icon-btn svg{width:20px;height:20px;fill:currentColor;pointer-events:none}
+.notes-icon-btn.btn-danger{background:var(--danger)!important}
+.notes-icon-btn.btn-danger:hover{background:#d32f2f!important}
+.notes-icon-btn.active{background:var(--accent);color:#fff}
+
+/* Notes list — GRID view */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:6px}
+.notes-grid .note-card{background:var(--bg-card);border-radius:12px;padding:16px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;min-height:150px;display:flex;flex-direction:column;border:1px solid transparent}
+.notes-grid .note-card:hover{background:var(--bg-card-hover);transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.25);border-color:rgba(255,255,255,.14)}
+.notes-grid .note-card .note-lock{position:absolute;top:10px;right:10px;opacity:.6}
+.notes-grid .note-card .note-lock svg{width:14px;height:14px;fill:currentColor}
+.notes-grid .note-card .note-title{font-size:1em;font-weight:600;margin-bottom:8px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:#fff;word-break:break-word}
+.notes-grid .note-card .note-preview{font-size:.82em;opacity:.75;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;flex:1;color:#fff;word-break:break-word}
+.notes-grid .note-card .note-preview *{color:inherit!important;background:transparent!important;font-size:1em!important;font-weight:inherit!important;margin:0!important;padding:0!important;text-decoration:inherit!important}
+.notes-grid .note-card .note-meta{font-size:.72em;opacity:.5;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}
+
+/* Notes list — LIST view (with rich preview) */
+.notes-list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.notes-list .note-card{background:var(--bg-card);border-radius:12px;padding:14px 18px;cursor:pointer;transition:.2s;position:relative;display:flex;gap:16px;align-items:flex-start;border:1px solid transparent}
+.notes-list .note-card:hover{background:var(--bg-card-hover);border-color:rgba(255,255,255,.14)}
+.notes-list .note-card .note-lock{opacity:.6;flex-shrink:0;margin-top:4px}
+.notes-list .note-card .note-lock svg{width:16px;height:16px;fill:currentColor}
+.notes-list .note-card .note-body-wrap{flex:1;min-width:0}
+.notes-list .note-card .note-title{font-size:1.05em;font-weight:600;margin-bottom:4px;color:#fff;word-break:break-word}
+.notes-list .note-card .note-preview{font-size:.85em;opacity:.75;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;color:#fff;word-break:break-word}
+.notes-list .note-card .note-preview *{font-size:1em!important;color:inherit!important;background:transparent!important;font-weight:inherit!important;margin:0!important;padding:0!important;text-decoration:inherit!important}
+.notes-list .note-card .note-meta{font-size:.75em;opacity:.5;margin-top:8px}
+.notes-list .note-card .note-swatch{width:8px;align-self:stretch;border-radius:4px;background:var(--note-color,transparent);flex-shrink:0}
+
+.notes-empty{padding:60px 20px;text-align:center;opacity:.55;font-size:.9em}
+.notes-empty svg{width:56px;height:56px;opacity:.5;margin-bottom:12px;display:inline-block}
+.notes-empty-title{font-size:1.05em;font-weight:600;margin-bottom:4px}
+.notes-empty-hint{font-size:.8em;opacity:.75}
+
+/* ═══ NOTE EDITOR ═══ */
+.note-editor{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--modal-bg);z-index:9998;display:none;flex-direction:column;overflow:hidden}
+.note-editor.open{display:flex}
+.note-editor .ne-topbar{position:sticky;top:0;left:0;right:0;z-index:100;background:linear-gradient(180deg,rgba(17,24,39,.98),rgba(17,24,39,.95));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.10);padding:10px 14px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.note-editor .ne-topbar .ne-btn{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:.18s;flex-shrink:0;position:relative}
+.note-editor .ne-topbar .ne-btn:hover{background:rgba(255,255,255,.20)}
+.note-editor .ne-topbar .ne-btn:disabled{opacity:.35;cursor:not-allowed}
+.note-editor .ne-topbar .ne-btn.active{background:var(--accent);color:#fff}
+.note-editor .ne-topbar .ne-btn svg{width:18px;height:18px;fill:currentColor;pointer-events:none}
+.note-editor .ne-topbar .ne-btn.btn-danger{background:var(--danger)!important}
+.note-editor .ne-topbar .ne-btn.btn-danger:hover{background:#d32f2f!important}
+.note-editor .ne-topbar .ne-sep{width:1px;height:24px;background:rgba(255,255,255,.14);margin:0 4px;flex-shrink:0}
+.note-editor .ne-topbar .ne-spacer{flex:1;min-width:8px}
+.note-editor .ne-topbar .ne-color{width:38px;height:38px;padding:0;border-radius:8px;border:2px solid rgba(255,255,255,.20);cursor:pointer;background:transparent;flex-shrink:0}
+.note-editor .ne-topbar .ne-color::-webkit-color-swatch{border:none;border-radius:6px}
+.note-editor .ne-topbar .ne-color::-moz-color-swatch{border:none;border-radius:6px}
+
+/* Dropdown for heading selector */
+.ne-dropdown{position:relative;flex-shrink:0}
+.ne-dropdown-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1e2a38;border-radius:8px;padding:6px 0;min-width:160px;z-index:110;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.ne-dropdown.open .ne-dropdown-menu{display:block}
+.ne-dropdown-menu button{display:block;width:100%;text-align:left;padding:9px 14px;background:none;font-size:.9em;border:none;color:#fff;cursor:pointer}
+.ne-dropdown-menu button:hover{background:rgba(255,255,255,.10);color:var(--accent)}
+.ne-dropdown-menu button.ne-h1{font-size:1.35em;font-weight:700}
+.ne-dropdown-menu button.ne-h2{font-size:1.2em;font-weight:700}
+.ne-dropdown-menu button.ne-h3{font-size:1.08em;font-weight:600}
+.ne-dropdown-menu button.ne-h4{font-size:.98em;font-weight:600}
+.ne-dropdown-menu button.ne-h5{font-size:.9em;font-weight:600}
+
+/* Title + body */
+.note-editor .ne-body-wrap{flex:1;overflow-y:auto;padding:22px 28px 40px;background:var(--note-editor-bg,transparent);transition:background .3s}
+@media(max-width:640px){ .note-editor .ne-body-wrap{padding:16px} }
+.note-editor .ne-title{width:100%;background:transparent;border:none;color:#fff;font-size:2em;font-weight:700;padding:6px 0 10px;font-family:var(--font);outline:none}
+.note-editor .ne-title::placeholder{opacity:.35}
+.note-editor .ne-meta{font-size:.78em;opacity:.55;margin-bottom:18px}
+.note-editor .ne-content{min-height:400px;color:#fff;font-size:1.02em;line-height:1.7;padding:8px 2px;outline:none;caret-color:var(--accent);white-space:pre-wrap;word-wrap:break-word}
+.note-editor .ne-content:empty::before{content:attr(data-placeholder);opacity:.35;pointer-events:none}
+.note-editor .ne-content h1{font-size:2em;font-weight:700;margin:22px 0 12px;color:var(--accent)}
+.note-editor .ne-content h2{font-size:1.6em;font-weight:700;margin:20px 0 10px;color:var(--accent)}
+.note-editor .ne-content h3{font-size:1.35em;font-weight:600;margin:18px 0 10px;color:var(--accent)}
+.note-editor .ne-content h4{font-size:1.15em;font-weight:600;margin:16px 0 8px}
+.note-editor .ne-content h5{font-size:1em;font-weight:600;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.05em;opacity:.85}
+.note-editor .ne-content ul,.note-editor .ne-content ol{padding-left:28px;margin:10px 0}
+.note-editor .ne-content li{margin:4px 0}
+.note-editor .ne-content blockquote{border-left:3px solid var(--accent);padding:4px 0 4px 16px;margin:14px 0;opacity:.85;font-style:italic}
+.note-editor .ne-content code{background:rgba(255,255,255,.10);padding:2px 6px;border-radius:4px;font-family:'SF Mono','Menlo',monospace;font-size:.9em}
+.note-editor .ne-content pre{background:rgba(0,0,0,.30);padding:12px 14px;border-radius:8px;overflow-x:auto;font-family:'SF Mono','Menlo',monospace;font-size:.88em;margin:12px 0}
+.note-editor .ne-content hr{border:0;border-top:1px solid rgba(255,255,255,.20);margin:18px 0}
+.note-editor .ne-content a{color:var(--accent);text-decoration:underline}
+
+/* Notes widget */
+.notes-widget-switch{width:32px;height:32px;padding:0;background:rgba(255,255,255,.10);color:#fff;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.18s;flex-shrink:0}
+.notes-widget-switch:hover{background:var(--accent)}
+.notes-widget-switch svg{width:18px;height:18px;fill:currentColor;pointer-events:none}
+.notes-widget-body{width:100%;display:flex;flex-direction:column;gap:8px;text-align:left}
+.notes-widget-body .nwb-preview{background:rgba(0,0,0,.22);border-radius:8px;padding:10px 12px;font-size:.85em;line-height:1.5;color:#fff;min-height:80px;max-height:180px;overflow-y:auto;word-break:break-word;text-align:left}
+.notes-widget-body .nwb-preview.editable{outline:1px dashed transparent;transition:outline-color .2s,background .2s}
+.notes-widget-body .nwb-preview.editable:hover{outline-color:rgba(255,255,255,.14)}
+.notes-widget-body .nwb-preview.editable:focus{outline:1px solid var(--accent);background:rgba(0,0,0,.32)}
+.notes-widget-body .nwb-preview *{font-size:1em!important;text-align:left!important;background:transparent!important;margin:0!important;padding:0!important}
+.notes-widget-body .nwb-preview p,.notes-widget-body .nwb-preview div{color:inherit!important}
+.notes-widget-body .nwb-preview strong,.notes-widget-body .nwb-preview b{font-weight:700!important}
+.notes-widget-body .nwb-preview em,.notes-widget-body .nwb-preview i{font-style:italic!important}
+.notes-widget-body .nwb-preview u{text-decoration:underline!important}
+.notes-widget-body .nwb-preview s,.notes-widget-body .nwb-preview strike,.notes-widget-body .nwb-preview del{text-decoration:line-through!important}
+.notes-widget-body .nwb-preview ul,.notes-widget-body .nwb-preview ol{padding-left:22px!important;margin:4px 0!important}
+.notes-widget-body .nwb-preview .nwb-empty{opacity:.5;font-style:italic}
+.notes-widget-body .nwb-meta{font-size:.72em;opacity:.55;text-align:right;padding:0 2px}
+
+/* Notes switcher popup — larger custom picker over any modal */
+.notes-switcher-popup .popup-box{max-width:520px;width:94%;padding:16px}
+.notes-switcher-popup .ns-search{width:100%;background:rgba(255,255,255,.10);border:none;border-radius:8px;padding:11px 14px;font-size:.92em;color:#fff;font-family:var(--font);margin-bottom:12px}
+.notes-switcher-popup .ns-search:focus{outline:none;background:rgba(255,255,255,.18)}
+.notes-switcher-popup .ns-list{max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin:0 -4px;padding:0 4px}
+.notes-switcher-popup .ns-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:10px;cursor:pointer;transition:.18s;text-align:left;color:#fff;font-family:var(--font);width:100%}
+.notes-switcher-popup .ns-item:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.14)}
+.notes-switcher-popup .ns-item.active{background:rgba(46,139,61,.28);border-color:var(--accent)}
+.notes-switcher-popup .ns-swatch{width:6px;align-self:stretch;border-radius:3px;background:transparent;border:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.notes-switcher-popup .ns-body{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.notes-switcher-popup .ns-title{font-size:.98em;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
+.notes-switcher-popup .ns-preview{font-size:.78em;opacity:.65;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notes-switcher-popup .ns-badge{background:rgba(255,255,255,.15);color:#fff;font-size:.65em;padding:3px 6px;border-radius:5px;font-weight:600;letter-spacing:.05em;align-self:center;flex-shrink:0}
+.notes-switcher-popup .ns-empty{padding:40px 12px;text-align:center;opacity:.55;font-size:.9em}
+
+/* ═══ NOTES APP EXTENSIONS ═══ */
+/* Search bar in notes toolbar — cap width like other modal search bars, and pad row */
+.notes-search-wrapper{margin:18px auto 12px;padding:6px 4px;max-width:680px;width:100%}
+.notes-search-wrapper input{width:100%;padding:14px 18px;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-family:var(--font);font-size:.93em;box-shadow:0 2px 8px rgba(0,0,0,.15);border:none}
+.notes-search-wrapper input:focus{outline:none;background:rgba(255,255,255,.16)}
+.notes-toolbar{max-width:1200px;width:100%;margin-left:auto;margin-right:auto;flex-wrap:nowrap;overflow:visible;gap:8px}
+.notes-toolbar .notes-crumb{flex:1;min-width:0;font-size:.95em;color:#fff;display:flex;align-items:center;gap:6px;overflow:hidden}
+.notes-toolbar .notes-crumb .nav-icon-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);color:#fff;width:34px;height:34px;padding:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.notes-toolbar .notes-crumb .nav-icon-btn:hover:not(.disabled){background:rgba(255,255,255,.18);color:var(--accent)}
+.notes-toolbar .notes-crumb .nav-icon-btn.disabled{opacity:.35;cursor:not-allowed}
+.notes-toolbar .notes-crumb .crumb-name{font-weight:600;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.notes-toolbar .notes-icon-btn svg{width:20px;height:20px}
+@media(max-width:600px){
+  .notes-toolbar{gap:6px;padding:10px 10px}
+  .notes-toolbar .notes-icon-btn{width:36px;height:36px}
+  .notes-toolbar .notes-icon-btn svg{width:18px;height:18px}
+}
+@media(max-width:400px){
+  .notes-toolbar .notes-icon-btn{width:32px;height:32px}
+  .notes-toolbar .notes-icon-btn svg{width:16px;height:16px}
+  .notes-toolbar{gap:4px}
+}
+
+/* Notes-select-mode action bar (parallels files-actions) */
+.notes-actions{display:none;justify-content:center;gap:10px;margin:0 auto 14px;flex-wrap:nowrap;overflow:visible;padding:10px 12px;max-width:1200px;position:sticky;top:0;z-index:50;background:rgba(20,26,38,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.06)}
+.notes-actions.visible{display:flex}
+.notes-actions .notes-icon-btn{flex:0 0 auto}
+@media(max-width:600px){ .notes-actions{gap:6px;padding:8px 10px} .notes-actions .notes-icon-btn{width:36px;height:36px} .notes-actions .notes-icon-btn svg{width:18px;height:18px} }
+@media(max-width:400px){ .notes-actions{gap:4px} .notes-actions .notes-icon-btn{width:32px;height:32px} .notes-actions .notes-icon-btn svg{width:16px;height:16px} }
+
+/* Folder cards in notes */
+.notes-grid .note-folder,.notes-list .note-folder{cursor:pointer;position:relative}
+.notes-grid .note-folder .note-title{color:#ffd54f}
+.notes-list .note-folder .note-title{color:#ffd54f}
+.notes-grid .note-folder .note-icon{width:56px;height:56px;margin:0 auto 10px;background:linear-gradient(135deg,rgba(255,193,7,.25),rgba(255,152,0,.12));border:1px solid rgba(255,193,7,.45);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#ffd54f}
+.notes-grid .note-folder .note-icon svg{width:30px;height:30px;fill:currentColor}
+.notes-list .note-folder .note-icon-inline{width:36px;height:36px;background:linear-gradient(135deg,rgba(255,193,7,.25),rgba(255,152,0,.12));border:1px solid rgba(255,193,7,.45);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#ffd54f;flex-shrink:0}
+.notes-list .note-folder .note-icon-inline svg{width:20px;height:20px;fill:currentColor}
+.notes-grid .note-card.selectable-mode,.notes-list .note-card.selectable-mode{padding-left:38px}
+.notes-list .note-card.selectable-mode{padding-left:44px}
+.note-checkbox{position:absolute;top:12px;left:12px;width:20px;height:20px;background:rgba(0,0,0,.55);border-radius:5px;display:none;align-items:center;justify-content:center;color:#fff;z-index:5;pointer-events:none}
+.note-card.selectable-mode .note-checkbox{display:flex}
+.note-card.selected .note-checkbox{background:var(--accent)}
+.note-card.selected{outline:2px solid var(--accent)}
+.note-checkbox svg{width:14px;height:14px;fill:currentColor}
+
+/* Filter chip row */
+.notes-filter-row{display:flex;justify-content:center;gap:8px;margin:0 auto 12px;flex-wrap:wrap;max-width:1200px;padding:0 4px}
+.notes-filter-row .nf-chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);color:#fff;padding:6px 14px;border-radius:20px;font-size:.82em;cursor:pointer;transition:.18s;font-family:var(--font)}
+.notes-filter-row .nf-chip:hover{background:rgba(255,255,255,.15)}
+.notes-filter-row .nf-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Read-only editor state */
+.note-editor .ne-content[contenteditable="false"]{opacity:.85;cursor:default}
+.note-editor.readonly .ne-btn.ne-format-btn{opacity:.4;pointer-events:none}
+.note-editor .ne-readonly-banner{background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.35);color:#ffb74d;padding:8px 12px;border-radius:8px;font-size:.85em;margin-bottom:14px;display:none}
+.note-editor.readonly .ne-readonly-banner{display:block}
+
+/* ═══════════════════════════════════════════════
+   FILES TOOLBAR — force single-row icon fit, cap max-width,
+   keep upload menu from getting cut off on any viewport
+   ═══════════════════════════════════════════════ */
+.files-toolbar{max-width:100%;flex-wrap:nowrap;overflow:visible}
+.files-toolbar .breadcrumb{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.files-toolbar .breadcrumb .current-folder-name{overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%}
+.files-toolbar .files-icon-btn,
+.files-toolbar .files-upload-wrap{flex:0 0 auto}
+/* Position the upload menu smartly so it never gets clipped by the viewport edge */
+.files-upload-menu{right:auto;left:auto}
+.files-upload-wrap.menu-flip-right .files-upload-menu{right:0;left:auto}
+/* Files actions bar — allow overflow so dropdowns clear the sticky bar */
+.files-actions{max-width:100%;overflow:visible;flex-wrap:nowrap;justify-content:center;gap:8px}
+.files-actions .files-icon-btn{flex:0 0 auto}
+/* Shrink icons a bit on narrow screens so they always fit one row */
+@media(max-width:600px){
+  .files-toolbar{gap:6px;padding:10px 10px}
+  .files-toolbar .files-icon-btn{width:36px;height:36px}
+  .files-toolbar .files-icon-btn svg{width:18px;height:18px}
+  .files-actions{gap:6px;padding:8px 10px}
+  .files-actions .files-icon-btn{width:36px;height:36px}
+  .files-actions .files-icon-btn svg{width:18px;height:18px}
+}
+@media(max-width:400px){
+  .files-toolbar .files-icon-btn{width:32px;height:32px}
+  .files-toolbar .files-icon-btn svg{width:16px;height:16px}
+  .files-actions .files-icon-btn{width:32px;height:32px}
+  .files-actions .files-icon-btn svg{width:16px;height:16px}
+  .files-toolbar{gap:4px}
+  .files-actions{gap:4px}
+}
+
 </style>
 </head>
 <body>
@@ -787,6 +1008,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
       <button class="btn-ghost" id="openBookmarksMenu">Bookmarks</button>
       <button class="btn-ghost" id="openReminders">Calendar</button>
       <button class="btn-ghost" id="openRSS">RSS Feeds</button>
+      <button class="btn-ghost" id="openNotes">Notes</button>
       <button class="btn-ghost" onclick="closeModal('menuModal');openUrlModalDirect()">Page Viewer</button>
     </div>
   </div>
@@ -808,19 +1030,19 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
       </div>
     </div>
     <div id="photoContent">
-      <div class="search-bar-wrapper" id="photoSearchWrapper"><input type="text" id="mediaSearchInput" placeholder="Search media..." oninput="searchMedia()"></div>
-      <div class="upload-buttons">
-        <button class="btn-primary" onclick="document.getElementById('uploadInput').click()">Add Media</button>
-        <button class="btn-ghost" onclick="uploadMedia()">Upload</button>
+      <div class="files-toolbar media-toolbar">
+        <div style="flex:1;min-width:0"></div>
+        <button class="files-icon-btn" onclick="document.getElementById('uploadInput').click()" title="Add Media" aria-label="Add Media"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg></button>
       </div>
+      <div class="search-bar-wrapper" id="photoSearchWrapper"><input type="text" id="mediaSearchInput" placeholder="Search media..." oninput="searchMedia()"></div>
       <input type="file" id="uploadInput" accept="image/*,video/*,.pdf" multiple style="display:none">
       <div id="progressContainer" style="display:none"><div class="progress-bar"><div id="progressBar" class="progress"></div></div></div>
-      <div class="action-buttons">
-        <button id="mediaSelectBtn" onclick="toggleMediaSelectMode()">Select</button>
-        <button onclick="openMedia()">Open</button>
-        <button onclick="downloadMedia()">Download</button>
-        <button onclick="renameMediaItem()">Rename</button>
-        <button class="btn-danger" onclick="deleteMedia()">Delete</button>
+      <div class="files-actions media-actions">
+        <button id="mediaSelectBtn" class="files-icon-btn" onclick="toggleMediaSelectMode()" title="Select" aria-label="Select"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .89-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></button>
+        <button class="files-icon-btn" onclick="openMedia()" title="Open" aria-label="Open"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
+        <button class="files-icon-btn" onclick="downloadMedia()" title="Download" aria-label="Download"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
+        <button class="files-icon-btn" onclick="renameMediaItem()" title="Rename" aria-label="Rename"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+        <button class="files-icon-btn btn-danger" onclick="deleteMedia()" title="Delete" aria-label="Delete"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
       </div>
       <div id="mediaContainer"></div>
     </div>
@@ -843,18 +1065,18 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
       </div>
     </div>
     <div id="webAppContent">
-      <div class="search-bar-wrapper" id="webAppSearchWrapper"><input type="text" id="appSearchInput" placeholder="Search apps..." oninput="searchApps()"></div>
-      <div class="upload-buttons">
-        <button class="btn-primary" onclick="document.getElementById('webAppInput').click()">Add HTML App</button>
-        <button class="btn-ghost" onclick="uploadWebApp()">Upload</button>
+      <div class="files-toolbar webapp-toolbar">
+        <div style="flex:1;min-width:0"></div>
+        <button class="files-icon-btn" onclick="document.getElementById('webAppInput').click()" title="Add HTML App" aria-label="Add HTML App"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg></button>
       </div>
+      <div class="search-bar-wrapper" id="webAppSearchWrapper"><input type="text" id="appSearchInput" placeholder="Search apps..." oninput="searchApps()"></div>
       <input type="file" id="webAppInput" accept="text/html,.html" multiple style="display:none">
-      <div class="action-buttons">
-        <button id="webAppSelectBtn" onclick="toggleWebAppSelectMode()">Select</button>
-        <button onclick="openWebApp()">Open</button>
-        <button onclick="downloadWebApp()">Download</button>
-        <button onclick="renameWebApp()">Rename</button>
-        <button class="btn-danger" onclick="deleteWebApp()">Delete</button>
+      <div class="files-actions webapp-actions">
+        <button id="webAppSelectBtn" class="files-icon-btn" onclick="toggleWebAppSelectMode()" title="Select" aria-label="Select"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .89-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></button>
+        <button class="files-icon-btn" onclick="openWebApp()" title="Open" aria-label="Open"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
+        <button class="files-icon-btn" onclick="downloadWebApp()" title="Download" aria-label="Download"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
+        <button class="files-icon-btn" onclick="renameWebApp()" title="Rename" aria-label="Rename"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+        <button class="files-icon-btn btn-danger" onclick="deleteWebApp()" title="Delete" aria-label="Delete"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
       </div>
       <div id="appContainer"></div>
     </div>
@@ -975,6 +1197,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
         <div class="widget-checkbox"><input type="checkbox" id="showRSS"><label for="showRSS">RSS Feed Widget</label></div>
         <div class="setting-item"><label>RSS Feeds (one per line)</label><textarea id="rssUrls" rows="4" style="width:100%;resize:vertical" placeholder="https://feeds.bbci.co.uk/news/rss.xml"></textarea></div>
         <div class="widget-checkbox"><input type="checkbox" id="showNotes"><label for="showNotes">Notes</label></div>
+        <div class="widget-checkbox"><input type="checkbox" id="notesWidgetEditable" checked><label for="notesWidgetEditable">Allow editing notes from the widget</label></div>
         <div class="widget-checkbox"><input type="checkbox" id="showUpcomingEvents"><label for="showUpcomingEvents">Upcoming Events</label></div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
           <div style="font-size:.88em;font-weight:600;margin-bottom:8px">Layout & Appearance</div>
@@ -1024,6 +1247,7 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
         <div class="widget-checkbox"><input type="checkbox" id="lockFiles"><label for="lockFiles">Lock Files</label></div>
         <div class="widget-checkbox"><input type="checkbox" id="lockRSS"><label for="lockRSS">Lock RSS</label></div>
         <div class="widget-checkbox"><input type="checkbox" id="lockUrl"><label for="lockUrl">Lock URL Viewer</label></div>
+        <div class="widget-checkbox"><input type="checkbox" id="lockNotes"><label for="lockNotes">Lock Notes</label></div>
         <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn-primary" onclick="showChangePasswordDialog()">Change Password</button>
           <button class="btn-ghost" onclick="clearMasterPassword()" id="clearPwBtn">Clear Password</button>
@@ -1313,6 +1537,183 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
   </div>
   <div class="rss-reader-content" id="rssReaderContent">
     <div id="rssArticleBody"></div>
+  </div>
+</div>
+
+<!-- ═══ NOTES MODAL ═══ -->
+<div class="modal-overlay" id="notesModal">
+  <button class="close-btn" onclick="closeModal('notesModal')">&times;</button>
+  <div class="modal-content-area">
+    <div class="modal-header"><h2>Notes</h2></div>
+    <div class="password-screen" id="notesPasswordScreen">
+      <div class="pw-title">Notes</div>
+      <div class="pw-sub">Enter Password</div>
+      <input type="password" class="password-input" id="notesPasswordInput" placeholder="Password" onkeydown="if(event.key==='Enter')verifyPassword('notesModal')">
+      <div class="pw-btns">
+        <button onclick="verifyPassword('notesModal')">Verify</button>
+        <button onclick="authenticatePasskey('notesModal')">Use Passkey</button>
+      </div>
+    </div>
+    <div id="notesContent">
+      <div class="notes-toolbar">
+        <div class="notes-crumb" id="notesCrumb">
+          <button class="nav-icon-btn" id="notesUpBtn" onclick="notesGoUp()" title="Up" aria-label="Up">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </button>
+          <span class="crumb-name" id="notesCrumbName">All notes</span>
+        </div>
+        <button class="notes-icon-btn" onclick="createNewNoteFolder()" title="New folder" aria-label="New folder">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>
+        </button>
+        <button class="notes-icon-btn" onclick="createNewNote()" title="New note" aria-label="New note">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-4v-2h4v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        </button>
+        <button class="notes-icon-btn" id="notesViewGridBtn" onclick="setNotesView('grid')" title="Grid view" aria-label="Grid view">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11h5V4H4v7zm0 9h5v-7H4v7zm6 0h5v-7h-5v7zm6 0h5v-7h-5v7zm-6-9h5V4h-5v7zm6-7v7h5V4h-5z"/></svg>
+        </button>
+        <button class="notes-icon-btn" id="notesViewListBtn" onclick="setNotesView('list')" title="List view" aria-label="List view">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+        </button>
+      </div>
+      <div class="notes-search-wrapper"><input type="text" id="notesSearchInput" placeholder="Search notes…" oninput="renderNotesApp()"></div>
+      <div class="notes-filter-row" id="notesFilterRow">
+        <button class="nf-chip active" data-filter="all" onclick="setNotesFilter('all')">All</button>
+        <button class="nf-chip" data-filter="folders" onclick="setNotesFilter('folders')">Folders only</button>
+        <button class="nf-chip" data-filter="notes" onclick="setNotesFilter('notes')">Notes only</button>
+      </div>
+      <div class="notes-actions" id="notesActionsBar">
+        <button class="notes-icon-btn" onclick="startNotesSelectMode()" id="notesSelectBtn" title="Select" aria-label="Select"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .89-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></button>
+        <button class="notes-icon-btn" onclick="notesSelectAll()" id="notesSelectAllBtn" title="Select all" aria-label="Select all" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 4v16H6V4h16m0-2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM2 6H0v16c0 1.1.9 2 2 2h16v-2H2V6zm18 10V6h-4l-6 6-2-2-2 2 4 4 8-8 2 2v6z"/></svg></button>
+        <button class="notes-icon-btn" id="notesMoveBtn" onclick="showNotesCopyDialog('move')" title="Move" aria-label="Move" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg></button>
+        <button class="notes-icon-btn" id="notesCopyBtn" onclick="showNotesCopyDialog('copy')" title="Copy" aria-label="Copy" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+        <button class="notes-icon-btn btn-danger" id="notesDelBtn" onclick="deleteSelectedNotes()" title="Delete" aria-label="Delete" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+        <button class="notes-icon-btn" id="notesCancelSelBtn" onclick="cancelNotesSelectMode()" title="Cancel selection" aria-label="Cancel" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+      </div>
+      <div id="notesListContainer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NOTE EDITOR (full-screen overlay) ═══ -->
+<div class="note-editor" id="noteEditor">
+  <div class="ne-topbar" id="noteEditorTopbar">
+    <button class="ne-btn" onclick="closeNoteEditor()" title="Back" aria-label="Back">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </button>
+    <div class="ne-sep"></div>
+    <!-- Heading dropdown -->
+    <div class="ne-dropdown" id="neHeadingDropdown">
+      <button class="ne-btn" onclick="toggleNeHeadingMenu(event)" title="Heading / paragraph" aria-label="Heading">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4z"/></svg>
+      </button>
+      <div class="ne-dropdown-menu">
+        <button onclick="applyNoteFormat('formatBlock','p')">Paragraph</button>
+        <button class="ne-h1" onclick="applyNoteFormat('formatBlock','h1')">Heading 1</button>
+        <button class="ne-h2" onclick="applyNoteFormat('formatBlock','h2')">Heading 2</button>
+        <button class="ne-h3" onclick="applyNoteFormat('formatBlock','h3')">Heading 3</button>
+        <button class="ne-h4" onclick="applyNoteFormat('formatBlock','h4')">Heading 4</button>
+        <button class="ne-h5" onclick="applyNoteFormat('formatBlock','h5')">Heading 5</button>
+        <button onclick="applyNoteFormat('formatBlock','blockquote')">Quote</button>
+        <button onclick="applyNoteFormat('formatBlock','pre')">Code block</button>
+      </div>
+    </div>
+    <button class="ne-btn" onclick="applyNoteFormat('bold')" title="Bold" aria-label="Bold" data-cmd="bold">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('italic')" title="Italic" aria-label="Italic" data-cmd="italic">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('underline')" title="Underline" aria-label="Underline" data-cmd="underline">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('strikeThrough')" title="Strikethrough" aria-label="Strikethrough" data-cmd="strikeThrough">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('subscript')" title="Subscript" aria-label="Subscript" data-cmd="subscript">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 18h-2v1h3v1h-4v-2c0-.55.45-1 1-1h2v-1h-3v-1h3c.55 0 1 .45 1 1v1c0 .55-.45 1-1 1zM5.88 18h2.66l3.4-5.42h.12l3.4 5.42h2.66l-4.65-7.27L17.81 4h-2.68l-3.07 4.99h-.12L8.85 4H6.19l4.32 6.73L5.88 18z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('superscript')" title="Superscript" aria-label="Superscript" data-cmd="superscript">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 7h-2v1h3v1h-4V7c0-.55.45-1 1-1h2V5h-3V4h3c.55 0 1 .45 1 1v1c0 .55-.45 1-1 1zM5.88 20h2.66l3.4-5.42h.12l3.4 5.42h2.66l-4.65-7.27L17.81 6h-2.68l-3.07 4.99h-.12L8.85 6H6.19l4.32 6.73L5.88 20z"/></svg>
+    </button>
+    <div class="ne-sep"></div>
+    <button class="ne-btn" onclick="applyNoteFormat('insertUnorderedList')" title="Bullet list" aria-label="Bullet list" data-cmd="insertUnorderedList">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('insertOrderedList')" title="Numbered list" aria-label="Numbered list" data-cmd="insertOrderedList">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="insertNoteChecklist()" title="Checkbox list" aria-label="Checkbox list">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 5.72l-4.6-3.86-1.29 1.53 4.6 3.86L22 5.72zM7.88 3.39L6.6 1.86 2 5.71l1.29 1.53 4.59-3.85zM12.5 8H11v6l4.75 2.85.75-1.23-4-2.37V8zM12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('formatBlock','blockquote')" title="Quote" aria-label="Quote">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="insertNoteHR()" title="Horizontal rule" aria-label="Horizontal rule">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="applyNoteFormat('removeFormat')" title="Clear formatting" aria-label="Clear formatting">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.27 5L2 6.27l6.97 6.97L6.5 19h3l1.57-3.66L16.73 21 18 19.73 3.55 5.27 3.27 5zM6 5v.18L8.82 8h2.4l-.72 1.68 2.1 2.1L14.21 8H20V5H6z"/></svg>
+    </button>
+    <div class="ne-sep"></div>
+    <input type="color" class="ne-color" id="noteEditorBgColor" title="Page color" aria-label="Page color" onchange="setNotePageColor(this.value)">
+    <div class="ne-spacer"></div>
+    <button class="ne-btn" onclick="toggleNoteReadOnly()" id="noteEditorReadOnlyBtn" title="Toggle read-only in widget" aria-label="Toggle read-only in widget">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+    </button>
+    <button class="ne-btn" onclick="toggleNoteLock()" id="noteEditorLockBtn" title="Lock note" aria-label="Lock note">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>
+    </button>
+    <button class="ne-btn btn-danger" onclick="deleteCurrentNote()" title="Delete note" aria-label="Delete note">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+    </button>
+  </div>
+  <div class="ne-body-wrap" id="noteEditorBodyWrap">
+    <input type="text" class="ne-title" id="noteEditorTitle" placeholder="Untitled note" oninput="onNoteEdited()">
+    <div class="ne-meta" id="noteEditorMeta"></div>
+    <div class="ne-readonly-banner" id="noteEditorReadOnlyBanner">👁️ This note is read-only from the widget. Toggle read-only off (eye icon) to allow widget editing.</div>
+    <div contenteditable="true" class="ne-content" id="noteEditorContent" data-placeholder="Start writing…" oninput="onNoteEdited()" style="text-align:left"></div>
+  </div>
+</div>
+
+<!-- ═══ NOTE SWITCHER POPUP (opened by widget dropdown icon) ═══ -->
+<div class="popup-overlay notes-switcher-popup" id="notesSwitcherPopup">
+  <div class="popup-box" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closePopup('notesSwitcherPopup')" style="position:absolute;top:14px;right:14px;left:auto">&times;</button>
+    <h3 style="margin:0 0 12px">Switch note</h3>
+    <input type="text" class="ns-search" id="notesSwitcherSearch" placeholder="Search notes…" oninput="onNotesSwitcherSearchInput(this.value)">
+    <div class="ns-list" id="notesSwitcherList"></div>
+  </div>
+</div>
+
+<!-- ═══ NOTES COPY/MOVE DIALOG ═══ -->
+<div class="popup-overlay" id="notesCopyPopup">
+  <div class="popup-box copy-dialog" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closePopup('notesCopyPopup')" style="position:absolute;top:14px;right:14px;left:auto">&times;</button>
+    <h3 id="notesCopyTitle">Move to folder</h3>
+    <input type="text" class="cd-search" id="notesCopySearch" placeholder="Search folders..." oninput="notesCopyDialogSearchInput()">
+    <div class="cd-path" id="notesCopyPath"></div>
+    <div class="cd-list" id="notesCopyList"></div>
+    <div class="cd-actions">
+      <div class="cd-left">
+        <button class="btn-ghost" onclick="closePopup('notesCopyPopup')">Cancel</button>
+      </div>
+      <button class="btn-primary" onclick="confirmNotesCopyMove()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notes password popup (for unlocking a specific locked note) -->
+<div class="popup-overlay" id="notePasswordPopup">
+  <div class="popup-box" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closePopup('notePasswordPopup')" style="position:absolute;top:14px;right:14px;left:auto">&times;</button>
+    <h3>Unlock note</h3>
+    <div style="font-size:.85em;opacity:.75;margin-bottom:10px" id="notePwPromptSub">Enter master password to open this note.</div>
+    <input type="password" id="notePasswordPopupInput" placeholder="Password" onkeydown="if(event.key==='Enter')verifyNoteUnlock()">
+    <div class="popup-btn-row">
+      <button class="btn-primary" onclick="verifyNoteUnlock()">Unlock</button>
+      <button class="btn-ghost" onclick="authenticateNotePasskey()" id="notePwPasskeyBtn">Use Passkey</button>
+      <button class="btn-ghost" onclick="closePopup('notePasswordPopup')">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1695,7 +2096,7 @@ function searchSettings(){
 (function installEncryptedStorage(){
   const ENCRYPTED_KEYS = new Set([
     'googokeHistory','googokeBookmarks','googokeReminders','googokeRSSFeeds',
-    'googokeFiles','googokeMostVisited','googokeNotes','googokeSettings',
+    'googokeFiles','googokeMostVisited','googokeNotes','googokeNotesData','googokeNotesMeta','googokeSettings',
     'googokeTopNav','mediaMetadata','webappsMetadata'
   ]);
   const MAGIC = 'ENC1:';
@@ -1836,11 +2237,11 @@ const DEFAULT_SETTINGS = {
   menuBgType: 'gradient', menuBgColor1: '#111827', menuBgColor2: '#1f2937',
   themeMode: 'dark', menuPassword: '', usePasskey: false, passkeyCredentialId: null,
   lockHistory: false, lockBookmarks: false, lockSettings: false, lockReminders: false,
-  lockMedia: false, lockWebApps: false, lockFiles: false, lockRSS: false, lockUrl: false,
+  lockMedia: false, lockWebApps: false, lockFiles: false, lockRSS: false, lockUrl: false, lockNotes: false,
   savedUrls: [], // [{id, name, url, dateAdded}]
   enableHistory: true, showClock: true, showWeather: false, weatherLocation: '',
   showImageSlideshow: false, showVideoSlideshow: false, showCalendar: false,
-  showRSS: false, rssUrls: '', showNotes: false, showUpcomingEvents: false,
+  showRSS: false, rssUrls: '', showNotes: false, showUpcomingEvents: false, notesWidgetEditable: true,
   clockTimeFormat: '12', clockShowSeconds: true, clockDateFormat: 'short',
   bgMediaId: '', slideshowInterval: 5000, showMostVisited: true, widgetOrder: null,
   enableNotifications: false, accentColor: '#2e8b3d', widgetOpacity: 7, blurStrength: 12,
@@ -1867,6 +2268,7 @@ window.addEventListener('load', async () => {
   try { reminders = JSON.parse(localStorage.getItem('googokeReminders')) || []; } catch { reminders=[]; }
   try { mostVisited = JSON.parse(localStorage.getItem('googokeMostVisited')) || {}; } catch { mostVisited={}; }
   try { rssFeeds = JSON.parse(localStorage.getItem('googokeRSSFeeds')) || []; } catch { rssFeeds=[]; }
+  _safe(_loadNotes, 'loadNotes');
   try { filesTree = JSON.parse(localStorage.getItem('googokeFiles')) || { root: { id: 'root', name: 'Files', type: 'folder', parentId: null, children: [], dateCreated: new Date().toISOString() } }; } catch { filesTree = { root: { id: 'root', name: 'Files', type: 'folder', parentId: null, children: [], dateCreated: new Date().toISOString() } }; }
 
   _safe(loadMediaMetadata, 'loadMediaMetadata');
@@ -1944,6 +2346,7 @@ function bindTopNav() {
   _bind('openBookmarksMenu', () => { closeModal('menuModal'); openLockedModal('bookmarksModal'); });
   _bind('openReminders',     () => { closeModal('menuModal'); openLockedModal('reminderModal'); });
   _bind('openRSS',           () => { closeModal('menuModal'); openLockedModal('rssModal'); });
+  _bind('openNotes',         () => { closeModal('menuModal'); openLockedModal('notesModal'); });
 }
 
 function setupKeyboardShortcuts() {
@@ -1969,7 +2372,7 @@ function closeModal(id) {
   const map = { photoModal:'photoPasswordInput', webAppModal:'webAppPasswordInput', filesModal:'filesPasswordInput',
     settingsModal:'settingsPasswordInput', historyModal:'historyPasswordInput',
     bookmarksModal:'bookmarksPasswordInput', reminderModal:'reminderPasswordInput',
-    rssModal:'rssPasswordInput', urlModal:'urlPasswordInput' };
+    rssModal:'rssPasswordInput', urlModal:'urlPasswordInput', notesModal:'notesPasswordInput' };
   if (map[id]) { const inp = document.getElementById(map[id]); if (inp) inp.value = ''; }
 }
 function closeAllModals() {
@@ -1981,18 +2384,18 @@ function closePopup(id) { document.getElementById(id).classList.remove('open'); 
 const MODAL_LOCKS = {
   historyModal: 'lockHistory', bookmarksModal: 'lockBookmarks', settingsModal: 'lockSettings',
   reminderModal: 'lockReminders', photoModal: 'lockMedia', webAppModal: 'lockWebApps',
-  filesModal: 'lockFiles', rssModal: 'lockRSS', urlModal: 'lockUrl'
+  filesModal: 'lockFiles', rssModal: 'lockRSS', urlModal: 'lockUrl', notesModal: 'lockNotes'
 };
 const MODAL_SCREENS = {
   photoModal:'photoPasswordScreen', webAppModal:'webAppPasswordScreen', filesModal:'filesPasswordScreen',
   settingsModal:'settingsPasswordScreen', historyModal:'historyPasswordScreen',
   bookmarksModal:'bookmarksPasswordScreen', reminderModal:'reminderPasswordScreen',
-  rssModal:'rssPasswordScreen', urlModal:'urlPasswordScreen'
+  rssModal:'rssPasswordScreen', urlModal:'urlPasswordScreen', notesModal:'notesPasswordScreen'
 };
 const MODAL_CONTENTS = {
   photoModal:'photoContent', webAppModal:'webAppContent', filesModal:'filesContent',
   settingsModal:'settingsContent', historyModal:'historyContent', bookmarksModal:'bookmarksContent',
-  reminderModal:'reminderContent', rssModal:'rssContent', urlModal:'urlContent'
+  reminderModal:'reminderContent', rssModal:'rssContent', urlModal:'urlContent', notesModal:'notesContent'
 };
 
 function openLockedModal(modalId) {
@@ -2041,6 +2444,7 @@ function onModalContentOpen(modalId) {
   if (modalId === 'webAppModal') loadWebApps();
   if (modalId === 'filesModal') renderFilesGrid();
   if (modalId === 'rssModal') { loadRSSFeedTags(); if (allRSSArticles.length === 0) loadAllRSSFeeds(); else renderRSSArticles(); buildRSSFilterPicker(); }
+  if (modalId === 'notesModal') { renderNotesApp(); }
   if (modalId === 'urlModal') { renderUrlModal(); const q=document.getElementById('urlModalSearchInput'); if(q) q.value=''; const inp=document.getElementById('urlQuickInput'); if(inp){ inp.value=''; setTimeout(()=>{ try{ inp.focus(); }catch{} }, 100); } }
 }
 
@@ -2060,7 +2464,7 @@ async function verifyPassword(modalId) {
   const map = { photoModal:'photoPasswordInput', webAppModal:'webAppPasswordInput', filesModal:'filesPasswordInput',
     settingsModal:'settingsPasswordInput', historyModal:'historyPasswordInput',
     bookmarksModal:'bookmarksPasswordInput', reminderModal:'reminderPasswordInput',
-    rssModal:'rssPasswordInput', urlModal:'urlPasswordInput' };
+    rssModal:'rssPasswordInput', urlModal:'urlPasswordInput', notesModal:'notesPasswordInput' };
   const inp = document.getElementById(map[modalId]);
   const ok = await passwordMatches(inp ? inp.value : '');
   if (ok) {
@@ -2215,7 +2619,7 @@ async function confirmClearMasterPassword(){
   if(!ok){ showToast('Incorrect password','error'); if(inp) inp.value=''; return; }
   settings.menuPassword='';
   const h=document.getElementById('menuPassword'); if(h) h.value='';
-  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl'].forEach(id=>{
+  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes'].forEach(id=>{
     settings[id]=false; const el=document.getElementById(id); if(el) el.checked=false;
   });
   const la=document.getElementById('lockAll'); if(la) la.checked=false;
@@ -2232,7 +2636,7 @@ function updateMasterPwStatus(){
   s.style.color=settings.menuPassword?'var(--accent)':'';
   const clr=document.getElementById('clearPwBtn'); if(clr) clr.style.display=settings.menuPassword?'':'none';
 }
-const LOCK_KEYS=['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl'];
+const LOCK_KEYS=['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes'];
 function refreshLockAllState(){
   const all=LOCK_KEYS.every(k=>{const el=document.getElementById(k); return el && el.checked;});
   const any=LOCK_KEYS.some(k=>{const el=document.getElementById(k); return el && el.checked;});
@@ -2285,7 +2689,7 @@ function attachSettingsListeners() {
     });
   }
   // Lock checkbox enforcement
-  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl'].forEach(id => {
+  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes'].forEach(id => {
     const cb = document.getElementById(id);
     if (!cb || cb._lockListenerAttached) return;
     cb._lockListenerAttached = true;
@@ -2654,14 +3058,905 @@ function _renderRssWidgetItems(content, articles){
 function _escapeText(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 function _escapeAttr(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+// ═══════════════════════════════════════════════════════
+//  NOTES APP — multi-note storage, rich editing, per-note lock
+// ═══════════════════════════════════════════════════════
+//
+// Storage:
+//   googokeNotesData  → array of note objects
+//   googokeNotesMeta  → { activeWidgetNoteId, view } — UI state
+//
+// Note shape:
+//   { id, title, content (HTML), pageColor, locked, createdAt, updatedAt }
+//
+// Backward-compat: an older single-textbox note lived at localStorage['googokeNotes'].
+// On first migration we convert it into a note object.
+// ═══════════════════════════════════════════════════════
+let notesData = [];
+let notesMeta = { activeWidgetNoteId: null, view: 'grid' };
+let _currentEditingNoteId = null;
+let _noteEditorDirty = false;
+let _noteEditorAutosaveTimer = null;
+// Note IDs whose lock has been unlocked in this session
+const _unlockedNoteIds = new Set();
+
+function _loadNotes(){
+  try { notesData = JSON.parse(localStorage.getItem('googokeNotesData')) || []; } catch { notesData = []; }
+  try { notesMeta = { ...notesMeta, ...(JSON.parse(localStorage.getItem('googokeNotesMeta')) || {}) }; } catch {}
+  // Migrate legacy single-note textarea if present
+  const legacy = localStorage.getItem('googokeNotes');
+  if (legacy && !localStorage.getItem('googokeNotesMigrated')) {
+    if (legacy.trim()) {
+      const now = new Date().toISOString();
+      notesData.unshift({
+        id: 'n_'+Date.now().toString(36),
+        title: 'Imported note',
+        content: legacy.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>'),
+        pageColor: '',
+        locked: false,
+        createdAt: now, updatedAt: now
+      });
+      _saveNotes();
+    }
+    localStorage.setItem('googokeNotesMigrated','1');
+  }
+}
+function _saveNotes(){
+  try { localStorage.setItem('googokeNotesData', JSON.stringify(notesData)); } catch(e){ console.warn('[notes save]', e); }
+}
+function _saveNotesMeta(){
+  try { localStorage.setItem('googokeNotesMeta', JSON.stringify(notesMeta)); } catch{}
+}
+function _findNote(id){ return notesData.find(n => n.id === id); }
+function _stripHtml(html){
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').trim();
+}
+function _fmtNoteDate(iso){
+  if (!iso) return '';
+  try{
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    if (sameDay) return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    return d.toLocaleDateString([], {month:'short', day:'numeric', year: d.getFullYear()!==now.getFullYear()?'numeric':undefined});
+  } catch { return ''; }
+}
+
+// ─── Notes widget ───
+// Layout: title row with switcher icon-only button on the right + live preview of the
+// active note below. Preview is editable when settings.notesWidgetEditable is on AND
+// the individual note is not marked readOnly. Locked notes are excluded from the
+// switcher unless the menu (main password gate) is currently unlocked in this session.
 function createNotesWidget() {
   const w = makeWidget('notes','');
-  w.innerHTML = `<h3>Notes</h3><textarea id="notesTextarea" placeholder="Type your notes here..."></textarea>`;
+  w.innerHTML =
+    `<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px">`+
+      `<h3 style="margin:0;flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="notesWidgetTitle">Notes</h3>`+
+      `<button class="notes-widget-switch" onclick="openNotesWidgetSwitcher(event)" title="Switch note" aria-label="Switch note">`+
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5H7z"/></svg>`+
+      `</button>`+
+    `</div>`+
+    `<div class="notes-widget-body" id="notesWidgetBody"></div>`;
   document.getElementById('widgetsContainer').appendChild(w);
-  const ta = document.getElementById('notesTextarea');
-  ta.value = localStorage.getItem('googokeNotes') || '';
-  ta.addEventListener('input', () => localStorage.setItem('googokeNotes', ta.value));
+  renderNotesWidget();
 }
+function renderNotesWidget(){
+  const body = document.getElementById('notesWidgetBody');
+  const title = document.getElementById('notesWidgetTitle');
+  if (!body) return;
+  const visible = _notesVisibleInSwitcher();
+  if (!visible.length){
+    body.innerHTML = `<div class="nwb-preview"><span class="nwb-empty">No notes yet.</span></div>`;
+    if (title) title.textContent = 'Notes';
+    return;
+  }
+  // Pick active — must be in the visible list (locked notes filtered out when menu locked)
+  let activeId = notesMeta.activeWidgetNoteId;
+  if (!activeId || !visible.some(n => n.id === activeId)) activeId = visible[0].id;
+  const active = _findNote(activeId);
+  if (title) title.textContent = active ? (active.title || 'Untitled note') : 'Notes';
+  const canEdit = _canEditNoteInWidget(active);
+  const previewHtml = active
+    ? (_stripHtml(active.content)
+        ? sanitizeRichHtml(active.content)
+        : `<span class="nwb-empty">Empty note.</span>`)
+    : `<span class="nwb-empty">No note selected.</span>`;
+  body.innerHTML =
+    `<div class="nwb-preview${canEdit?' editable':''}" id="notesWidgetPreview" `+
+      (canEdit
+        ? `contenteditable="true" oninput="onNotesWidgetPreviewInput()" onblur="onNotesWidgetPreviewBlur()"`
+        : `title="This note is read-only from the widget"`)+
+      `>${previewHtml}</div>`+
+    (active && !canEdit
+      ? `<div class="nwb-meta">${active.readOnly ? 'Read-only note' : 'Widget editing disabled in settings'}</div>`
+      : '');
+}
+// Notes eligible for the switcher: locked notes are hidden unless the main menu
+// (password gate) is currently unlocked in this session.
+function _notesVisibleInSwitcher(){
+  const menuUnlocked = !settings.menuPassword || !_anyModalLockActive() || _menuIsUnlockedThisSession();
+  return notesData.filter(n => menuUnlocked ? true : !n.locked);
+}
+function _anyModalLockActive(){
+  // Are there any locks that would gate access to Notes?
+  return !!(settings.menuPassword && (settings.lockNotes));
+}
+// The "menu" is considered unlocked in this session iff the Notes modal has been
+// unlocked via password/passkey during this session (or is not locked at all).
+function _menuIsUnlockedThisSession(){
+  if (!settings.lockNotes) return true;
+  return unlockedModals.has('notesModal');
+}
+function _canEditNoteInWidget(note){
+  if (!note) return false;
+  if (settings.notesWidgetEditable === false) return false;
+  if (note.readOnly) return false;
+  return true;
+}
+function onNotesWidgetPreviewInput(){
+  if (!notesMeta.activeWidgetNoteId) return;
+  const n = _findNote(notesMeta.activeWidgetNoteId);
+  if (!n || !_canEditNoteInWidget(n)) return;
+  const el = document.getElementById('notesWidgetPreview');
+  if (!el) return;
+  // Coalesce writes: schedule a save
+  if (n._widgetSaveTimer) clearTimeout(n._widgetSaveTimer);
+  n._widgetSaveTimer = setTimeout(() => {
+    n.content = el.innerHTML;
+    n.updatedAt = new Date().toISOString();
+    _saveNotes();
+    const title = document.getElementById('notesWidgetTitle');
+    if (title && n.title) title.textContent = n.title;
+  }, 400);
+}
+function onNotesWidgetPreviewBlur(){
+  if (!notesMeta.activeWidgetNoteId) return;
+  const n = _findNote(notesMeta.activeWidgetNoteId);
+  if (!n || !_canEditNoteInWidget(n)) return;
+  const el = document.getElementById('notesWidgetPreview');
+  if (!el) return;
+  n.content = el.innerHTML;
+  n.updatedAt = new Date().toISOString();
+  _saveNotes();
+}
+
+// ─── Custom note switcher popup (icon-only trigger) ───
+let _switcherQuery = '';
+function openNotesWidgetSwitcher(e){
+  if (e) e.stopPropagation();
+  const popup = document.getElementById('notesSwitcherPopup');
+  if (!popup) return;
+  _switcherQuery = '';
+  const searchInput = document.getElementById('notesSwitcherSearch');
+  if (searchInput) searchInput.value = '';
+  renderNotesSwitcher();
+  openPopup('notesSwitcherPopup');
+  setTimeout(() => { try { searchInput && searchInput.focus(); } catch{} }, 80);
+}
+function renderNotesSwitcher(){
+  const listEl = document.getElementById('notesSwitcherList');
+  if (!listEl) return;
+  const visible = _notesVisibleInSwitcher();
+  const q = _switcherQuery.trim().toLowerCase();
+  let notes = visible.slice();
+  if (q){
+    notes = notes.filter(n => {
+      if ((n.title||'').toLowerCase().includes(q)) return true;
+      // Skip content search for locked notes (defense-in-depth even though filtered)
+      if (n.locked) return false;
+      return _stripHtml(n.content).toLowerCase().includes(q);
+    });
+  }
+  notes.sort((a,b) => (new Date(b.updatedAt||b.createdAt||0)) - (new Date(a.updatedAt||a.createdAt||0)));
+  if (!notes.length){
+    listEl.innerHTML = `<div class="ns-empty">${q ? 'No matches' : (visible.length ? 'No notes' : 'No unlocked notes available')}</div>`;
+    return;
+  }
+  const activeId = notesMeta.activeWidgetNoteId;
+  listEl.innerHTML = '';
+  notes.forEach(n => {
+    const item = document.createElement('button');
+    item.className = 'ns-item' + (n.id===activeId ? ' active' : '');
+    const preview = _stripHtml(n.content).slice(0, 90) || '(empty)';
+    item.innerHTML =
+      `<span class="ns-swatch" style="background:${_escapeAttr(n.pageColor||'transparent')}"></span>`+
+      `<span class="ns-body">`+
+        `<span class="ns-title">${_escapeText(n.title||'Untitled note')}</span>`+
+        `<span class="ns-preview">${_escapeText(preview)}</span>`+
+      `</span>`+
+      (n.readOnly ? `<span class="ns-badge" title="Read-only from widget">RO</span>` : '');
+    item.onclick = () => { onNotesWidgetSelect(n.id); closePopup('notesSwitcherPopup'); };
+    listEl.appendChild(item);
+  });
+}
+function onNotesSwitcherSearchInput(v){ _switcherQuery = v || ''; renderNotesSwitcher(); }
+function onNotesWidgetSelect(id){
+  const n = _findNote(id);
+  if (!n) return;
+  // Guard: if it's locked and menu isn't unlocked, refuse
+  if (n.locked && !_menuIsUnlockedThisSession()){
+    showToast('This note is locked. Open Notes to unlock first.','warn');
+    return;
+  }
+  notesMeta.activeWidgetNoteId = id;
+  _saveNotesMeta();
+  renderNotesWidget();
+}
+
+// ─── Notes app (modal) with folders + selection + filter ───
+// State
+let _notesCurrentFolderId = null;  // null = root
+let _notesFilter = 'all';          // 'all' | 'folders' | 'notes'
+let _notesSelectMode = false;
+const _notesSelectedIds = new Set();
+
+function setNotesView(view){
+  notesMeta.view = view;
+  _saveNotesMeta();
+  renderNotesApp();
+}
+function setNotesFilter(filter){
+  _notesFilter = filter;
+  document.querySelectorAll('#notesFilterRow .nf-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.filter === filter);
+  });
+  renderNotesApp();
+}
+function notesGoUp(){
+  if (!_notesCurrentFolderId) return;
+  const cur = _findNote(_notesCurrentFolderId);
+  _notesCurrentFolderId = cur ? (cur.parentId || null) : null;
+  renderNotesApp();
+}
+function _folderPath(folderId){
+  const path = [];
+  let id = folderId;
+  while (id){
+    const f = _findNote(id);
+    if (!f) break;
+    path.unshift(f);
+    id = f.parentId || null;
+  }
+  return path;
+}
+function _updateNotesCrumb(){
+  const nameEl = document.getElementById('notesCrumbName');
+  const upBtn = document.getElementById('notesUpBtn');
+  if (!nameEl) return;
+  if (!_notesCurrentFolderId){
+    nameEl.textContent = 'All notes';
+    if (upBtn) upBtn.classList.add('disabled');
+  } else {
+    const path = _folderPath(_notesCurrentFolderId);
+    nameEl.textContent = path.map(f => f.title || 'Untitled folder').join(' › ');
+    if (upBtn) upBtn.classList.remove('disabled');
+  }
+}
+function renderNotesApp(){
+  const container = document.getElementById('notesListContainer');
+  if (!container) return;
+  _updateNotesCrumb();
+  const view = notesMeta.view || 'grid';
+  const gBtn = document.getElementById('notesViewGridBtn');
+  const lBtn = document.getElementById('notesViewListBtn');
+  if (gBtn) gBtn.classList.toggle('active', view==='grid');
+  if (lBtn) lBtn.classList.toggle('active', view==='list');
+  const searchInput = document.getElementById('notesSearchInput');
+  const q = (searchInput ? searchInput.value : '').trim().toLowerCase();
+  // Start from items in the current folder
+  let items = notesData.filter(n => (n.parentId || null) === _notesCurrentFolderId);
+  // Apply filter chip
+  if (_notesFilter === 'folders') items = items.filter(n => n.type === 'folder');
+  else if (_notesFilter === 'notes') items = items.filter(n => n.type !== 'folder');
+  // If searching, expand scope to all descendants of the current folder
+  if (q) {
+    const scope = _notesCurrentFolderId ? _descendantsOf(_notesCurrentFolderId) : notesData.slice();
+    items = scope.filter(n => {
+      if (_notesFilter === 'folders' && n.type !== 'folder') return false;
+      if (_notesFilter === 'notes' && n.type === 'folder') return false;
+      if ((n.title||'').toLowerCase().includes(q)) return true;
+      if (n.type === 'folder') return false;
+      if (!n.locked) return _stripHtml(n.content).toLowerCase().includes(q);
+      return false;
+    });
+  }
+  // Sort: folders first, then newest
+  items.sort((a,b) => {
+    const af = a.type === 'folder' ? 0 : 1;
+    const bf = b.type === 'folder' ? 0 : 1;
+    if (af !== bf) return af - bf;
+    return (new Date(b.updatedAt||b.createdAt||0)) - (new Date(a.updatedAt||a.createdAt||0));
+  });
+  if (!items.length){
+    container.innerHTML = `<div class="notes-empty">`+
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`+
+      `<div class="notes-empty-title">${q ? 'No matching items' : 'This folder is empty'}</div>`+
+      `<div class="notes-empty-hint">${q ? 'Try a different search.' : 'Use the + buttons above to add a folder or note.'}</div>`+
+    `</div>`;
+    return;
+  }
+  container.className = view==='list' ? 'notes-list' : 'notes-grid';
+  container.innerHTML = '';
+  items.forEach(n => {
+    const card = document.createElement('div');
+    card.className = 'note-card' + (n.type === 'folder' ? ' note-folder' : '') + (_notesSelectMode ? ' selectable-mode' : '') + (_notesSelectedIds.has(n.id) ? ' selected' : '');
+    const bg = n.pageColor || '';
+    if (bg && n.type !== 'folder') card.style.background = bg;
+    if (bg) card.style.setProperty('--note-color', bg);
+    const isLocked = n.locked && !_unlockedNoteIds.has(n.id);
+    const lockHtml = n.locked
+      ? `<span class="note-lock"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg></span>`
+      : '';
+    const checkboxHtml = `<div class="note-checkbox"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>`;
+    const folderIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`;
+    const previewSrc = isLocked ? '' : (n.content || '');
+    const previewHtml = n.type === 'folder'
+      ? `<em style="opacity:.75">Folder · ${_countInFolder(n.id)} item${_countInFolder(n.id)===1?'':'s'}</em>`
+      : (isLocked
+          ? '<em style="opacity:.65">🔒 Locked note. Click to unlock.</em>'
+          : (sanitizeRichHtml(previewSrc) || '<em style="opacity:.55">Empty</em>'));
+    if (view === 'list') {
+      card.innerHTML =
+        checkboxHtml +
+        (n.type === 'folder'
+          ? `<div class="note-icon-inline">${folderIconSvg}</div>`
+          : `<div class="note-swatch"></div>`)+
+        `<div class="note-body-wrap">`+
+          `<div class="note-title">${_escapeText(n.title||(n.type==='folder'?'Untitled folder':'Untitled note'))}</div>`+
+          `<div class="note-preview">${previewHtml}</div>`+
+          `<div class="note-meta">${_fmtNoteDate(n.updatedAt||n.createdAt)}${n.locked?' · 🔒 Locked':''}${n.readOnly?' · 👁 Read-only widget':''}</div>`+
+        `</div>`+
+        lockHtml;
+    } else {
+      card.innerHTML =
+        checkboxHtml +
+        lockHtml +
+        (n.type === 'folder' ? `<div class="note-icon">${folderIconSvg}</div>` : '')+
+        `<div class="note-title">${_escapeText(n.title||(n.type==='folder'?'Untitled folder':'Untitled note'))}</div>`+
+        `<div class="note-preview">${previewHtml}</div>`+
+        `<div class="note-meta">${_fmtNoteDate(n.updatedAt||n.createdAt)}${n.readOnly?' · 👁':''}</div>`;
+    }
+    card.onclick = (e) => {
+      e.stopPropagation();
+      if (_notesSelectMode){
+        if (_notesSelectedIds.has(n.id)) _notesSelectedIds.delete(n.id);
+        else _notesSelectedIds.add(n.id);
+        _refreshNotesSelectionUI();
+        renderNotesApp();
+        return;
+      }
+      if (n.type === 'folder'){
+        _notesCurrentFolderId = n.id;
+        renderNotesApp();
+      } else {
+        openNoteEditor(n.id);
+      }
+    };
+    // Right-click context menu (rename folder, delete, toggle read-only)
+    card.oncontextmenu = (e) => {
+      e.preventDefault();
+      _showNoteCtxMenu(e, n);
+    };
+    container.appendChild(card);
+  });
+}
+function _showNoteCtxMenu(e, n){
+  const items = [];
+  if (n.type === 'folder'){
+    items.push({label:'Open folder', action: () => { _notesCurrentFolderId = n.id; renderNotesApp(); }});
+    items.push({label:'Rename folder', action: () => _renameNote(n.id)});
+  } else {
+    items.push({label:'Open', action: () => openNoteEditor(n.id)});
+    items.push({label:'Rename', action: () => _renameNote(n.id)});
+    items.push({label:(n.readOnly?'Allow widget editing':'Make read-only in widget'), action: () => {
+      n.readOnly = !n.readOnly; n.updatedAt = new Date().toISOString(); _saveNotes(); renderNotesApp(); renderNotesWidget();
+    }});
+  }
+  items.push({sep:true});
+  items.push({label:'Move…', action: () => { _notesSelectedIds.clear(); _notesSelectedIds.add(n.id); _showNotesCopyDialog('move'); }});
+  items.push({label:'Copy…', action: () => { _notesSelectedIds.clear(); _notesSelectedIds.add(n.id); _showNotesCopyDialog('copy'); }});
+  items.push({sep:true});
+  items.push({label:'Delete', action: () => {
+    if (!confirm(`Delete "${n.title||'this item'}"?${n.type==='folder'?' (Folder and everything in it)':''}`)) return;
+    _deleteNoteWithChildren(n.id);
+    _saveNotes(); renderNotesApp(); renderNotesWidget();
+    showToast('Deleted');
+  }});
+  showCtxMenu(e, items);
+}
+function _renameNote(id){
+  const n = _findNote(id); if (!n) return;
+  const nv = prompt('Rename', n.title || '');
+  if (nv == null) return;
+  n.title = nv.trim();
+  n.updatedAt = new Date().toISOString();
+  _saveNotes(); renderNotesApp(); renderNotesWidget();
+}
+function _countInFolder(folderId){
+  return notesData.filter(n => n.parentId === folderId).length;
+}
+function _descendantsOf(folderId){
+  const out = [];
+  const stack = [folderId];
+  while (stack.length){
+    const cur = stack.pop();
+    notesData.forEach(n => {
+      if (n.parentId === cur){
+        out.push(n);
+        if (n.type === 'folder') stack.push(n.id);
+      }
+    });
+  }
+  return out;
+}
+function _deleteNoteWithChildren(id){
+  const toDelete = new Set([id]);
+  const n = _findNote(id);
+  if (n && n.type === 'folder'){
+    _descendantsOf(id).forEach(c => toDelete.add(c.id));
+  }
+  for (let i = notesData.length - 1; i >= 0; i--){
+    if (toDelete.has(notesData[i].id)) notesData.splice(i, 1);
+  }
+}
+function createNewNote(){
+  const now = new Date().toISOString();
+  const n = {
+    id: 'n_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    type: 'note',
+    title: '', content: '', pageColor: '', locked: false, readOnly: false,
+    parentId: _notesCurrentFolderId,
+    createdAt: now, updatedAt: now
+  };
+  notesData.unshift(n);
+  _saveNotes();
+  renderNotesApp();
+  openNoteEditor(n.id);
+}
+function createNewNoteFolder(){
+  const name = prompt('Folder name');
+  if (name == null) return;
+  const trimmed = name.trim();
+  if (!trimmed){ showToast('Name required','warn'); return; }
+  const now = new Date().toISOString();
+  notesData.unshift({
+    id: 'f_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    type: 'folder',
+    title: trimmed,
+    parentId: _notesCurrentFolderId,
+    createdAt: now, updatedAt: now
+  });
+  _saveNotes();
+  renderNotesApp();
+}
+
+// ─── Selection mode ───
+function startNotesSelectMode(){
+  _notesSelectMode = true;
+  _notesSelectedIds.clear();
+  _refreshNotesSelectionUI();
+  renderNotesApp();
+}
+function cancelNotesSelectMode(){
+  _notesSelectMode = false;
+  _notesSelectedIds.clear();
+  _refreshNotesSelectionUI();
+  renderNotesApp();
+}
+function notesSelectAll(){
+  if (!_notesSelectMode) startNotesSelectMode();
+  notesData.forEach(n => {
+    if ((n.parentId || null) === _notesCurrentFolderId){
+      if (_notesFilter === 'folders' && n.type !== 'folder') return;
+      if (_notesFilter === 'notes' && n.type === 'folder') return;
+      _notesSelectedIds.add(n.id);
+    }
+  });
+  _refreshNotesSelectionUI();
+  renderNotesApp();
+}
+function _refreshNotesSelectionUI(){
+  const has = _notesSelectedIds.size > 0;
+  const sel = _notesSelectMode;
+  const el = (id, show) => { const e = document.getElementById(id); if (e) e.style.display = show ? '' : 'none'; };
+  el('notesSelectBtn', !sel);
+  el('notesSelectAllBtn', sel);
+  el('notesMoveBtn', sel && has);
+  el('notesCopyBtn', sel && has);
+  el('notesDelBtn',  sel && has);
+  el('notesCancelSelBtn', sel);
+}
+function deleteSelectedNotes(){
+  if (!_notesSelectedIds.size) return;
+  const n = _notesSelectedIds.size;
+  if (!confirm(`Delete ${n} item${n===1?'':'s'}? Folders will also delete their contents.`)) return;
+  Array.from(_notesSelectedIds).forEach(id => _deleteNoteWithChildren(id));
+  _saveNotes();
+  cancelNotesSelectMode();
+  renderNotesWidget();
+  showToast('Deleted');
+}
+function showNotesCopyDialog(mode){ _showNotesCopyDialog(mode); }
+function _showNotesCopyDialog(mode){
+  if (!_notesSelectedIds.size){ showToast('Nothing selected','warn'); return; }
+  _notesCopyMode = mode;
+  _notesCopyDestId = null;
+  _notesCopyBrowseFolderId = null;
+  _renderNotesCopyDialog();
+  openPopup('notesCopyPopup');
+}
+let _notesCopyMode = 'move';
+let _notesCopyDestId = null;
+let _notesCopyBrowseFolderId = null;
+function _renderNotesCopyDialog(){
+  const titleEl = document.getElementById('notesCopyTitle');
+  const listEl = document.getElementById('notesCopyList');
+  const pathEl = document.getElementById('notesCopyPath');
+  if (!listEl) return;
+  if (titleEl) titleEl.textContent = (_notesCopyMode === 'move' ? 'Move to folder' : 'Copy to folder');
+  // Build path breadcrumb
+  const path = _notesCopyBrowseFolderId ? _folderPath(_notesCopyBrowseFolderId) : [];
+  const rootSpan = `<span data-fid="" style="cursor:pointer;color:var(--accent);padding:2px 6px;border-radius:4px">All notes</span>`;
+  const rest = path.map(f => `<span> › </span><span data-fid="${_escapeAttr(f.id)}" style="cursor:pointer;color:var(--accent);padding:2px 6px;border-radius:4px">${_escapeText(f.title||'Untitled')}</span>`).join('');
+  pathEl.innerHTML = rootSpan + rest;
+  pathEl.querySelectorAll('span[data-fid]').forEach(s => {
+    s.onclick = () => { _notesCopyBrowseFolderId = s.dataset.fid || null; _notesCopyDestId = _notesCopyBrowseFolderId; _renderNotesCopyDialog(); };
+  });
+  // Folders in current browse
+  const folders = notesData.filter(n =>
+    n.type === 'folder' &&
+    (n.parentId || null) === _notesCopyBrowseFolderId &&
+    !_notesSelectedIds.has(n.id) &&
+    !_isDescendantOfSelected(n.id)
+  );
+  const q = ((document.getElementById('notesCopySearch')||{}).value||'').trim().toLowerCase();
+  const shown = q ? folders.filter(f => (f.title||'').toLowerCase().includes(q)) : folders;
+  listEl.innerHTML = '';
+  // Option: "Here" (put in the currently browsed folder)
+  const hereOpt = document.createElement('div');
+  hereOpt.className = 'cd-item' + (_notesCopyDestId === _notesCopyBrowseFolderId ? ' selected' : '');
+  hereOpt.innerHTML = `<span class="cd-icon">📥</span><span class="cd-name"><em>${_notesCopyBrowseFolderId ? 'Place in this folder' : 'Place in root'}</em></span>`;
+  hereOpt.onclick = () => { _notesCopyDestId = _notesCopyBrowseFolderId; _renderNotesCopyDialog(); };
+  listEl.appendChild(hereOpt);
+  shown.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'cd-item' + (_notesCopyDestId === f.id ? ' selected' : '');
+    row.innerHTML = `<span class="cd-icon">📁</span><span class="cd-name">${_escapeText(f.title||'Untitled folder')}</span>`;
+    row.onclick = () => { _notesCopyDestId = f.id; _renderNotesCopyDialog(); };
+    row.ondblclick = () => { _notesCopyBrowseFolderId = f.id; _notesCopyDestId = f.id; _renderNotesCopyDialog(); };
+    listEl.appendChild(row);
+  });
+  if (!shown.length && !q){
+    const empty = document.createElement('div');
+    empty.className = 'cd-empty';
+    empty.textContent = 'No subfolders here — pick "Place in this folder" above.';
+    listEl.appendChild(empty);
+  }
+}
+function _isDescendantOfSelected(id){
+  // Prevent moving/copying a folder into itself or its descendants
+  const anySelected = Array.from(_notesSelectedIds).filter(sid => {
+    const n = _findNote(sid); return n && n.type === 'folder';
+  });
+  return anySelected.some(sid => {
+    if (sid === id) return true;
+    return _descendantsOf(sid).some(d => d.id === id);
+  });
+}
+function notesCopyDialogSearchInput(){
+  _renderNotesCopyDialog();
+}
+function confirmNotesCopyMove(){
+  const dest = _notesCopyDestId === '' ? null : _notesCopyDestId;
+  // Guard: don't allow moving/copying a folder into itself or a descendant
+  const bad = Array.from(_notesSelectedIds).some(id => {
+    const n = _findNote(id);
+    if (!n || n.type !== 'folder') return false;
+    if (id === dest) return true;
+    return _descendantsOf(id).some(d => d.id === dest);
+  });
+  if (bad){ showToast('Cannot move/copy a folder into itself','error'); return; }
+  const now = new Date().toISOString();
+  if (_notesCopyMode === 'move'){
+    _notesSelectedIds.forEach(id => {
+      const n = _findNote(id);
+      if (!n) return;
+      n.parentId = dest;
+      n.updatedAt = now;
+    });
+  } else {
+    // Copy: deep-copy each selected item + its descendants (folder case)
+    _notesSelectedIds.forEach(id => {
+      const src = _findNote(id);
+      if (!src) return;
+      const idMap = new Map();
+      const clones = [];
+      const cloneOne = (orig, newParent) => {
+        const c = { ...orig, id: (orig.type==='folder'?'f_':'n_')+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+                    parentId: newParent, createdAt: now, updatedAt: now };
+        idMap.set(orig.id, c.id);
+        clones.push(c);
+        return c;
+      };
+      const rootClone = cloneOne(src, dest);
+      if (src.type === 'folder'){
+        // Clone descendants preserving hierarchy
+        const desc = _descendantsOf(src.id);
+        // Process in original creation order to maintain parent references
+        desc.forEach(d => {
+          const newParent = idMap.get(d.parentId) || dest;
+          cloneOne(d, newParent);
+        });
+      }
+      // Newest first
+      notesData.unshift(...clones);
+    });
+  }
+  _saveNotes();
+  closePopup('notesCopyPopup');
+  cancelNotesSelectMode();
+  renderNotesWidget();
+  showToast(_notesCopyMode === 'move' ? 'Moved' : 'Copied');
+}
+
+// ─── Note editor ───
+function openNoteEditor(id){
+  const n = _findNote(id);
+  if (!n || n.type === 'folder') return;
+  if (n.locked && !_unlockedNoteIds.has(id)) {
+    promptNoteUnlock(id, () => openNoteEditor(id));
+    return;
+  }
+  _currentEditingNoteId = id;
+  _noteEditorDirty = false;
+  const editor = document.getElementById('noteEditor');
+  const titleInp = document.getElementById('noteEditorTitle');
+  const contentEl = document.getElementById('noteEditorContent');
+  const metaEl = document.getElementById('noteEditorMeta');
+  const bodyWrap = document.getElementById('noteEditorBodyWrap');
+  const colorInp = document.getElementById('noteEditorBgColor');
+  const lockBtn = document.getElementById('noteEditorLockBtn');
+  const roBtn = document.getElementById('noteEditorReadOnlyBtn');
+  titleInp.value = n.title || '';
+  contentEl.innerHTML = n.content || '';
+  metaEl.textContent = 'Last edited ' + (_fmtNoteDate(n.updatedAt) || 'just now');
+  if (n.pageColor) {
+    bodyWrap.style.background = n.pageColor;
+    colorInp.value = _rgbToHex(n.pageColor) || '#111827';
+  } else {
+    bodyWrap.style.background = '';
+    colorInp.value = '#111827';
+  }
+  lockBtn.classList.toggle('active', !!n.locked);
+  lockBtn.title = n.locked ? 'Unlock note' : 'Lock note';
+  if (roBtn){
+    roBtn.classList.toggle('active', !!n.readOnly);
+    roBtn.title = n.readOnly ? 'Widget read-only (on) — click to allow widget editing' : 'Widget editing allowed — click to make read-only in widget';
+  }
+  editor.classList.add('open');
+  // Focus title if empty, else content
+  setTimeout(() => { (n.title ? contentEl : titleInp).focus(); }, 60);
+}
+function closeNoteEditor(){
+  // Flush pending autosave
+  if (_noteEditorAutosaveTimer) { clearTimeout(_noteEditorAutosaveTimer); _noteEditorAutosaveTimer = null; }
+  const editingId = _currentEditingNoteId;
+  if (editingId && _noteEditorDirty) _flushNoteEditor();
+  // Auto-relock: once we close a locked note that we unlocked, it locks again
+  if (editingId){
+    const n = _findNote(editingId);
+    if (n && n.locked) {
+      _unlockedNoteIds.delete(editingId);
+    }
+  }
+  _currentEditingNoteId = null;
+  _noteEditorDirty = false;
+  const editor = document.getElementById('noteEditor');
+  editor.classList.remove('open');
+  // Close any dropdowns
+  document.querySelectorAll('.ne-dropdown.open').forEach(d => d.classList.remove('open'));
+  renderNotesApp();
+  renderNotesWidget();
+}
+function toggleNoteReadOnly(){
+  if (!_currentEditingNoteId) return;
+  const n = _findNote(_currentEditingNoteId);
+  if (!n) return;
+  n.readOnly = !n.readOnly;
+  n.updatedAt = new Date().toISOString();
+  _saveNotes();
+  const roBtn = document.getElementById('noteEditorReadOnlyBtn');
+  if (roBtn){
+    roBtn.classList.toggle('active', !!n.readOnly);
+    roBtn.title = n.readOnly ? 'Widget read-only (on) — click to allow widget editing' : 'Widget editing allowed — click to make read-only in widget';
+  }
+  showToast(n.readOnly ? 'Note is now read-only in the widget' : 'Widget editing allowed for this note');
+}
+// Insert a checkbox list — we render a real <ul> with a class the sanitizer allows.
+function insertNoteChecklist(){
+  const contentEl = document.getElementById('noteEditorContent');
+  if (!contentEl) return;
+  contentEl.focus();
+  const html = `<ul class="note-checklist"><li>☐ New item</li></ul>`;
+  try { document.execCommand('insertHTML', false, html); } catch(e){ console.warn('[note checklist]', e); }
+  onNoteEdited();
+}
+function onNoteEdited(){
+  _noteEditorDirty = true;
+  if (_noteEditorAutosaveTimer) clearTimeout(_noteEditorAutosaveTimer);
+  _noteEditorAutosaveTimer = setTimeout(_flushNoteEditor, 400);
+  _refreshNoteFormatState();
+}
+function _flushNoteEditor(){
+  if (!_currentEditingNoteId) return;
+  const n = _findNote(_currentEditingNoteId);
+  if (!n) return;
+  const titleInp = document.getElementById('noteEditorTitle');
+  const contentEl = document.getElementById('noteEditorContent');
+  n.title = titleInp.value;
+  n.content = contentEl.innerHTML;
+  n.updatedAt = new Date().toISOString();
+  _saveNotes();
+  _noteEditorDirty = false;
+  const metaEl = document.getElementById('noteEditorMeta');
+  if (metaEl) metaEl.textContent = 'Last edited ' + _fmtNoteDate(n.updatedAt);
+}
+function applyNoteFormat(cmd, arg){
+  const contentEl = document.getElementById('noteEditorContent');
+  if (!contentEl) return;
+  contentEl.focus();
+  try {
+    if (cmd === 'formatBlock') document.execCommand('formatBlock', false, arg);
+    else document.execCommand(cmd, false, arg||null);
+  } catch(e) { console.warn('[note format]', cmd, e); }
+  // Close heading dropdown after selection
+  document.querySelectorAll('.ne-dropdown.open').forEach(d => d.classList.remove('open'));
+  onNoteEdited();
+}
+function insertNoteHR(){
+  const contentEl = document.getElementById('noteEditorContent');
+  if (!contentEl) return;
+  contentEl.focus();
+  try { document.execCommand('insertHorizontalRule', false, null); } catch{}
+  onNoteEdited();
+}
+function toggleNeHeadingMenu(e){
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('neHeadingDropdown');
+  if (!dd) return;
+  const wasOpen = dd.classList.contains('open');
+  document.querySelectorAll('.ne-dropdown.open').forEach(d => d.classList.remove('open'));
+  if (!wasOpen) dd.classList.add('open');
+}
+// Close heading dropdown on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.ne-dropdown')) {
+    document.querySelectorAll('.ne-dropdown.open').forEach(d => d.classList.remove('open'));
+  }
+});
+// Also close upload menu on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.files-upload-wrap')) {
+    document.querySelectorAll('.files-upload-wrap.open').forEach(d => d.classList.remove('open'));
+  }
+});
+function _refreshNoteFormatState(){
+  document.querySelectorAll('.ne-topbar .ne-btn[data-cmd]').forEach(btn => {
+    const cmd = btn.dataset.cmd;
+    try { btn.classList.toggle('active', document.queryCommandState(cmd)); } catch {}
+  });
+}
+document.addEventListener('selectionchange', () => {
+  const editor = document.getElementById('noteEditor');
+  if (editor && editor.classList.contains('open')) _refreshNoteFormatState();
+});
+function setNotePageColor(color){
+  const bodyWrap = document.getElementById('noteEditorBodyWrap');
+  if (bodyWrap) bodyWrap.style.background = color;
+  if (!_currentEditingNoteId) return;
+  const n = _findNote(_currentEditingNoteId);
+  if (!n) return;
+  n.pageColor = color;
+  onNoteEdited();
+}
+function _rgbToHex(color){
+  // Accept hex passthrough
+  if (/^#[0-9a-f]{3,8}$/i.test(color)) return color;
+  const m = String(color).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (!m) return '';
+  return '#'+((1<<24)|(+m[1]<<16)|(+m[2]<<8)|+m[3]).toString(16).slice(1);
+}
+function deleteCurrentNote(){
+  if (!_currentEditingNoteId) return;
+  if (!confirm('Delete this note? This cannot be undone.')) return;
+  const idx = notesData.findIndex(n => n.id === _currentEditingNoteId);
+  if (idx >= 0) notesData.splice(idx, 1);
+  _saveNotes();
+  _currentEditingNoteId = null;
+  _noteEditorDirty = false;
+  document.getElementById('noteEditor').classList.remove('open');
+  renderNotesApp();
+  renderNotesWidget();
+  showToast('Note deleted');
+}
+function toggleNoteLock(){
+  if (!_currentEditingNoteId) return;
+  const n = _findNote(_currentEditingNoteId);
+  if (!n) return;
+  if (!settings.menuPassword){
+    showToast('Set a master password in Settings first', 'error');
+    return;
+  }
+  n.locked = !n.locked;
+  n.updatedAt = new Date().toISOString();
+  if (n.locked) _unlockedNoteIds.add(n.id); // stay unlocked in this session
+  _saveNotes();
+  const lockBtn = document.getElementById('noteEditorLockBtn');
+  if (lockBtn) { lockBtn.classList.toggle('active', n.locked); lockBtn.title = n.locked ? 'Unlock note' : 'Lock note'; }
+  showToast(n.locked ? 'Note locked' : 'Note unlocked');
+}
+
+// ─── Locked-note password gate ───
+let _notePwOnSuccess = null;
+let _notePwTargetId = null;
+function promptNoteUnlock(noteId, onSuccess){
+  if (!settings.menuPassword){
+    // No master password set → treat as unlocked
+    _unlockedNoteIds.add(noteId);
+    onSuccess && onSuccess();
+    return;
+  }
+  _notePwTargetId = noteId;
+  _notePwOnSuccess = onSuccess;
+  const pk = document.getElementById('notePwPasskeyBtn');
+  if (pk) pk.style.display = settings.usePasskey ? '' : 'none';
+  const inp = document.getElementById('notePasswordPopupInput');
+  if (inp) inp.value = '';
+  openPopup('notePasswordPopup');
+  setTimeout(() => { try { inp && inp.focus(); } catch{} }, 80);
+}
+async function verifyNoteUnlock(){
+  const inp = document.getElementById('notePasswordPopupInput');
+  const ok = await passwordMatches(inp ? inp.value : '');
+  if (!ok) { showToast('Incorrect password', 'error'); if (inp) inp.value = ''; return; }
+  const id = _notePwTargetId;
+  if (id) _unlockedNoteIds.add(id);
+  const cb = _notePwOnSuccess;
+  _notePwOnSuccess = null; _notePwTargetId = null;
+  closePopup('notePasswordPopup');
+  cb && cb();
+}
+async function authenticateNotePasskey(){
+  if (!settings.passkeyCredentialId) { showToast('No passkey registered', 'error'); return; }
+  try {
+    const assertion = await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: [{ id: Uint8Array.from(atob(settings.passkeyCredentialId), c => c.charCodeAt(0)), type: 'public-key' }],
+      userVerification: 'preferred'
+    }});
+    if (assertion) {
+      const id = _notePwTargetId;
+      if (id) _unlockedNoteIds.add(id);
+      const cb = _notePwOnSuccess;
+      _notePwOnSuccess = null; _notePwTargetId = null;
+      closePopup('notePasswordPopup');
+      cb && cb();
+    }
+  } catch(e) { console.warn('[note passkey]', e); showToast('Passkey authentication failed', 'error'); }
+}
+
+// Guarantee ESC closes the note editor cleanly and only exits fullscreen if any.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (document.fullscreenElement) return;
+  const editor = document.getElementById('noteEditor');
+  if (editor && editor.classList.contains('open')) {
+    closeNoteEditor();
+  }
+});
 
 function createUpcomingEventsWidget() {
   const w = makeWidget('upcomingevents','event-widget');
@@ -3610,25 +4905,46 @@ function searchRSS() {
   const q=document.getElementById('rssSearchInput').value.toLowerCase();
   document.querySelectorAll('#rssArticlesList .rss-article').forEach(i=>{ i.style.display=i.textContent.toLowerCase().includes(q)?'block':'none'; });
 }
+// Open an RSS article inside the SAME viewer used for web pages / files.
+// We render the article's already-parsed rich content directly (no extra fetch),
+// so users get consistent chrome (reload, fullscreen, save) across every surface.
 function openRSSArticle(article) {
-  const m=document.getElementById('rssReaderModal'); m.classList.add('open');
+  const v = document.getElementById('viewerModal'), vc = document.getElementById('viewerContent');
+  vc.innerHTML = '';
+  _viewerCurrentNode = null; _viewerCurrentMode = 'rss-article'; _viewerTextArea = null; _viewerDirty = false;
+  // Remember the article URL so the reload icon can re-fetch as a full page
+  const articleUrl = article.link || article.source || '';
+  _viewerCurrentUrl = articleUrl;
+  _viewerCurrentArticle = article;
   let hostname = '';
   try { hostname = article.source ? new URL(article.source).hostname.replace('www.','') : ''; } catch{}
   const cleanBody = sanitizeRichHtml(article.fullContent || article.summary || '');
   const author = article.author ? ` · ${_escapeText(article.author)}` : '';
-  document.getElementById('rssArticleBody').innerHTML=
-    `<h2>${_escapeText(article.title||'Untitled')}</h2>`+
-    `<div class="rss-meta" style="margin:8px 0 16px;opacity:.55;font-size:.85em">${_escapeText(hostname)} · ${_escapeText(article.date||'')}${author}</div>`+
-    (article.thumbnail?`<img src="${_escapeAttr(article.thumbnail)}" alt="" style="width:100%;max-height:360px;object-fit:cover;border-radius:12px;margin-bottom:16px" loading="lazy" onerror="this.remove()">`:'')+
-    `<div class="article-body rich-content">${cleanBody}</div>`+
-    `<div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">`+
-      `<button class="btn-primary" onclick="openUrlInViewer('${_escapeAttr(article.link||article.source||'')}')">Open in Viewer</button>`+
-      `<button class="btn-ghost" onclick="openExternalLink('${_escapeAttr(article.link||article.source||'')}')" style="color:var(--accent);align-self:center;font-size:.9em">Open original ↗</button>`+
-    `</div>`;
-  // Scroll to top when opening
-  const rc = document.getElementById('rssReaderContent'); if (rc) rc.scrollTop = 0;
+  const wrap = document.createElement('div');
+  wrap.className = 'web-viewer-wrap rich-content';
+  wrap.innerHTML =
+    `<div class="web-viewer-header">`+
+      `<h1>${_escapeText(article.title||'Untitled')}</h1>`+
+      `<div class="web-viewer-source">${_escapeText(hostname)}${article.date?` · ${_escapeText(article.date)}`:''}${author}</div>`+
+    `</div>`+
+    (article.thumbnail?`<img src="${_escapeAttr(article.thumbnail)}" alt="" style="width:100%;max-height:360px;object-fit:cover;border-radius:12px;margin-bottom:18px" loading="lazy" onerror="this.remove()">`:'')+
+    `<div class="article-body">${cleanBody}</div>`;
+  vc.appendChild(wrap);
+  // Toolbar buttons for article context: open as full page, open original externally
+  setViewerExtraToolbar(
+    (articleUrl ? `<button class="vb-btn" onclick="openUrlInViewer('${_escapeAttr(articleUrl)}')" title="Load full page">🌐 Full Page</button>` : '')+
+    (articleUrl ? `<a class="vb-btn" href="${_escapeAttr(articleUrl)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Open original ↗</a>` : '')
+  );
+  // Hide the reload icon (nothing to reload for pre-parsed articles)
+  const rb = document.getElementById('viewerReloadBtn'); if (rb) rb.style.display='none';
+  v.classList.add('open'); v.style.display='flex';
 }
-function closeRSSReader() { document.getElementById('rssReaderModal').classList.remove('open'); }
+// Legacy shim — kept because ESC handler and other spots still call it.
+function closeRSSReader() {
+  const m = document.getElementById('rssReaderModal');
+  if (m) m.classList.remove('open');
+}
+let _viewerCurrentArticle = null;
 
 // Sanitize rich content — allow formatting tags but strip scripts / event handlers / iframes / forms.
 // This is what powers the RSS reader AND the file viewer's "web-page mode".
@@ -4471,7 +5787,27 @@ function renderBreadcrumb(){
 }
 function searchFiles(){ renderFilesGrid(); }
 function showNewFolderDialog(){ openPopup('newFolderPopup'); setTimeout(()=>document.getElementById('newFolderInput').focus(),100); }
-function toggleFilesUploadMenu(e){ e.stopPropagation(); const w=document.getElementById('filesUploadWrap'); if(!w) return; w.classList.toggle('open'); document.addEventListener('click',closeFilesUploadMenu,{once:true}); }
+function toggleFilesUploadMenu(e){
+  e.stopPropagation();
+  const w = document.getElementById('filesUploadWrap');
+  if(!w) return;
+  w.classList.toggle('open');
+  // If the menu would spill off the right edge, flip it so it aligns to the right
+  // side of the trigger instead. Prevents the "New Web Link…" item from being clipped.
+  if (w.classList.contains('open')) {
+    const menu = w.querySelector('.files-upload-menu');
+    if (menu) {
+      // Reset first
+      w.classList.remove('menu-flip-right');
+      const rect = menu.getBoundingClientRect();
+      const vw = window.innerWidth || document.documentElement.clientWidth;
+      if (rect.right > vw - 8) {
+        w.classList.add('menu-flip-right');
+      }
+    }
+  }
+  document.addEventListener('click', closeFilesUploadMenu, { once:true });
+}
 function closeFilesUploadMenu(){ const w=document.getElementById('filesUploadWrap'); if(w) w.classList.remove('open'); }
 function showNewFileDialog(){ openPopup('newFilePopup'); setTimeout(()=>document.getElementById('newFileNameInput').focus(),100); }
 async function confirmNewFile(){
@@ -5275,14 +6611,22 @@ function toggleMediaSelectMode(){
   mediaSelectMode=!mediaSelectMode;
   selectedMediaIds.clear();
   const btn=document.getElementById('mediaSelectBtn');
-  if(btn){ btn.textContent=mediaSelectMode?'Cancel Select':'Select'; btn.classList.toggle('btn-primary',mediaSelectMode); }
+  if(btn){
+    btn.classList.toggle('active', mediaSelectMode);
+    btn.title = mediaSelectMode ? 'Cancel selection' : 'Select';
+    btn.setAttribute('aria-label', btn.title);
+  }
   loadMedia();
 }
 function toggleWebAppSelectMode(){
   webAppSelectMode=!webAppSelectMode;
   selectedAppIds.clear();
   const btn=document.getElementById('webAppSelectBtn');
-  if(btn){ btn.textContent=webAppSelectMode?'Cancel Select':'Select'; btn.classList.toggle('btn-primary',webAppSelectMode); }
+  if(btn){
+    btn.classList.toggle('active', webAppSelectMode);
+    btn.title = webAppSelectMode ? 'Cancel selection' : 'Select';
+    btn.setAttribute('aria-label', btn.title);
+  }
   loadWebApps();
 }
 
@@ -5409,7 +6753,8 @@ const TOP_NAV_BTN_CATALOG = {
   history:   {label:'History',   handler:'openHistoryModal'},
   bookmarks: {label:'Bookmarks', handler:'openBookmarksModalDirect'},
   reminders: {label:'Calendar',  handler:'openRemindersModal'},
-  rss:       {label:'RSS Feeds', handler:'openRSSModal'}
+  rss:       {label:'RSS Feeds', handler:'openRSSModal'},
+  notes:     {label:'Notes',     handler:'openNotesModal'}
 };
 // Handler map — direct-modal openers
 function _openLockedOrPlain(id){ if(typeof openLockedModal==='function') return openLockedModal(id); return openModal(id); }
@@ -5421,6 +6766,7 @@ function openHistoryModal(){ closeAllModals(); _openLockedOrPlain('historyModal'
 function openBookmarksModalDirect(){ closeAllModals(); _openLockedOrPlain('bookmarksModal'); }
 function openRemindersModal(){ closeAllModals(); _openLockedOrPlain('reminderModal'); }
 function openRSSModal(){ closeAllModals(); _openLockedOrPlain('rssModal'); }
+function openNotesModal(){ closeAllModals(); _openLockedOrPlain('notesModal'); }
 function openUrlModalDirect(){ closeAllModals(); _openLockedOrPlain('urlModal'); }
 function openMenuModal(){ closeAllModals(); openModal('menuModal'); }
 
@@ -6130,5 +7476,6 @@ async function _fetchOneFeedAndMerge(url){
 setTimeout(()=>{ try { _setupInactivityAutoLock(); } catch{} }, 500);
 
 </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
