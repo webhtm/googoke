@@ -637,6 +637,18 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 #viewerModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.96);z-index:9999;justify-content:center;align-items:center}
 #viewerModal.open{display:flex}
 #viewerContent{position:relative;width:90vw;height:90vh;display:flex;justify-content:center;align-items:center}
+/* Phones: the floating back pill and the toolbar pill both live at the top, so
+   the content starts below them. The bottom gutter matches the side gutter
+   rather than reserving a tall strip nothing uses. */
+@media(max-width:720px){
+  #viewerModal{align-items:flex-start;justify-content:center;padding:70px 12px 12px;box-sizing:border-box}
+  #viewerContent{width:100%;height:calc(100vh - 82px);max-height:calc(100dvh - 82px)}
+  #viewerContent img,#viewerContent video{max-width:100%;max-height:100%}
+  #viewerContent embed{width:100%;height:100%}
+  /* When the extra action bar is showing, keep clear of it too. */
+  #viewerModal.has-extra-bar #viewerContent{height:calc(100vh - 148px);max-height:calc(100dvh - 148px)}
+  .viewer-extra-bar{bottom:12px;left:12px;right:12px;transform:none;justify-content:center;flex-wrap:wrap}
+}
 #viewerContent img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
 #viewerContent video{max-width:100%;max-height:100%;border-radius:10px}
 #viewerContent iframe,#viewerContent embed{width:100%;height:100%;border-radius:10px}
@@ -673,6 +685,73 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .code-viewer-textarea{flex:1;width:100%;height:100%;padding:20px 22px;background:transparent;color:#e6edf3;font-family:'SF Mono','Menlo','Consolas','Courier New',monospace;font-size:14px;line-height:1.55;resize:none;border:0;outline:none;tab-size:2;white-space:pre;overflow:auto;caret-color:var(--accent)}
 .code-viewer-textarea:focus{outline:0}
 .html-app-iframe{width:92vw;max-width:1100px;height:85vh;background:#fff;border:0;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+
+/* ═══════════════════════════════════════════════
+   MARKDOWN EDITOR
+   Sticky formatting dock pinned to the top of the source editor. Built to
+   match the note editor's .ne-topbar: same button metrics, same horizontal
+   scroll behaviour, same pinned cluster on the inline-end edge, so moving
+   between a note and a .md file doesn't feel like changing apps.
+   ═══════════════════════════════════════════════ */
+.md-editor-wrap{width:92vw;max-width:1100px;height:85vh;background:#0f1620;border-radius:10px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);display:flex;flex-direction:column}
+.md-dock{position:sticky;top:0;z-index:5;flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:8px 10px;background:linear-gradient(180deg,rgba(17,24,39,.99),rgba(20,28,44,.98));border-bottom:1px solid rgba(255,255,255,.10);box-shadow:0 4px 12px rgba(0,0,0,.35);overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.md-dock::-webkit-scrollbar{height:0;display:none}
+.md-dock>*{flex:0 0 auto}
+.md-btn{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:.18s;position:relative}
+.md-btn:hover{background:rgba(255,255,255,.20)}
+.md-btn:active{transform:scale(.94)}
+.md-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.md-btn svg{width:18px;height:18px;fill:currentColor;pointer-events:none}
+.md-sep{width:1px;height:22px;background:rgba(255,255,255,.14);margin:0 3px}
+/* Pinned trailing cluster — count + preview + save stay reachable while the
+   format tools scroll underneath. Solid backing so nothing shows through. */
+.md-right{position:sticky;right:0;display:flex;align-items:center;gap:6px;padding-left:10px;margin-left:auto;background:#131b2b;border-left:1px solid rgba(255,255,255,.16);box-shadow:-8px 0 12px -4px rgba(0,0,0,.55);z-index:6}
+.md-count{font-size:.72em;opacity:.5;font-variant-numeric:tabular-nums;white-space:nowrap;padding:0 4px}
+.md-text-btn{height:36px;padding:0 14px;border:none;border-radius:8px;background:rgba(255,255,255,.10);color:#fff;font-family:var(--font);font-size:.85em;cursor:pointer;transition:.18s;white-space:nowrap}
+.md-text-btn:hover{background:rgba(255,255,255,.22)}
+.md-text-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.md-save{background:var(--accent-bg)}
+.md-save:hover{background:var(--accent-bg-hover)}
+.md-save.dirty{background:var(--warn);animation:pulseDirty 1.4s ease infinite}
+/* Block-style menu. position:fixed and parented to <body> so the dock's
+   overflow-x can't clip it; coordinates are set in JS on open. */
+.md-menu{display:none;position:fixed;top:0;left:0;min-width:196px;background:#1e2a38;border-radius:10px;padding:6px 0;z-index:10600;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+.md-menu.open{display:block}
+.md-menu button{display:block;width:100%;text-align:left;padding:9px 16px;background:none;border:none;color:#fff;font-family:var(--font);font-size:.9em;cursor:pointer}
+.md-menu button:hover{background:rgba(255,255,255,.10);color:var(--accent)}
+.md-menu .mdm-h1{font-size:1.32em;font-weight:700}
+.md-menu .mdm-h2{font-size:1.18em;font-weight:700}
+.md-menu .mdm-h3{font-size:1.06em;font-weight:600}
+.md-menu .mdm-h4{font-size:.98em;font-weight:600}
+.md-menu .mdm-sep{height:1px;background:rgba(255,255,255,.12);margin:6px 0}
+/* Prose soft-wraps. Markdown is writing, not code — no sideways scrolling. */
+.md-textarea{flex:1 1 auto;min-height:0;width:100%;padding:22px 24px;background:transparent;color:#e6edf3;font-family:'SF Mono','Menlo','Consolas','Courier New',monospace;font-size:14px;line-height:1.7;resize:none;border:0;outline:none;tab-size:2;white-space:pre-wrap;word-wrap:break-word;overflow-y:auto;caret-color:var(--accent)}
+.md-textarea:focus{outline:0}
+.md-textarea::placeholder{opacity:.32}
+/* Empty-document state. An empty .md used to render as a blank panel, which
+   looks like a failed load rather than a file with nothing in it yet. */
+.md-empty-host{display:flex;align-items:center;justify-content:center}
+.md-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px;min-height:38vh;color:#fff}
+.md-empty svg{width:46px;height:46px;fill:currentColor;opacity:.2;margin-bottom:16px}
+.md-empty .mde-title{font-size:1.06em;font-weight:600;opacity:.82}
+.md-empty .mde-hint{font-size:.86em;opacity:.45;margin-top:7px;line-height:1.55;max-width:36ch}
+.md-empty .mde-name{opacity:.75;font-family:'SF Mono','Menlo','Consolas',monospace;font-size:.95em}
+.md-empty .mde-cta{margin-top:22px;padding:10px 20px;border:none;border-radius:10px;background:var(--accent-bg);color:#fff;font-family:var(--font);font-size:.9em;cursor:pointer;transition:.18s}
+.md-empty .mde-cta:hover{background:var(--accent-bg-hover)}
+.md-empty .mde-cta:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:720px){
+  .md-editor-wrap{width:100%;height:100%;max-width:none}
+  .md-dock{padding:7px 8px;gap:4px}
+  .md-btn{width:34px;height:34px}
+  .md-btn svg{width:17px;height:17px}
+  .md-count{display:none}
+  .md-text-btn{height:34px;padding:0 12px;font-size:.82em}
+  .md-textarea{padding:15px 16px;font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){
+  .md-btn,.md-text-btn{transition:none}
+  .md-save.dirty{animation:none}
+}
 
 /* ── PASSWORD SCREEN (simplified) ── */
 .password-screen{display:none;max-width:360px;margin:20px auto 0;text-align:center}
@@ -1221,7 +1300,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 /* Sticky action dock. width:fit-content makes the dark plate hug the buttons
    instead of stretching the full column, so it only covers what it needs to
    while the grid scrolls underneath it. */
-.files-actions{width:fit-content;max-width:100%;margin:12px auto 16px;overflow:visible;flex-wrap:nowrap;justify-content:center;gap:clamp(4px,1.6vw,10px);
+.files-actions{width:fit-content;max-width:100%;margin:12px auto 16px;overflow:visible;flex-wrap:nowrap;justify-content:center;gap:clamp(5px,1.8vw,10px);
   padding:6px 8px;border-radius:14px;
   background:rgba(16,22,33,.86);
   backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
@@ -1231,8 +1310,8 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 /* Lifts slightly once it actually detaches and overlaps the grid. */
 .files-actions.is-stuck{background:rgba(13,18,28,.94);box-shadow:0 10px 28px rgba(0,0,0,.6);border-color:rgba(255,255,255,.13)}
 .files-actions .files-icon-btn,.files-actions .files-select-wrap{flex:0 1 auto;min-width:0}
-.files-actions .files-icon-btn{width:clamp(30px,8vw,40px);height:auto;aspect-ratio:1}
-.files-actions .files-icon-btn svg{width:min(50%,20px);height:min(50%,20px)}
+.files-actions .files-icon-btn{width:clamp(38px,10.5vw,46px);height:auto;aspect-ratio:1}
+.files-actions .files-icon-btn svg{width:min(52%,22px);height:min(52%,22px)}
 /* Files top-bar icons shrink fluidly too. */
 .files-toolbar{gap:clamp(4px,1.5vw,8px)}
 .files-toolbar .files-icon-btn{width:clamp(30px,8vw,38px);height:auto;aspect-ratio:1}
@@ -1307,14 +1386,13 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 /* Files bulk-action overflow menu (Properties / folder colour). Shown as its own
    icon buttons on a roomy screen and folded into a ⋮ menu on phones. */
 .files-more-wrap{position:relative;display:none;flex:0 0 auto}
-.files-more-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#1e2a38;border-radius:12px;padding:10px 8px;min-width:236px;z-index:220;box-shadow:0 12px 34px rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.07)}
+.files-more-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e2a38;border-radius:11px;padding:6px 5px;min-width:198px;z-index:220;box-shadow:0 12px 32px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.07)}
 .files-more-wrap.open .files-more-menu{display:block}
-/* Roomier rows: the old 10px/.92em cramped two-word labels onto tight lines. */
-.files-more-menu button{display:flex;align-items:center;gap:12px;width:calc(100% - 8px);text-align:left;padding:13px 14px;margin:3px 4px;background:none;border:none;font-family:var(--font);font-size:.95em;line-height:1.35;border-radius:8px;color:#fff;cursor:pointer;transition:background .15s;white-space:nowrap}
+.files-more-menu button{display:flex;align-items:center;gap:10px;width:calc(100% - 6px);text-align:left;padding:9px 11px;margin:1px 3px;background:none;border:none;font-family:var(--font);font-size:.9em;line-height:1.3;border-radius:7px;color:#fff;cursor:pointer;transition:background .15s;white-space:nowrap}
 .files-more-menu button:hover{background:rgba(255,255,255,.1);color:var(--accent)}
-.files-more-menu button svg{width:19px;height:19px;fill:currentColor;flex-shrink:0;opacity:.9}
+.files-more-menu button svg{width:17px;height:17px;fill:currentColor;flex-shrink:0;opacity:.9}
 .files-more-menu button.hidden{display:none}
-.files-more-menu .fm-sep{height:1px;background:rgba(255,255,255,.1);margin:6px 10px}
+.files-more-menu .fm-sep{height:1px;background:rgba(255,255,255,.1);margin:4px 8px}
 /* Dot size is set in the markup (CSS `r` isn't reliable across engines). */
 /* Phones only: Properties + Colour collapse into the ⋮ menu. On desktop every
    action already has its own button, so the ⋮ is not rendered at all. */
@@ -1480,6 +1558,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
             <div class="mm-sep"></div>
             <button onclick="closeManageMenus();openWebApp()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>Open</button>
             <button onclick="closeManageMenus();downloadWebApp()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Download</button>
+            <button onclick="closeManageMenus();editWebAppSource()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Edit HTML</button>
             <button onclick="closeManageMenus();renameWebApp()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>Rename</button>
             <div class="mm-sep"></div>
             <button class="danger" onclick="closeManageMenus();deleteWebApp()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Delete</button>
@@ -1518,6 +1597,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
           <div class="files-upload-menu">
             <button onclick="closeFilesUploadMenu();showNewFolderDialog()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>New Folder</button>
             <button onclick="closeFilesUploadMenu();showNewFileDialog()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z"/></svg>New File</button>
+            <button onclick="closeFilesUploadMenu();showNewMarkdownDialog()" title="Create an empty .md and start writing"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.5 5h-17A1.5 1.5 0 0 0 2 6.5v11A1.5 1.5 0 0 0 3.5 19h17a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 20.5 5zM11 15H9v-3.5l-1.5 2-1.5-2V15H4V9h2l1.5 2L9 9h2v6zm5.5.5L14 12h1.75V9h1.5v3H19l-2.5 3.5z"/></svg>New Markdown…</button>
             <div class="fu-sep"></div>
             <button onclick="closeFilesUploadMenu();document.getElementById('filesUploadInput').click()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>Upload files…</button>
             <button onclick="closeFilesUploadMenu();showNewWebLinkDialog()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>New Web Link…</button>
@@ -1545,6 +1625,8 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
           <button id="filesMoreBtn" class="files-icon-btn" onclick="toggleFilesMoreMenu(event)" title="More actions" aria-label="More actions"><svg xmlns="http://www.w3.org/2000/svg" viewBox="5 3 14 18" fill="currentColor"><circle cx="12" cy="5.6" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="18.4" r="1.75"/></svg></button>
           <div class="files-more-menu">
             <button onclick="closeFilesMoreMenu();showBulkProperties()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2V7zm0 4h2v6h-2v-6z"/></svg>Properties</button>
+            <button id="filesMoreSendMedia" onclick="closeFilesMoreMenu();sendFilesTo(null,'media')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/></svg>Send to Media</button>
+            <button id="filesMoreSendApps" onclick="closeFilesMoreMenu();sendFilesTo(null,'webapps')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Send to Web Apps</button>
             <div class="fm-sep"></div>
             <button id="filesMoreColorItem" onclick="closeFilesMoreMenu();showFolderColorDialog()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22a1 1 0 0 1-1-1v-1.5a1.5 1.5 0 0 1 1.5-1.5H16a5 5 0 0 0 5-5c0-4.42-4.03-8-9-8s-9 3.58-9 8 4.03 9 9 9zM6.5 12.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>Folder colour…</button>
           </div>
@@ -2034,6 +2116,8 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
         <span id="vnmSaveFileLabel">Save file</span>
       </button>
+      <!-- Populated per file type (image / video / audio / pdf) -->
+      <div id="vnmTypeActions"></div>
     </div>
   </div>
   <!-- Top-right: fullscreen only -->
@@ -2380,6 +2464,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
   </div>
 </div>
 
+
 <!-- FULL-URL PEEK (opened by right-clicking a recent-URL crumb) -->
 <div class="url-peek" id="urlPeek" onclick="event.stopPropagation()">
   <div class="up-head">Full URL</div>
@@ -2548,6 +2633,22 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
     <div class="popup-btn-row">
       <button class="btn-primary" onclick="confirmNewFile()">Create</button>
       <button class="btn-ghost" onclick="closePopup('newFilePopup')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Markdown — name only; the extension and the empty body are implied. -->
+<div class="popup-overlay" id="newMarkdownPopup">
+  <div class="popup-box has-close" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closePopup('newMarkdownPopup')">&times;</button>
+    <h3>New Markdown file</h3>
+    <input type="text" id="newMarkdownNameInput" placeholder="Untitled" autocomplete="off" spellcheck="false">
+    <div style="font-size:.78em;opacity:.55;margin:-4px 2px 14px;line-height:1.5">
+      Saved as <span id="newMarkdownPreviewName" style="opacity:.9">Untitled.md</span> — the file starts empty and opens in the editor.
+    </div>
+    <div class="popup-btn-row">
+      <button class="btn-primary" onclick="confirmNewMarkdown()">Create &amp; edit</button>
+      <button class="btn-ghost" onclick="closePopup('newMarkdownPopup')">Cancel</button>
     </div>
   </div>
 </div>
@@ -7656,7 +7757,8 @@ function loadWebApps(){
   searchApps();
 }
 function showAppCtxMenu(e,item,idx){
-  showCtxMenu(e,[{label:'Open',action:()=>showWebAppInViewer(item)},{label:'Download',action:()=>{selectedAppIndex=idx;downloadWebApp();}},{label:'Rename',action:()=>{selectedAppIndex=idx;renameWebApp();}},{sep:true},{label:'Properties',action:()=>showProperties(item)},{sep:true},{label:'Delete',action:()=>{selectedAppIndex=idx;deleteWebApp();}}]);
+  showCtxMenu(e,[{label:'Open',action:()=>showWebAppInViewer(item)},
+    {label:'Edit HTML…',action:()=>editWebAppSource(item)},{label:'Download',action:()=>{selectedAppIndex=idx;downloadWebApp();}},{label:'Rename',action:()=>{selectedAppIndex=idx;renameWebApp();}},{sep:true},{label:'Properties',action:()=>showProperties(item)},{sep:true},{label:'Delete',action:()=>{selectedAppIndex=idx;deleteWebApp();}}]);
 }
 function renameWebApp(){
   if(selectedAppIndex===null){ showToast('Select an app first','error'); return; }
@@ -7730,6 +7832,10 @@ function closeViewer(){
   const rb = document.getElementById('viewerReloadBtn'); if (rb) rb.style.display='none';
   _viewerCurrentUrl = null;
   _viewerCurrentNode=null; _viewerCurrentMode=null; _viewerTextArea=null; _viewerDirty=false;
+  // Markdown editor state is per-file — don't leak scroll / selection / an
+  // open block menu into whatever gets opened next.
+  try { _mdCloseMenu(); } catch{}
+  _viewerMdSource=''; _mdSel=null; _mdScroll=0;
 }
 // Fullscreens the viewer itself — does NOT close the viewer. If the browser
 // blocks the request (permissions, non-user-gesture), the viewer stays open.
@@ -7769,23 +7875,22 @@ function _updateFsIcons(){
 document.addEventListener('fullscreenchange', _updateFsIcons);
 document.addEventListener('webkitfullscreenchange', _updateFsIcons);
 
-// Reload the currently open surface in the viewer.
-//  - Web URL         → re-run openUrlInViewer(_viewerCurrentUrl)
-//  - Text / code / html-source → reload from the underlying file node
-//  - Media (image/video/pdf)   → re-open from IndexedDB
-// The reload icon spins briefly for visual feedback either way.
+// Reload re-fetches a web page, and only a web page.
+//
+// It used to also re-read the open FILE from IndexedDB. That was a data-loss
+// bug: for text / HTML / markdown it silently discarded whatever was in the
+// editor, and for images, video, audio and PDFs it re-decoded bytes that
+// cannot have changed while the viewer is the only thing holding them. Files
+// now have no reload path at all — the menu entry hides itself (see
+// refreshViewerNavMenu) and this function refuses anything that isn't web.
 let _viewerCurrentUrl = null;
 function reloadCurrentViewer(btn){
+  if (_viewerCurrentMode !== 'web' || !_viewerCurrentUrl){
+    showToast('Reload only applies to web pages','warn');
+    return;
+  }
   if (btn){ btn.classList.remove('rl-spin'); void btn.offsetWidth; btn.classList.add('rl-spin'); }
-  if (_viewerCurrentMode === 'web' && _viewerCurrentUrl){
-    openUrlInViewer(_viewerCurrentUrl);
-    return;
-  }
-  if (_viewerCurrentNode){
-    try { openFileViewer(_viewerCurrentNode); } catch (e){ console.warn('[reload]', e); }
-    return;
-  }
-  showToast('Nothing to reload','warn');
+  openUrlInViewer(_viewerCurrentUrl);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -8363,7 +8468,7 @@ function renderFilesGrid(){
     else { typeClass=getFileTypeClass(node.name); icon=getFileIcon(node.name); }
     div.classList.add(typeClass);
     const label = escapeHtml(node.name);
-    div.innerHTML=`<div class="multi-check-file"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><span class="file-icon">${icon}</span><div class="file-label" title="${_escapeAttr(label)}">${_escapeText(label)}</div><div class="file-info">${node.type==='folder'?'Folder':formatFileSize(node.size||0)}</div>`;
+    div.innerHTML=`<div class="multi-check-file"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><span class="file-icon">${icon}</span><div class="file-label" title="${_escapeAttr(label)}">${_escapeText(label)}</div><div class="file-info">${node.type==='folder'?'Folder':(node.size?formatFileSize(node.size):'Empty')}</div>`;
     div.onclick=(e)=>{
       if(filesSelectMode){ toggleFileSelect(node.id); return; }
       // Ctrl/Cmd-click: enter select mode automatically so the "Select" dropdown
@@ -8669,6 +8774,93 @@ async function confirmNewFile(){
   closePopup('newFilePopup');
   showToast('File created');
 }
+// ── New Markdown ───────────────────────────────────────────────────────────
+// A .md gets its own entry because the generic New File dialog makes you type
+// the extension and then drops you in a blank preview. This appends .md,
+// avoids collisions in the current folder, and opens the source editor.
+function _mdSuggestName(){
+  const taken = new Set(
+    (filesTree[currentFolderId]?.children || [])
+      .map(id => (filesTree[id]?.name || '').toLowerCase())
+  );
+  if(!taken.has('untitled.md')) return 'Untitled';
+  let n = 2;
+  while(taken.has(`untitled ${n}.md`)) n++;
+  return `Untitled ${n}`;
+}
+
+// Strip path-hostile characters, then guarantee exactly one .md/.markdown tail.
+function _mdNormalizeName(raw){
+  let name = String(raw || '').trim().replace(/[\\/:*?"<>|]/g, '_').replace(/\.+$/, '').trim();
+  if(!name) name = 'Untitled';
+  if(!/\.(md|markdown)$/i.test(name)) name += '.md';
+  return name.slice(0, 120);
+}
+
+function _mdUniqueName(name){
+  const taken = new Set(
+    (filesTree[currentFolderId]?.children || [])
+      .map(id => (filesTree[id]?.name || '').toLowerCase())
+  );
+  if(!taken.has(name.toLowerCase())) return name;
+  const dot = name.lastIndexOf('.');
+  const stem = name.slice(0, dot), ext = name.slice(dot);
+  let n = 2;
+  while(taken.has(`${stem} ${n}${ext}`.toLowerCase())) n++;
+  return `${stem} ${n}${ext}`;
+}
+
+function showNewMarkdownDialog(){
+  openPopup('newMarkdownPopup');
+  const input = document.getElementById('newMarkdownNameInput');
+  if(input){
+    input.value = _mdSuggestName();
+    input.oninput = _mdSyncPreviewName;
+    _mdSyncPreviewName();
+    setTimeout(() => { input.focus(); input.select(); }, 100);
+  }
+}
+
+function _mdSyncPreviewName(){
+  const input = document.getElementById('newMarkdownNameInput');
+  const out = document.getElementById('newMarkdownPreviewName');
+  if(out) out.textContent = _mdNormalizeName(input ? input.value : '');
+}
+
+async function confirmNewMarkdown(){
+  const name = _mdUniqueName(_mdNormalizeName(
+    (document.getElementById('newMarkdownNameInput') || {}).value
+  ));
+  const mime = 'text/markdown';
+  const blob = new Blob([''], {type: mime});
+  const id = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+  const meta = {
+    id, name, type: 'file', mimeType: mime, size: 0,
+    parentId: currentFolderId, dateCreated: new Date().toISOString()
+  };
+
+  const tx = db.transaction(['files'], 'readwrite');
+  tx.objectStore('files').add({id, name, type: mime, size: 0, data: blob});
+  const wrote = await new Promise(done => {
+    tx.oncomplete = () => done(true);
+    tx.onerror = tx.onabort = () => done(false);
+  });
+  if(!wrote){ showToast('Could not create the file', 'error'); return; }
+
+  filesTree[id] = meta;
+  (filesTree[currentFolderId].children = filesTree[currentFolderId].children || []).push(id);
+  saveFilesTree();
+  renderFilesGrid();
+  closePopup('newMarkdownPopup');
+  showToast(`Created ${name}`);
+
+  // An empty preview would just look broken — go straight to writing.
+  openFileViewer(meta);
+  setTimeout(() => {
+    if(_viewerCurrentMode === 'md-preview') toggleMarkdownViewerMode();
+  }, 120);
+}
+
 function showNewWebLinkDialog(){
   openPopup('newWebLinkPopup');
   setTimeout(()=>{ const el=document.getElementById('newWebLinkNameInput'); if(el){ el.value=''; el.focus(); } const u=document.getElementById('newWebLinkUrlInput'); if(u) u.value=''; }, 80);
@@ -8813,6 +9005,10 @@ function showFileCtxMenu(e,node){
     {label:'Cut',action:()=>{filesCopyBuffer={ids:targetIds,mode:'move'};showToast(targetIds.length>1?`Cut ${targetIds.length} items`:'Cut');}},
     {label:'Copy',action:()=>{filesCopyBuffer={ids:targetIds,mode:'copy'};showToast(targetIds.length>1?`Copied ${targetIds.length} items`:'Copied');}},
     filesCopyBuffer?{label:'Paste here',action:()=>pasteFiles()}:null,
+    (()=>{ const n=filesCanSendTo(targetIds,'media');
+           return n ? {label: n>1 ? `Send ${n} to Media` : 'Send to Media', action:()=>sendFilesTo(targetIds,'media')} : null; })(),
+    (()=>{ const n=filesCanSendTo(targetIds,'webapps');
+           return n ? {label: n>1 ? `Send ${n} to Web Apps` : 'Send to Web Apps', action:()=>sendFilesTo(targetIds,'webapps')} : null; })(),
     (()=>{ const f=targetIds.filter(id=>filesTree[id]?.type==='folder');
            return f.length ? {label: f.length>1 ? `Change colour of ${f.length} folders…` : 'Change folder colour…',
                               action:()=>showFolderColorDialog(f)} : null; })(),
@@ -8886,6 +9082,11 @@ function updateFilesActionButtons(){
     moreWrap.classList.toggle('has-sel', anySel);
     const colorItem = document.getElementById('filesMoreColorItem');
     if(colorItem) colorItem.classList.toggle('hidden', !anyFolderSel);
+    const ids=[...selectedFileIds];
+    const sm=document.getElementById('filesMoreSendMedia');
+    if(sm) sm.classList.toggle('hidden', !filesCanSendTo(ids,'media'));
+    const sa=document.getElementById('filesMoreSendApps');
+    if(sa) sa.classList.toggle('hidden', !filesCanSendTo(ids,'webapps'));
     if(!anySel) moreWrap.classList.remove('open');
   }
   // Icon-only Select button: show count as a badge instead of changing text
@@ -9132,15 +9333,21 @@ function openFileViewer(node){
     const _rb=document.getElementById('viewerReloadBtn'); if (_rb) _rb.style.display='none';
     _viewerCurrentUrl = null;
     setViewerExtraToolbar('');
+    _viewerTypeActions = [];
     const mime=node.mimeType||getFileMimeGuess(node.name);
     if(mime.startsWith('image')){
-      const img=document.createElement('img');img.src=url;img.style.cssText='max-width:90vw;max-height:85vh;object-fit:contain;border-radius:10px';vc.appendChild(img);
+      const img=document.createElement('img');img.id='viewerImageEl';img.src=url;img.style.cssText='max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;transition:transform .18s';vc.appendChild(img);
+      _viewerImageState={rot:0,zoom:1};
+      _viewerTypeActions = _imageTypeActions();
     } else if(mime.startsWith('video')){
-      const vid=document.createElement('video');vid.controls=true;vid.autoplay=true;vid.src=url;vid.style.cssText='max-width:90vw;max-height:85vh;border-radius:10px';vc.appendChild(vid);
+      const vid=document.createElement('video');vid.id='viewerVideoEl';vid.controls=true;vid.autoplay=true;vid.playsInline=true;vid.src=url;vid.style.cssText='max-width:100%;max-height:100%;border-radius:10px';vc.appendChild(vid);
+      _viewerTypeActions = _mediaTypeActions('viewerVideoEl', true);
     } else if(mime.startsWith('audio')){
-      const au=document.createElement('audio');au.controls=true;au.autoplay=true;au.src=url;au.style.cssText='width:80vw;max-width:600px;border-radius:10px';vc.appendChild(au);
+      const au=document.createElement('audio');au.id='viewerAudioEl';au.controls=true;au.autoplay=true;au.src=url;au.style.cssText='width:80vw;max-width:600px;border-radius:10px';vc.appendChild(au);
+      _viewerTypeActions = _mediaTypeActions('viewerAudioEl', false);
     } else if(mime==='application/pdf'){
-      const em=document.createElement('embed');em.src=url+'#toolbar=1';em.type='application/pdf';em.style.cssText='width:90vw;height:85vh;border-radius:10px';vc.appendChild(em);
+      const em=document.createElement('embed');em.src=url+'#toolbar=1';em.type='application/pdf';em.style.cssText='width:100%;height:100%;border-radius:10px';vc.appendChild(em);
+      _viewerTypeActions = [{label:'Download', icon:'dl', fn:()=>viewerDownloadCurrent()}];
     } else if(isTextMime(mime)){
       const fr=new FileReader();
       fr.onload=()=>{
@@ -9238,6 +9445,97 @@ function _updateViewerDlBtn(){
   b.style.display = (_viewerCurrentNode || _viewerCurrentUrl) ? 'inline-flex' : 'none';
 }
 
+// ── Per-type viewer action bars ────────────────────────
+let _viewerImageState = {rot:0, zoom:1};
+// Per-type entries for the viewer's top-left dropdown. Same home as the HTML
+// source/app toggle, so every file type gets its options in one predictable place.
+let _viewerTypeActions = [];
+const _VNM_ICONS = {
+  edit:'<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>',
+  rot:'<path d="M15.55 5.55 11 1v3.07A8 8 0 0 0 4.05 11H2a10 10 0 0 0 9 9.95V19a8 8 0 0 0 6.95-6.95H20A10 10 0 0 0 15.55 5.55z"/>',
+  zin:'<path d="M15.5 14h-.79l-.28-.27a6.47 6.47 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zM10 7H9v2H7v1h2v2h1v-2h2V9h-2V7z"/>',
+  zout:'<path d="M15.5 14h-.79l-.28-.27a6.47 6.47 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zM7 9h5v1H7V9z"/>',
+  fit:'<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>',
+  dl:'<path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>',
+  send:'<path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/>',
+  slow:'<path d="M11 18V6l-8.5 6 8.5 6zm.5-6 8.5 6V6l-8.5 6z"/>',
+  fast:'<path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>',
+  loop:'<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>',
+  pip:'<path d="M19 11h-8v6h8v-6zm4 8V4.98A2 2 0 0 0 21 3H3a2 2 0 0 0-2 1.98V19a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2zm-2 .02H3V4.97h18v14.05z"/>'
+};
+function _imageTypeActions(){
+  const a=[];
+  a.push({label:'Rotate 90°',    icon:'rot',  fn:()=>viewerImageRotate(),   stay:true});
+  a.push({label:'Zoom in',       icon:'zin',  fn:()=>viewerImageZoom(0.25), stay:true});
+  a.push({label:'Zoom out',      icon:'zout', fn:()=>viewerImageZoom(-0.25),stay:true});
+  a.push({label:'Fit to screen', icon:'fit',  fn:()=>viewerImageReset(),    stay:true});
+  a.push({label:'Send to Media', icon:'send', fn:()=>viewerSendCurrentTo('media')});
+  a.push({label:'Download',      icon:'dl',   fn:()=>viewerDownloadCurrent()});
+  return a;
+}
+function _mediaTypeActions(elId, isVideo){
+  const a=[
+    {label:'Slower',      icon:'slow', fn:()=>viewerMediaSpeed(elId,-0.25), stay:true},
+    {label:'Faster',      icon:'fast', fn:()=>viewerMediaSpeed(elId, 0.25), stay:true},
+    {label:'Toggle loop', icon:'loop', fn:()=>viewerMediaLoop(elId),        stay:true}
+  ];
+  if(isVideo) a.push({label:'Pop-out player', icon:'pip', fn:()=>viewerMediaPip()});
+  a.push({label:'Send to Media', icon:'send', fn:()=>viewerSendCurrentTo('media')});
+  a.push({label:'Download',      icon:'dl',   fn:()=>viewerDownloadCurrent()});
+  return a;
+}
+function renderViewerTypeActions(){
+  const host=document.getElementById('vnmTypeActions'); if(!host) return;
+  host.innerHTML='';
+  const list=_viewerTypeActions||[];
+  if(!list.length) return;
+  const sep=document.createElement('div'); sep.className='vnm-sep'; host.appendChild(sep);
+  list.forEach(a=>{
+    const b=document.createElement('button');
+    b.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${_VNM_ICONS[a.icon]||''}</svg><span>${_escapeText(a.label)}</span>`;
+    b.onclick=(e)=>{
+      e.stopPropagation();
+      try{ a.fn(); }catch(err){ console.warn('[vnm action]',err); }
+      // Repeatable steps (zoom / speed / loop) keep the menu open.
+      if(!a.stay) closeViewerNavMenu();
+    };
+    host.appendChild(b);
+  });
+}
+function _viewerApplyImageTransform(){
+  const img=document.getElementById('viewerImageEl'); if(!img) return;
+  img.style.transform=`rotate(${_viewerImageState.rot}deg) scale(${_viewerImageState.zoom})`;
+}
+function viewerImageRotate(){ _viewerImageState.rot=(_viewerImageState.rot+90)%360; _viewerApplyImageTransform(); }
+function viewerImageZoom(d){
+  _viewerImageState.zoom=Math.max(0.25, Math.min(6, +(_viewerImageState.zoom+d).toFixed(2)));
+  _viewerApplyImageTransform();
+}
+function viewerImageReset(){ _viewerImageState={rot:0,zoom:1}; _viewerApplyImageTransform(); }
+function viewerMediaSpeed(id, d){
+  const el=document.getElementById(id); if(!el) return;
+  el.playbackRate=Math.max(0.25, Math.min(4, +(el.playbackRate+d).toFixed(2)));
+  showToast('Speed '+el.playbackRate.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')+'×');
+}
+function viewerMediaLoop(id){
+  const el=document.getElementById(id); if(!el) return;
+  el.loop=!el.loop;
+  showToast('Loop '+(el.loop?'on':'off'));
+}
+async function viewerMediaPip(){
+  const el=document.getElementById('viewerVideoEl'); if(!el) return;
+  try{
+    if(document.pictureInPictureElement) await document.exitPictureInPicture();
+    else if(el.requestPictureInPicture) await el.requestPictureInPicture();
+    else showToast('Pop-out not supported here','warn');
+  }catch(e){ showToast('Pop-out unavailable','warn'); }
+}
+function viewerSendCurrentTo(dest){
+  const n=_viewerCurrentNode;
+  if(!n || n._store) { showToast('Already in that library','warn'); return; }
+  sendFilesTo([n.id], dest);
+}
+
 function setViewerExtraToolbar(html){
   let bar=document.getElementById('viewerExtraBar');
   if(!bar){
@@ -9249,6 +9547,8 @@ function setViewerExtraToolbar(html){
   }
   bar.innerHTML=html;
   bar.style.display = html ? 'flex' : 'none';
+  const vm=document.getElementById('viewerModal');
+  if(vm) vm.classList.toggle('has-extra-bar', !!html);
 }
 
 function renderTextViewer(node,text,mime){
@@ -9257,6 +9557,8 @@ function renderTextViewer(node,text,mime){
   vc.innerHTML='';
   const wrap=document.createElement('div'); wrap.className='code-viewer-wrap';
   const ta=document.createElement('textarea'); ta.className='code-viewer-textarea'; ta.spellcheck=false; ta.value=text; ta.setAttribute('data-lang', (node.name.split('.').pop()||'').toLowerCase());
+  // An empty file and a failed read look identical in a blank textarea — say which.
+  ta.placeholder = 'This file is empty — start typing to add content.';
   ta.addEventListener('input',()=>{ _viewerDirty=true; updateSaveBtnDirty(); });
   wrap.appendChild(ta);
   vc.appendChild(wrap);
@@ -9316,52 +9618,463 @@ function updateSaveBtnDirty(){
   b.innerHTML = _viewerDirty ? '● Save*' : 'Save';
 }
 
-// Markdown viewer (renders GitHub-flavored subset). Toggle between source + preview.
-function renderMarkdownViewer(node, text){
-  _viewerCurrentMode = 'md-preview';
-  const vc = document.getElementById('viewerContent'); vc.innerHTML = '';
-  const wrap = document.createElement('div'); wrap.className='web-viewer-wrap rich-content';
-  wrap.innerHTML = markdownToRichHtml(text);
-  vc.appendChild(wrap);
-  _viewerTextArea = null; // preview mode has no textarea
-  // Stash the source for toggling
-  _viewerMdSource = text;
-  setViewerExtraToolbar(
-    '<button class="vb-btn" onclick="toggleMarkdownViewerMode()" id="viewerToggleBtn">Edit Source</button>'
-  );
-}
+// ═══════════════════════════════════════════════════════
+//  MARKDOWN EDITOR
+//  A .md file opens in preview and toggles into a source editor that carries
+//  a sticky formatting dock, modelled on the note editor's topbar.
+//
+//  Everything routes through _mdSplice so the browser's native undo stack
+//  survives — rewriting textarea.value wholesale would flatten it, which is
+//  exactly the sort of thing that makes an editor feel broken.
+// ═══════════════════════════════════════════════════════
 let _viewerMdSource = '';
-function toggleMarkdownViewerMode(){
-  const vc = document.getElementById('viewerContent'); const btn = document.getElementById('viewerToggleBtn');
-  if (_viewerCurrentMode === 'md-preview'){
-    // Switch to source editor
-    const src = _viewerMdSource || '';
-    vc.innerHTML = '';
-    const w = document.createElement('div'); w.className='code-viewer-wrap';
-    const ta = document.createElement('textarea'); ta.className='code-viewer-textarea'; ta.spellcheck=false; ta.value=src; ta.setAttribute('data-lang','md');
-    ta.addEventListener('input',()=>{ _viewerDirty=true; _viewerMdSource=ta.value; updateSaveBtnDirty(); });
-    w.appendChild(ta); vc.appendChild(w);
-    _viewerTextArea = ta; _viewerCurrentMode = 'md-source';
-    setViewerExtraToolbar(
-      '<button class="vb-btn" onclick="toggleMarkdownViewerMode()" id="viewerToggleBtn">Preview</button>'+
-      '<button class="vb-btn vb-save" onclick="saveViewerFile()" id="viewerSaveBtn">Save</button>'
-    );
-    updateSaveBtnDirty();
+let _mdSel = null;        // last known selection, for clicks that steal focus
+let _mdScroll = 0;        // scroll offset preserved across preview/source
+
+function renderMarkdownViewer(node, text){
+  _viewerMdSource = text || '';
+  _mdSel = null;
+  _mdScroll = 0;
+  _mdRenderPreview();
+}
+
+// ── Preview ────────────────────────────────────────────────────────────────
+function _mdRenderPreview(){
+  const vc = document.getElementById('viewerContent');
+  if(!vc) return;
+  vc.innerHTML = '';
+  const w = document.createElement('div');
+  const body = _viewerMdSource || '';
+  if(!body.trim()){
+    // Blank panel == "did this fail to load?". Name the file and offer the
+    // one action that makes sense.
+    w.className = 'web-viewer-wrap rich-content md-empty-host';
+    const fname = (_viewerCurrentNode && _viewerCurrentNode.name) || 'This file';
+    w.innerHTML =
+      '<div class="md-empty">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>' +
+        '<div class="mde-title">This file is empty</div>' +
+        '<div class="mde-hint"><span class="mde-name">' + _escapeText(fname) + '</span> ' +
+          'has no content yet. Anything you write is saved back to this file.</div>' +
+        '<button class="mde-cta" type="button" onclick="toggleMarkdownViewerMode()">Start writing</button>' +
+      '</div>';
   } else {
-    // Back to preview (from the possibly-edited buffer)
-    const src = _viewerTextArea ? _viewerTextArea.value : _viewerMdSource;
-    _viewerMdSource = src;
-    vc.innerHTML='';
-    const w = document.createElement('div'); w.className='web-viewer-wrap rich-content';
-    w.innerHTML = markdownToRichHtml(src||'');
-    vc.appendChild(w);
-    _viewerTextArea = null; _viewerCurrentMode = 'md-preview';
-    setViewerExtraToolbar(
-      '<button class="vb-btn" onclick="toggleMarkdownViewerMode()" id="viewerToggleBtn">Edit Source</button>'+
-      (_viewerDirty?'<button class="vb-btn vb-save" onclick="saveViewerFile()" id="viewerSaveBtn">● Save*</button>':'')
-    );
+    w.className = 'web-viewer-wrap rich-content';
+    w.innerHTML = markdownToRichHtml(body);
+  }
+  vc.appendChild(w);
+  w.scrollTop = _mdScroll;
+  w.addEventListener('scroll', () => { _mdScroll = w.scrollTop; });
+  _viewerTextArea = null;
+  _viewerCurrentMode = 'md-preview';
+  setViewerExtraToolbar(
+    '<button class="vb-btn" onclick="toggleMarkdownViewerMode()" id="viewerToggleBtn">Edit markdown</button>'+
+    '<button class="vb-btn vb-save" onclick="saveViewerFile()" id="viewerSaveBtn">Save</button>'
+  );
+  updateSaveBtnDirty();
+  _mdCloseMenu();
+}
+
+// ── Source editor ──────────────────────────────────────────────────────────
+function _mdRenderSource(){
+  const vc = document.getElementById('viewerContent');
+  if(!vc) return;
+  vc.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'md-editor-wrap';
+  wrap.appendChild(_mdBuildDock());
+
+  const ta = document.createElement('textarea');
+  ta.className = 'md-textarea';
+  ta.id = 'mdSourceArea';
+  ta.spellcheck = true;
+  ta.value = _viewerMdSource || '';
+  ta.placeholder = 'Write in markdown…';
+  ta.setAttribute('data-lang','md');
+  ta.setAttribute('aria-label','Markdown source');
+  ta.addEventListener('input', () => {
+    _viewerDirty = true;
+    _viewerMdSource = ta.value;
+    updateSaveBtnDirty();
+    _mdUpdateCount();
+  });
+  ta.addEventListener('keydown', _mdKeydown);
+  ta.addEventListener('blur', () => { _mdSel = {s: ta.selectionStart, e: ta.selectionEnd}; });
+  ta.addEventListener('scroll', () => { _mdScroll = ta.scrollTop; });
+  wrap.appendChild(ta);
+  vc.appendChild(wrap);
+
+  _viewerTextArea = ta;
+  _viewerCurrentMode = 'md-source';
+  // The dock carries Preview and Save, so the floating bottom bar would only
+  // duplicate them — clear it and give the editor the full height.
+  setViewerExtraToolbar('');
+  ta.scrollTop = _mdScroll;
+  _mdUpdateCount();
+  updateSaveBtnDirty();
+  _mdCloseMenu();
+  setTimeout(() => { try { ta.focus(); } catch{} }, 0);
+}
+
+function toggleMarkdownViewerMode(){
+  if (_viewerCurrentMode === 'md-preview') _mdRenderSource();
+  else if (_viewerCurrentMode === 'md-source'){
+    if (_viewerTextArea) _viewerMdSource = _viewerTextArea.value;
+    _mdScroll = 0;
+    _mdRenderPreview();
   }
 }
+
+// ── The dock ───────────────────────────────────────────────────────────────
+const _MD_ICONS = {
+  heading:'<path d="M5 4v3h5.5v12h3V7H19V4z"/>',
+  bold:'<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>',
+  italic:'<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>',
+  strike:'<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>',
+  code:'<path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>',
+  link:'<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4a5 5 0 0 0 0-10z"/>',
+  image:'<path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>',
+  ul:'<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>',
+  ol:'<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>',
+  task:'<path d="M22 5.72l-4.6-3.86-1.29 1.53 4.6 3.86L22 5.72zM7.88 3.39 6.6 1.86 2 5.71l1.29 1.53 4.59-3.85zM12.5 8H11v6l4.75 2.85.75-1.23-4-2.37V8zM12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>',
+  quote:'<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>',
+  codeblock:'<path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM9.5 15.4 6.1 12l3.4-3.4.9.9L7.9 12l2.5 2.5-.9.9zm5 0-.9-.9 2.5-2.5-2.5-2.5.9-.9L17.9 12l-3.4 3.4z"/>',
+  hr:'<path d="M19 13H5v-2h14v2z"/>',
+  table:'<path d="M20 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 19H4v-4h4v4zm0-6H4V9h4v4zm0-6H4V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2z"/>'
+};
+
+function _mdIconBtn(icon, title, onclick){
+  return `<button class="md-btn" type="button" title="${title}" aria-label="${title.split('  ')[0]}" onclick="${onclick}">`+
+         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${_MD_ICONS[icon]}</svg></button>`;
+}
+
+function _mdBuildDock(){
+  const dock = document.createElement('div');
+  dock.className = 'md-dock';
+  dock.setAttribute('role','toolbar');
+  dock.setAttribute('aria-label','Markdown formatting');
+  dock.innerHTML =
+    _mdIconBtn('heading','Heading / block  (Ctrl+Alt+1…6)','mdToggleMenu(event)') +
+    '<div class="md-sep"></div>' +
+    _mdIconBtn('bold','Bold  (Ctrl+B)',"mdWrap('**','**','bold text')") +
+    _mdIconBtn('italic','Italic  (Ctrl+I)',"mdWrap('*','*','italic text')") +
+    _mdIconBtn('strike','Strikethrough  (Ctrl+Shift+X)',"mdWrap('~~','~~','struck text')") +
+    _mdIconBtn('code','Inline code  (Ctrl+E)',"mdWrap('`','`','code')") +
+    '<div class="md-sep"></div>' +
+    _mdIconBtn('link','Link  (Ctrl+K)','mdLink()') +
+    _mdIconBtn('image','Image','mdImage()') +
+    '<div class="md-sep"></div>' +
+    _mdIconBtn('ul','Bullet list',"mdBlock('ul')") +
+    _mdIconBtn('ol','Numbered list',"mdBlock('ol')") +
+    _mdIconBtn('task','Task list',"mdBlock('task')") +
+    _mdIconBtn('quote','Quote',"mdBlock('quote')") +
+    '<div class="md-sep"></div>' +
+    _mdIconBtn('codeblock','Code block','mdCodeBlock()') +
+    _mdIconBtn('hr','Horizontal rule','mdRule()') +
+    _mdIconBtn('table','Table','mdTable()') +
+    '<div class="md-right">' +
+      '<span class="md-count" id="mdCount"></span>' +
+      '<button class="md-text-btn" type="button" onclick="toggleMarkdownViewerMode()" id="viewerToggleBtn" title="Preview  (Ctrl+Shift+P)">Preview</button>' +
+      '<button class="md-text-btn md-save" type="button" onclick="saveViewerFile()" id="viewerSaveBtn" title="Save  (Ctrl+S)">Save</button>' +
+    '</div>';
+  // Keep focus (and therefore the selection) in the textarea when a tool is
+  // clicked. Without this the caret is lost the moment the button takes focus.
+  dock.addEventListener('mousedown', e => {
+    if (e.target.closest('button')) e.preventDefault();
+  });
+  return dock;
+}
+
+function _mdUpdateCount(){
+  const el = document.getElementById('mdCount');
+  const ta = document.getElementById('mdSourceArea');
+  if(!el || !ta) return;
+  const v = ta.value;
+  if(!v.trim()){ el.textContent = 'Empty file'; return; }
+  const words = (v.match(/\S+/g) || []).length;
+  el.textContent = `${words} word${words === 1 ? '' : 's'} · ${v.length} chars`;
+}
+
+// ── Block-style menu ───────────────────────────────────────────────────────
+function _mdMenuEl(){
+  let m = document.getElementById('mdBlockMenu');
+  if(!m){
+    m = document.createElement('div');
+    m.id = 'mdBlockMenu';
+    m.className = 'md-menu';
+    m.setAttribute('role','menu');
+    m.innerHTML =
+      '<button type="button" onclick="mdBlock(\'p\')">Paragraph</button>' +
+      '<button type="button" class="mdm-h1" onclick="mdBlock(\'h1\')">Heading 1</button>' +
+      '<button type="button" class="mdm-h2" onclick="mdBlock(\'h2\')">Heading 2</button>' +
+      '<button type="button" class="mdm-h3" onclick="mdBlock(\'h3\')">Heading 3</button>' +
+      '<button type="button" class="mdm-h4" onclick="mdBlock(\'h4\')">Heading 4</button>' +
+      '<button type="button" onclick="mdBlock(\'h5\')">Heading 5</button>' +
+      '<button type="button" onclick="mdBlock(\'h6\')">Heading 6</button>' +
+      '<div class="mdm-sep"></div>' +
+      '<button type="button" onclick="mdBlock(\'quote\')">Quote</button>' +
+      '<button type="button" onclick="mdCodeBlock()">Code block</button>';
+    m.addEventListener('mousedown', e => {
+      if (e.target.closest('button')) e.preventDefault();
+    });
+    m.addEventListener('click', e => {
+      if (e.target.closest('button')) _mdCloseMenu();
+    });
+    document.body.appendChild(m);
+  }
+  return m;
+}
+function mdToggleMenu(e){
+  e.stopPropagation();
+  const m = _mdMenuEl();
+  if (m.classList.contains('open')){ _mdCloseMenu(); return; }
+  const r = e.currentTarget.getBoundingClientRect();
+  m.style.top  = Math.min(r.bottom + 6, window.innerHeight - 340) + 'px';
+  m.style.left = Math.min(r.left, window.innerWidth - 210) + 'px';
+  m.classList.add('open');
+  setTimeout(() => document.addEventListener('mousedown', _mdMenuOutside, true), 0);
+}
+function _mdCloseMenu(){
+  const m = document.getElementById('mdBlockMenu');
+  if(m) m.classList.remove('open');
+  document.removeEventListener('mousedown', _mdMenuOutside, true);
+}
+function _mdMenuOutside(e){
+  const m = document.getElementById('mdBlockMenu');
+  if(m && !m.contains(e.target)) _mdCloseMenu();
+}
+
+// ── Edit primitives ────────────────────────────────────────────────────────
+// Splice through execCommand where possible: it is the only way to change a
+// textarea without wiping the browser's undo history.
+function _mdSplice(ta, start, end, text, selStart, selEnd){
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  let ok = false;
+  try {
+    ok = (text === '') ? (start !== end && document.execCommand('delete'))
+                       : document.execCommand('insertText', false, text);
+  } catch { ok = false; }
+  if(!ok){
+    const v = ta.value;
+    ta.value = v.slice(0, start) + text + v.slice(end);
+  }
+  const a = (selStart == null) ? start + text.length : selStart;
+  const b = (selEnd == null) ? a : selEnd;
+  ta.setSelectionRange(a, b);
+  ta.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+function _mdTA(){
+  const ta = (_viewerCurrentMode === 'md-source') ? _viewerTextArea : null;
+  if(!ta) return null;
+  // A toolbar click can land while the textarea is blurred; restore the
+  // selection we stashed on blur so edits still go where the caret was.
+  if(document.activeElement !== ta && _mdSel){
+    ta.focus();
+    try { ta.setSelectionRange(_mdSel.s, _mdSel.e); } catch{}
+  }
+  return ta;
+}
+
+function _mdLineBounds(val, s, e){
+  const start = val.lastIndexOf('\n', s - 1) + 1;
+  let end = val.indexOf('\n', e);
+  if(end === -1) end = val.length;
+  return [start, end];
+}
+
+// Inline wrap, with toggle-off: pressing Bold on already-bold text unbolds it,
+// whether the markers sit inside or outside the selection.
+function mdWrap(before, after, placeholder){
+  const ta = _mdTA(); if(!ta) return;
+  const val = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = val.slice(s, e);
+
+  // Markers just outside the selection → strip them.
+  if(val.slice(Math.max(0, s - before.length), s) === before &&
+     val.slice(e, e + after.length) === after){
+    _mdSplice(ta, s - before.length, e + after.length, sel,
+              s - before.length, s - before.length + sel.length);
+    return;
+  }
+  // Markers inside the selection → strip them.
+  if(sel.length >= before.length + after.length &&
+     sel.startsWith(before) && sel.endsWith(after)){
+    const inner = sel.slice(before.length, sel.length - after.length);
+    _mdSplice(ta, s, e, inner, s, s + inner.length);
+    return;
+  }
+  const body = sel || placeholder || '';
+  _mdSplice(ta, s, e, before + body + after,
+            s + before.length, s + before.length + body.length);
+}
+
+// Line-level block styles, all toggling.
+function mdBlock(kind){
+  const ta = _mdTA(); if(!ta) return;
+  const val = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+  const [ls, le] = _mdLineBounds(val, s, e);
+  const lines = val.slice(ls, le).split('\n');
+
+  const HDR  = /^ {0,3}#{1,6}[ \t]+/;
+  const Q    = /^ {0,3}> ?/;
+  const TASK = /^(\s*)[-*+][ \t]+\[[ xX]\][ \t]+/;
+  const UL   = /^(\s*)[-*+][ \t]+/;
+  const OL   = /^(\s*)\d+[.)][ \t]+/;
+  const bare = l => l.replace(TASK, '$1').replace(UL, '$1').replace(OL, '$1');
+
+  let out;
+  if(kind === 'p'){
+    out = lines.map(l => bare(l.replace(HDR, '').replace(Q, '')));
+  } else if(/^h[1-6]$/.test(kind)){
+    const hashes = '#'.repeat(+kind[1]) + ' ';
+    const on = lines.every(l => l.replace(HDR, '') !== l && l.startsWith(hashes));
+    out = lines.map(l => { const t = l.replace(HDR, ''); return on ? t : hashes + t; });
+  } else if(kind === 'quote'){
+    const on = lines.every(l => Q.test(l));
+    out = lines.map(l => on ? l.replace(Q, '') : '> ' + l);
+  } else if(kind === 'ul'){
+    const on = lines.every(l => UL.test(l) && !TASK.test(l));
+    out = lines.map(l => on ? l.replace(UL, '$1') : '- ' + bare(l));
+  } else if(kind === 'ol'){
+    const on = lines.every(l => OL.test(l));
+    let n = 0;
+    out = lines.map(l => on ? l.replace(OL, '$1') : `${++n}. ` + bare(l));
+  } else if(kind === 'task'){
+    const on = lines.every(l => TASK.test(l));
+    out = lines.map(l => on ? l.replace(TASK, '$1') : '- [ ] ' + bare(l));
+  } else return;
+
+  const rep = out.join('\n');
+  _mdSplice(ta, ls, le, rep, ls, ls + rep.length);
+}
+
+// Drop a block on its own lines, wherever the caret happens to be.
+function _mdInsertBlock(text, caretOffset){
+  const ta = _mdTA(); if(!ta) return;
+  const val = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+  const lead  = (s > 0 && !val.slice(0, s).endsWith('\n')) ? '\n' : '';
+  const trail = (e < val.length && !val.slice(e).startsWith('\n')) ? '\n' : '';
+  const ins = lead + text + trail;
+  const caret = s + lead.length + (caretOffset == null ? text.length : caretOffset);
+  _mdSplice(ta, s, e, ins, caret, caret);
+}
+
+function mdLink(){
+  const ta = _mdTA(); if(!ta) return;
+  const val = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = val.slice(s, e);
+  // Selection is already a URL → make it the target, select the label.
+  if(/^https?:\/\/\S+$/i.test(sel.trim())){
+    const t = `[link](${sel.trim()})`;
+    _mdSplice(ta, s, e, t, s + 1, s + 5);
+    return;
+  }
+  const label = sel || 'text';
+  const url = 'https://';
+  const t = `[${label}](${url})`;
+  const off = s + label.length + 3;
+  _mdSplice(ta, s, e, t, off, off + url.length);
+}
+
+function mdImage(){
+  const ta = _mdTA(); if(!ta) return;
+  const val = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+  const alt = val.slice(s, e) || 'alt text';
+  const url = 'https://';
+  const t = `![${alt}](${url})`;
+  const off = s + alt.length + 4;
+  _mdSplice(ta, s, e, t, off, off + url.length);
+}
+
+function mdCodeBlock(){
+  const ta = _mdTA(); if(!ta) return;
+  const sel = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+  if(sel){
+    _mdInsertBlock('```\n' + sel + '\n```', 3);
+  } else {
+    // Caret lands on the empty line between the fences.
+    _mdInsertBlock('```\n\n```', 4);
+  }
+}
+
+function mdRule(){ _mdInsertBlock('\n---\n'); }
+
+function mdTable(){
+  _mdInsertBlock(
+    '| Column | Column |\n' +
+    '| ------ | ------ |\n' +
+    '|        |        |', 2);
+}
+
+// ── Keyboard ───────────────────────────────────────────────────────────────
+function _mdKeydown(e){
+  const ta = e.currentTarget;
+  const mod = e.ctrlKey || e.metaKey;
+
+  // Ctrl+Alt+1…6 → heading, matching the note editor's shortcut shape.
+  if(mod && e.altKey && /^[0-6]$/.test(e.key)){
+    e.preventDefault();
+    mdBlock(e.key === '0' ? 'p' : 'h' + e.key);
+    return;
+  }
+  if(mod && !e.altKey){
+    const k = e.key.toLowerCase();
+    if(k === 'b'){ e.preventDefault(); mdWrap('**','**','bold text'); return; }
+    if(k === 'i'){ e.preventDefault(); mdWrap('*','*','italic text'); return; }
+    if(k === 'k'){ e.preventDefault(); mdLink(); return; }
+    if(k === 'e'){ e.preventDefault(); mdWrap('`','`','code'); return; }
+    if(e.shiftKey && k === 'x'){ e.preventDefault(); mdWrap('~~','~~','struck text'); return; }
+    if(e.shiftKey && k === 'p'){ e.preventDefault(); toggleMarkdownViewerMode(); return; }
+    // Ctrl+S is handled globally; everything else falls through to the browser.
+  }
+
+  if(e.key === 'Tab'){
+    e.preventDefault();
+    const val = ta.value, s = ta.selectionStart, en = ta.selectionEnd;
+    if(s === en && !e.shiftKey){
+      _mdSplice(ta, s, s, '  ');
+      return;
+    }
+    const [ls, le] = _mdLineBounds(val, s, en);
+    const lines = val.slice(ls, le).split('\n');
+    const rep = lines.map(l => e.shiftKey ? l.replace(/^ {1,2}/, '') : '  ' + l).join('\n');
+    _mdSplice(ta, ls, le, rep, ls, ls + rep.length);
+    return;
+  }
+
+  // Enter continues the list you're standing in; a second Enter on an empty
+  // item ends the list instead of leaving a dangling bullet.
+  if(e.key === 'Enter' && !e.shiftKey && !mod){
+    const val = ta.value, s = ta.selectionStart;
+    if(s !== ta.selectionEnd) return;
+    const ls = val.lastIndexOf('\n', s - 1) + 1;
+    const line = val.slice(ls, s);
+    const m = line.match(/^(\s*)([-*+]|\d+[.)])([ \t]+)(\[[ xX]\][ \t]+)?/);
+    if(!m) return;
+    if(!line.slice(m[0].length).trim()){
+      e.preventDefault();
+      _mdSplice(ta, ls, s, '');
+      return;
+    }
+    e.preventDefault();
+    let marker = m[2];
+    if(/^\d/.test(marker)){
+      const digits = marker.match(/^\d+/)[0];
+      marker = (parseInt(digits, 10) + 1) + marker.slice(digits.length);
+    }
+    _mdSplice(ta, s, s, '\n' + m[1] + marker + m[3] + (m[4] ? '[ ] ' : ''));
+    return;
+  }
+
+  if(e.key === 'Escape'){
+    const m = document.getElementById('mdBlockMenu');
+    if(m && m.classList.contains('open')){ e.stopPropagation(); _mdCloseMenu(); }
+  }
+}
+
 
 // Tiny markdown → HTML converter (subset). Not a spec-perfect parser; enough
 // for the common cases in .md files: headings, bold, italic, strike, sub,
@@ -9435,8 +10148,11 @@ function markdownToRichHtml(md){
 
 async function saveViewerFile(){
   if(!_viewerCurrentNode) return;
-  if(!_viewerTextArea){ showToast('Nothing to save'); return; }
-  const text=_viewerTextArea.value;
+  // Markdown preview has no textarea, but the edited buffer is still live in
+  // _viewerMdSource — without this, Save silently did nothing in preview.
+  const text = _viewerTextArea ? _viewerTextArea.value
+             : (_viewerCurrentMode === 'md-preview' ? (_viewerMdSource || '') : null);
+  if(text === null){ showToast('Nothing to save'); return; }
   const mime=_viewerCurrentNode.mimeType||getFileMimeGuess(_viewerCurrentNode.name);
   const blob=new Blob([text],{type:mime});
   const tx=db.transaction(['files'],'readwrite');
@@ -9560,6 +10276,7 @@ function confirmRename(){
 const POPUP_ENTER_MAP = {
   renamePopup: confirmRename,
   newFolderPopup: ()=>confirmNewFolder(),
+  newMarkdownPopup: ()=>confirmNewMarkdown(),
   addBookmarkPopup: ()=>saveNewBookmark(),
   addRSSPopup: ()=>addRSSFeed(),
   changePasswordPopup: ()=>confirmChangePassword(),
@@ -9647,13 +10364,154 @@ function showProperties(item){
   const rows=[
     ['Name',item.name||'—'],
     ['Type',_displayItemType(item)],
-    ['Size',isFolder ? _folderSizeLabel(item) : (item.size ? formatFileSize(item.size) : '—')],
+    ['Size',isFolder ? _folderSizeLabel(item) : (item.size ? formatFileSize(item.size) : 'Empty (0 B)')],
     ['Date Added',item.dateAdded||item.dateCreated?new Date(item.dateAdded||item.dateCreated).toLocaleString():'—'],
     ['ID',item.id||'—']
   ];
   if(isFolder && item.color) rows.splice(2,0,['Colour', item.color]);
   document.getElementById('propertiesContent').innerHTML=rows.map(([l,v])=>`<div class="prop-row"><div class="prop-label">${_escapeText(l)}</div><div class="prop-value">${_escapeText(v)}</div></div>`).join('');
   openPopup('propertiesPopup');
+}
+
+
+
+// ═══════════════════════════════════════════════════════
+//  SEND FILES → MEDIA / WEB APPS
+//  Format-gated. A mixed selection copies what fits and reports what didn't
+//  instead of failing the whole batch.
+// ═══════════════════════════════════════════════════════
+function _fileAcceptedBy(node, dest){
+  if(!node || node.type==='folder') return false;
+  const mime=(node.mimeType||getFileMimeGuess(node.name)||'').toLowerCase();
+  const ext=(node.name||'').split('.').pop().toLowerCase();
+  if(dest==='media'){
+    return mime.startsWith('image/') || mime.startsWith('video/') || mime==='application/pdf'
+        || ['jpg','jpeg','png','gif','webp','bmp','avif','heic','svg','mp4','webm','mov','mkv','avi','m4v','pdf'].includes(ext);
+  }
+  if(dest==='webapps'){
+    return mime==='text/html' || ['html','htm'].includes(ext);
+  }
+  return false;
+}
+function filesCanSendTo(ids, dest){
+  return (ids||[]).map(id=>filesTree[id]).filter(n=>_fileAcceptedBy(n,dest)).length;
+}
+async function sendFilesTo(ids, dest){
+  const all=(ids && ids.length ? ids : [...selectedFileIds]).map(id=>filesTree[id]).filter(Boolean);
+  if(!all.length){ showToast('Nothing selected','error'); return; }
+  const ok = all.filter(n=>_fileAcceptedBy(n,dest));
+  const skipped = all.length - ok.length;
+  if(!ok.length){
+    showToast(dest==='media' ? 'No images, videos or PDFs in the selection' : 'No HTML files in the selection', 'error');
+    return;
+  }
+  const label = dest==='media' ? 'Media' : 'Web Apps';
+  showToast(`Sending ${ok.length} item${ok.length>1?'s':''} to ${label}…`);
+  // Pull each blob out of the files store and hand it to the existing uploader,
+  // so thumbnails / metadata are produced exactly as a normal upload would.
+  const out=[]; const failed=[];
+  for(const n of ok){
+    try{
+      const blob = await new Promise((res,rej)=>{
+        const tx=db.transaction(['files'],'readonly');
+        tx.objectStore('files').get(n.id).onsuccess=e=>{
+          const r=e.target.result; if(!r?.data) rej(new Error('missing')); else res(r.data);
+        };
+        tx.onerror=()=>rej(tx.error||new Error('read failed'));
+      });
+      out.push(new File([blob], n.name, {type: n.mimeType || getFileMimeGuess(n.name) || blob.type || 'application/octet-stream'}));
+    }catch(err){ console.warn('[sendFilesTo]', n.name, err); failed.push(n.name); }
+  }
+  if(!out.length){ showToast('Could not read the selected files','error'); return; }
+  try{
+    if(dest==='media') await uploadMedia(out);
+    else await uploadWebApp(out);
+  }catch(err){ console.warn('[sendFilesTo upload]', err); showToast('Transfer failed','error'); return; }
+  const bits=[`Sent ${out.length} to ${label}`];
+  if(skipped) bits.push(`${skipped} unsupported skipped`);
+  if(failed.length) bits.push(`${failed.length} failed`);
+  showToast(bits.join(' · '));
+  cancelFilesSelectMode();
+}
+
+// ═══════════════════════════════════════════════════════
+//  WEB APPS — edit the stored HTML in place
+// ═══════════════════════════════════════════════════════
+function editWebAppSource(item){
+  const target = item || (selectedAppIndex!==null ? webappsMetadata[selectedAppIndex] : null);
+  if(!target){ showToast('Select a web app first','error'); return; }
+  const tx=db.transaction(['webapps'],'readonly');
+  tx.objectStore('webapps').get(target.id).onsuccess=e=>{
+    const rec=e.target.result;
+    if(!rec?.data){ showToast('App not found','error'); return; }
+    const fr=new FileReader();
+    fr.onload=()=>{
+      // Reuse the viewer's code editor; saving writes straight back to the
+      // webapps store rather than the files tree.
+      _openWebAppEditor(target, String(fr.result||''));
+    };
+    fr.onerror=()=>showToast('Could not read the app','error');
+    fr.readAsText(rec.data);
+  };
+}
+let _webAppEditTarget = null;
+function _openWebAppEditor(item, text){
+  const v=document.getElementById('viewerModal'), vc=document.getElementById('viewerContent');
+  _newViewerToken();
+  vc.innerHTML='';
+  _viewerCurrentNode={...item,_store:'webapps'};
+  _viewerCurrentUrl=null; _viewerCurrentMode='webapp-source';
+  _webAppEditTarget=item;
+  const wrap=document.createElement('div'); wrap.className='code-viewer-wrap';
+  const ta=document.createElement('textarea');
+  ta.className='code-viewer-textarea'; ta.spellcheck=false; ta.value=text;
+  wrap.appendChild(ta); vc.appendChild(wrap);
+  _viewerTextArea=ta; _viewerDirty=false;
+  ta.addEventListener('input', ()=>{
+    _viewerDirty=true;
+    const b=document.getElementById('viewerSaveBtn');
+    if(b){ b.classList.add('dirty'); b.textContent='● Save*'; }
+  });
+  setViewerExtraToolbar(
+    '<button class="vb-btn" onclick="webAppPreviewFromEditor()">Preview</button>'+
+    '<button class="vb-btn vb-save" id="viewerSaveBtn" onclick="saveWebAppSource()">Save</button>'
+  );
+  try{ _updateViewerDlBtn(); }catch{}
+  v.classList.add('open'); v.style.display='flex';
+}
+function webAppPreviewFromEditor(){
+  if(!_viewerTextArea || !_webAppEditTarget) return;
+  const html=_viewerTextArea.value;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const vc=document.getElementById('viewerContent');
+  vc.innerHTML='';
+  const fr=document.createElement('iframe');
+  fr.src=url; fr.style.cssText='width:100%;height:100%;border-radius:10px;border:0';
+  vc.appendChild(fr);
+  setTimeout(()=>URL.revokeObjectURL(url), 20000);
+  setViewerExtraToolbar(
+    '<button class="vb-btn" onclick="editWebAppSource(_webAppEditTarget)">Back to source</button>'+
+    '<button class="vb-btn vb-save" onclick="editWebAppSource(_webAppEditTarget)">Edit</button>'
+  );
+}
+function saveWebAppSource(){
+  if(!_viewerTextArea || !_webAppEditTarget){ showToast('Nothing to save','error'); return; }
+  const item=_webAppEditTarget;
+  const blob=new Blob([_viewerTextArea.value],{type:'text/html'});
+  const tx=db.transaction(['webapps'],'readwrite');
+  tx.oncomplete=()=>{
+    const m=webappsMetadata.find(x=>x.id===item.id);
+    if(m){ m.size=blob.size; m.type='text/html'; }
+    saveWebappsMetadata();
+    _viewerDirty=false;
+    const b=document.getElementById('viewerSaveBtn');
+    if(b){ b.classList.remove('dirty'); b.textContent='Save'; }
+    try{ loadWebApps(); }catch{}
+    showToast('Web app saved');
+  };
+  tx.onerror=tx.onabort=()=>showToast('Save failed','error');
+  tx.objectStore('webapps').put({id:item.id,name:item.name,type:'text/html',size:blob.size,data:blob});
 }
 
 // ═══════════════════════════════════════════════════════
@@ -9758,7 +10616,8 @@ document.addEventListener('keydown',e=>{
   // fullscreen state, it does NOT close the viewer).
   if(e.key==='Escape' && viewerOpen && !document.fullscreenElement) closeViewer();
   // Ctrl-S / Cmd-S saves the currently-open text file
-  if((e.ctrlKey||e.metaKey) && (e.key==='s'||e.key==='S') && viewerOpen && _viewerTextArea){
+  const canSave = _viewerTextArea || _viewerCurrentMode === 'md-preview';
+  if((e.ctrlKey||e.metaKey) && (e.key==='s'||e.key==='S') && viewerOpen && canSave){
     e.preventDefault();
     saveViewerFile();
   }
@@ -10379,7 +11238,6 @@ let _viewerUrlHistory = [];
 let _viewerUrlFuture = [];
 function refreshViewerNavMenu(){
   const isWeb = _viewerCurrentMode === 'web';
-  const isFile = !!_viewerCurrentNode;
   const back = document.getElementById('vnmBack');
   const fwd = document.getElementById('vnmForward');
   const rel = document.getElementById('vnmReload');
@@ -10391,7 +11249,8 @@ function refreshViewerNavMenu(){
   const savFileLbl = document.getElementById('vnmSaveFileLabel');
   if(back) back.disabled = _viewerUrlHistory.length === 0;
   if(fwd) fwd.disabled = _viewerUrlFuture.length === 0;
-  if(rel) rel.disabled = !(isWeb || isFile);
+  // Reload is web-only — hide it entirely for files so it can't eat edits.
+  if(rel){ rel.style.display = isWeb ? 'flex' : 'none'; rel.disabled = !isWeb; }
   // Save URL / Open original — only for web
   if(sav){
     if (isWeb && _viewerCurrentUrl){
@@ -10407,16 +11266,17 @@ function refreshViewerNavMenu(){
       if(togLbl) togLbl.textContent = _viewerCurrentMode === 'html-source' ? 'View HTML app' : 'Edit HTML source';
     } else if (_viewerCurrentMode === 'md-preview' || _viewerCurrentMode === 'md-source'){
       tog.style.display = 'flex';
-      if(togLbl) togLbl.textContent = _viewerCurrentMode === 'md-source' ? 'Preview markdown' : 'Edit markdown source';
+      if(togLbl) togLbl.textContent = _viewerCurrentMode === 'md-source' ? 'Preview' : 'Edit markdown';
     } else {
       tog.style.display = 'none';
     }
   }
   if(savFile){
-    const hasText = _viewerTextArea != null;
+    const hasText = _viewerTextArea != null || _viewerCurrentMode === 'md-preview';
     savFile.style.display = hasText ? 'flex' : 'none';
     if(savFileLbl) savFileLbl.textContent = _viewerDirty ? '● Save file*' : 'Save file';
   }
+  try{ renderViewerTypeActions(); }catch(e){ console.warn('[vnm type]', e); }
 }
 function vnmToggleViewMode(){
   if (_viewerCurrentMode === 'html-source' || _viewerCurrentMode === 'html-app') {
