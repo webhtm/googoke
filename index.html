@@ -1669,7 +1669,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
         </div>
       </div>
       <!-- Appearance -->
-      <div class="settings-section" data-keywords="appearance background gradient color theme">
+      <div class="settings-section" data-keywords="appearance background gradient color theme image caching cache webp memory performance lag storage">
         <h3>Appearance</h3>
         <div class="setting-item"><label>Background Type</label>
           <select id="bgType"><option value="gradient">Gradient</option><option value="solid">Solid Color</option><option value="video">Video (from Media)</option><option value="image">Image (from Media)</option><option value="slideshow">Slideshow (from Media)</option></select>
@@ -1692,6 +1692,12 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
         <div class="setting-item"><label>Blur Strength</label><input type="range" id="blurStrength" min="0" max="30" value="12" style="width:150px"> <span id="blurStrengthVal">12px</span></div>
         <div class="setting-item"><label>Font Size</label><select id="fontSizeChoice"><option value="14px">Small</option><option value="16px" selected>Medium</option><option value="18px">Large</option></select></div>
         <div class="setting-item"><label>Animation Speed</label><select id="animSpeed"><option value="fast">Fast</option><option value="normal" selected>Normal</option><option value="slow">Slow</option></select></div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+          <div class="widget-checkbox"><input type="checkbox" id="imageCaching" checked><label for="imageCaching">Image caching</label></div>
+          <div class="inactivity-hint">Background and widget images are shrunk to screen size and re-encoded as WebP so they don't stall the page. With this on, that result is also kept on your device (encrypted, in internal storage) so it only has to be done once. Turn it off and images are still shrunk — they're just rebuilt each time you open the app, which is slower but stores nothing.</div>
+          <div class="setting-item"><label>Cached images</label><span id="imgCacheStat" style="opacity:.8;font-size:.9em">—</span></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn-ghost" onclick="clearImageCache()" style="padding:9px 20px;font-size:.85em">Clear Image Cache</button></div>
+        </div>
       </div>
       <!-- Widgets -->
       <div class="settings-section" data-keywords="widgets clock weather slideshow calendar rss notes events">
@@ -3002,7 +3008,8 @@ function newUid(prefix){ return (prefix||'')+Date.now().toString(36)+'_'+(_uidCo
 
 let slideshowIntervals = {};
 let unlockedModals = new Set();
-let currentBgUrl = null, currentBgUrls = null, currentBgInterval = null;
+// Background object URLs are owned by ImgCache handles now (see _bgHandle).
+let currentBgInterval = null;
 let bgSelectType = '', selectedBgIndex = null;
 let selectedIndex = null, selectedAppIndex = null;
 let calCurrentDate = new Date();
@@ -3044,6 +3051,10 @@ const DEFAULT_SETTINGS = {
   enableNotifications: false, accentColor: '#2e8b3d', accentType: 'solid', accentColor2: '#1563b6',
   autoSizeWidgets: false, widgetOpacity: 7, blurStrength: 12,
   fontSizeChoice: '16px', animSpeed: 'normal',
+  // Keep encrypted, downscaled WebP copies of background images on disk.
+  // Off still downscales (that is the part that fixes the lag) — it just
+  // rebuilds the variant each session instead of storing it.
+  imageCaching: true,
   widgetLayout: null, // { clock:{w:1,order:0}, weather:{w:2,order:1} ... }
   widgetTintType: 'none', // 'none' | 'solid' | 'gradient'
   widgetTintColor1: '#2e8b3d', widgetTintColor2: '#004675', widgetTintOpacity: 30,
@@ -3099,6 +3110,8 @@ window.addEventListener('load', async () => {
   _safe(loadWidgets, 'loadWidgets');
   _safe(loadMostVisited, 'loadMostVisited');
   _safe(scheduleAllReminders, 'scheduleAllReminders');
+  // Off the critical path: drop cached variants whose original media is gone.
+  setTimeout(()=>{ try{ ImgCache.purgeOrphans(); }catch{} }, 4000);
   const depuInput = document.getElementById('depu');
   if(depuInput) depuInput.addEventListener('input', suggestHistory);
   _safe(setupDragAndDrop, 'setupDragAndDrop');
@@ -3197,6 +3210,8 @@ function closeModal(id) {
   if (id === 'reminderModal') { try{ closeEventsViewer(); closePopup('addEventModal'); }catch{} }
   // Leaving Notes drops any active multi-selection so it doesn't linger.
   if (id === 'notesModal') { try{ _notesSelectMode=false; _notesSelectedIds.clear(); }catch{} }
+  // The widget-style sheet holds image handles for its swatches and preview.
+  if (id === 'widgetStyleModal') { try{ _wsReleaseAll(); }catch{} }
   // Reset password fields
   const map = { photoModal:'photoPasswordInput', webAppModal:'webAppPasswordInput', filesModal:'filesPasswordInput',
     settingsModal:'settingsPasswordInput', historyModal:'historyPasswordInput',
@@ -3411,6 +3426,26 @@ function loadSettingsForm() {
   if(typeof _updateWidgetBgMediaRow==='function') _updateWidgetBgMediaRow();
   if(typeof updateMasterPwStatus==='function') updateMasterPwStatus();
   if(typeof refreshLockAllState==='function') refreshLockAllState();
+  if(typeof refreshImgCacheStat==='function') refreshImgCacheStat();
+}
+
+// ─── Image cache readout / controls (Appearance) ───
+async function refreshImgCacheStat(){
+  const el = document.getElementById('imgCacheStat'); if(!el) return;
+  if(settings && settings.imageCaching === false){ el.textContent = 'Off — not stored'; return; }
+  try{
+    const s = await ImgCache.stats();
+    el.textContent = s.count ? `${s.count} stored · ${formatFileSize(s.bytes)}` : 'Nothing cached yet';
+  }catch{ el.textContent = '—'; }
+}
+async function clearImageCache(){
+  try{
+    await ImgCache.clearAll();
+    showToast('Image cache cleared');
+    // Repaint so the visible surfaces rebuild their variants immediately.
+    await applySettings(); loadWidgets();
+  }catch(e){ console.warn('[img cache clear]', e); showToast('Could not clear the cache','error'); }
+  refreshImgCacheStat();
 }
 
 // ─── Change master password / Lock All ───
@@ -3517,6 +3552,17 @@ function attachSettingsListeners() {
   }
   const _wbt = document.getElementById('widgetBgMediaType');
   if(_wbt && !_wbt._wsListener){ _wbt._wsListener=true; _wbt.addEventListener('change', ()=>{ _updateWidgetBgMediaRow(); }); }
+  const _imgc = document.getElementById('imageCaching');
+  if(_imgc && !_imgc._imgCacheListener){
+    _imgc._imgCacheListener = true;
+    _imgc.addEventListener('change', async function(){
+      settings.imageCaching = this.checked;
+      saveSettings();
+      // Turning it off should actually free the space, not just stop adding.
+      if(!this.checked){ try{ await ImgCache.clearAll(); showToast('Image cache cleared'); }catch{} }
+      refreshImgCacheStat();
+    });
+  }
   document.getElementById('usePasskey').addEventListener('change', async function() {
     if (this.checked) {
       // Always allow (re)registration when user opts in
@@ -3733,11 +3779,23 @@ function _shadeHex(hex, amt){
   } catch { return hex; }
 }
 
+// applySettings() runs on every keystroke-debounced settings change, so the
+// previous background's handles have to be let go before new ones are taken or
+// each edit pins another decoded bitmap for the life of the page.
+let _bgHandle = null, _bgSlideHandles = [];
+function _releaseBgHandles(){
+  if (_bgHandle) { try{ _bgHandle.release(); }catch{} _bgHandle = null; }
+  if (_bgSlideHandles.length) { _bgSlideHandles.forEach(h => { try{ h && h.release(); }catch{} }); _bgSlideHandles = []; }
+}
+// Guards against a slow decode from an older settings pass landing after a
+// newer one already painted.
+let _bgToken = 0;
+
 async function applySettings() {
   try { document.querySelectorAll('.bg-element').forEach(el => el.remove()); } catch{}
-  if (currentBgInterval) clearInterval(currentBgInterval);
-  if (currentBgUrl) { try{ URL.revokeObjectURL(currentBgUrl); }catch{} currentBgUrl = null; }
-  if (currentBgUrls) { try{ currentBgUrls.forEach(URL.revokeObjectURL); }catch{} currentBgUrls = null; }
+  if (currentBgInterval) { clearInterval(currentBgInterval); currentBgInterval = null; }
+  _releaseBgHandles();
+  const myToken = ++_bgToken;
   document.body.style.cssText = '';
   document.body.style.fontFamily = 'var(--font)';
   document.body.style.textAlign = 'center';
@@ -3757,24 +3815,55 @@ async function applySettings() {
   if (type === 'solid') document.body.style.background = settings.bgColor1;
   else if (type === 'gradient') document.body.style.background = `linear-gradient(135deg,${settings.bgColor1},${settings.bgColor2})`;
   else if (type === 'image' && settings.bgMediaId) {
-    try { const u = await fetchUrl(settings.bgMediaId); document.body.style.backgroundImage=`url(${u})`; document.body.style.backgroundSize='cover'; document.body.style.backgroundPosition='center'; currentBgUrl=u; } catch{}
+    // Keep the gradient underneath so there is something to look at while the
+    // (now much smaller) image is being prepared.
+    document.body.style.background = `linear-gradient(135deg,${settings.bgColor1},${settings.bgColor2})`;
+    try {
+      const h = await ImgCache.acquire(settings.bgMediaId, 'bg');
+      if (myToken !== _bgToken) { h.release(); return; }
+      _bgHandle = h;
+      document.body.style.backgroundImage=`url("${h.url}")`;
+      document.body.style.backgroundSize='cover';
+      document.body.style.backgroundPosition='center';
+    } catch(e){ console.warn('[bg image]', e); }
   } else if (type === 'video' && settings.bgMediaId) {
     try {
-      const u = await fetchUrl(settings.bgMediaId);
-      const v = document.createElement('video'); v.src=u; v.autoplay=true; v.loop=true; v.muted=true; v.playsInline=true; v.className='bg-element';
+      const h = await ImgCache.acquireRaw(settings.bgMediaId);
+      if (myToken !== _bgToken) { h.release(); return; }
+      _bgHandle = h;
+      const v = document.createElement('video'); v.src=h.url; v.autoplay=true; v.loop=true; v.muted=true; v.playsInline=true; v.className='bg-element';
       Object.assign(v.style,{position:'fixed',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',zIndex:'-1'});
-      document.body.appendChild(v); currentBgUrl=u;
-    } catch{}
+      document.body.appendChild(v);
+      v.play().catch(()=>{});
+    } catch(e){ console.warn('[bg video]', e); }
   } else if (type === 'slideshow') {
+    document.body.style.background = `linear-gradient(135deg,${settings.bgColor1},${settings.bgColor2})`;
     try {
-      const imgs = mediaMetadata.filter(m=>m.type.startsWith('image')).map(m=>m.id);
+      // `m.type` is missing on entries imported from older builds, and calling
+      // .startsWith on undefined threw here and killed the whole settings pass.
+      const imgs = (mediaMetadata||[]).filter(m => (m.type||'').startsWith('image')).map(m => m.id);
       if (imgs.length>0) {
-        const urls = await Promise.all(imgs.map(fetchUrl));
-        currentBgUrls = urls; let idx=0;
-        const changeBg = () => { document.body.style.backgroundImage=`url(${urls[idx]})`; document.body.style.backgroundSize='cover'; document.body.style.backgroundPosition='center'; idx=(idx+1)%urls.length; };
-        changeBg(); currentBgInterval = setInterval(changeBg, settings.slideshowInterval);
+        let idx = 0;
+        // The old code resolved every image up front, which pinned the entire
+        // library in memory at once. Hold at most the current frame.
+        const changeBg = async () => {
+          const id = imgs[idx];
+          idx = (idx+1) % imgs.length;
+          try {
+            const h = await ImgCache.acquire(id, 'bg');
+            if (myToken !== _bgToken) { h.release(); return; }
+            document.body.style.backgroundImage=`url("${h.url}")`;
+            document.body.style.backgroundSize='cover';
+            document.body.style.backgroundPosition='center';
+            const prev = _bgSlideHandles;
+            _bgSlideHandles = [h];
+            prev.forEach(p => { try{ p.release(); }catch{} });
+          } catch{}
+        };
+        changeBg();
+        currentBgInterval = setInterval(changeBg, Math.max(1000, settings.slideshowInterval || 5000));
       }
-    } catch{}
+    } catch(e){ console.warn('[bg slideshow]', e); }
   } else { document.body.style.background = `linear-gradient(135deg,${settings.bgColor1},${settings.bgColor2})`; }
 
   // Input
@@ -3819,6 +3908,10 @@ function loadWidgets() {
   // Tear down any live intervals from previous instances before wiping DOM
   try{ Object.values(slideshowIntervals).forEach(i=>i&&clearInterval(i)); }catch{}
   slideshowIntervals = {};
+  // innerHTML='' drops the nodes but not the object URLs they were holding, so
+  // hand those back explicitly first.
+  try{ _releaseAllWidgetBgs(container); }catch{}
+  try{ container.querySelectorAll('video').forEach(v=>{ try{ v.pause(); v.removeAttribute('src'); v.load(); }catch{} }); }catch{}
   container.innerHTML = '';
   const defaultOrder = ['clock','weather','imageslideshow','videoslideshow','calendar','rss','notes','upcomingevents'];
   let order = settings.widgetOrder || defaultOrder;
@@ -5868,7 +5961,6 @@ function makeWidget(id, extra) {
   const w = document.createElement('div');
   w.className = 'widget' + (extra?' '+extra:'');
   w.id = 'widget-'+id; w.draggable = true;
-  const op = (settings.widgetOpacity||7)/100;
   const bl = settings.blurStrength||12;
   w.style.backdropFilter = `blur(${bl}px)`;
   w.style.webkitBackdropFilter = `blur(${bl}px)`;
@@ -5882,11 +5974,24 @@ function makeWidget(id, extra) {
 // Resolve a widget's background. Priority: a per-widget override (Widget Styles)
 // → a global media background (image/video) → the global tint → the base
 // translucent white.
+// Hand back whatever image/video this widget was holding. Must run before a
+// widget is re-painted or discarded, otherwise every settings change pins
+// another copy of the background for the life of the page.
+function _releaseWidgetBg(w){
+  if(!w) return;
+  if(w._bgHandle){ try{ w._bgHandle.release(); }catch{} w._bgHandle = null; }
+  w._bgToken = (w._bgToken || 0) + 1;
+}
+function _releaseAllWidgetBgs(container){
+  if(!container) return;
+  container.querySelectorAll('.widget').forEach(_releaseWidgetBg);
+}
 function _applyWidgetBg(w, id){
   const op = (settings.widgetOpacity||7)/100;
   const base = `rgba(255,255,255,${op})`;
+  _releaseWidgetBg(w);
   // Clear any previous video background element.
-  const oldVid = w.querySelector(':scope > .widget-bg-video'); if(oldVid) oldVid.remove();
+  const oldVid = w.querySelector(':scope > .widget-bg-video'); if(oldVid){ oldVid.removeAttribute('src'); oldVid.load?.(); oldVid.remove(); }
   w.style.backgroundImage = ''; w.style.backgroundSize = ''; w.style.backgroundPosition = '';
   const st = (settings.widgetStyles||{})[id];
   const applyPaint = (spec) => {
@@ -5923,33 +6028,39 @@ function _applyWidgetBg(w, id){
     w.style.background = base;
   }
 }
+// A widget is a few hundred pixels wide, so it gets the small variant — the old
+// code handed every widget the full-resolution original and each one kept its
+// own decoded bitmap.
 function _setWidgetImageBg(w, mediaId, base){
   w.style.background = base;
-  try {
-    fetchUrl(mediaId).then(url => {
-      // A light scrim keeps widget text readable over the image.
-      w.style.backgroundImage = `linear-gradient(rgba(0,0,0,.32),rgba(0,0,0,.32)), url(${url})`;
-      w.style.backgroundSize = 'cover';
-      w.style.backgroundPosition = 'center';
-    }).catch(()=>{});
-  } catch{}
+  const token = w._bgToken = (w._bgToken || 0) + 1;
+  ImgCache.acquire(mediaId, 'widget').then(h => {
+    // The widget may have been re-painted or torn out while we were decoding.
+    if(w._bgToken !== token || !w.isConnected){ h.release(); return; }
+    w._bgHandle = h;
+    // A light scrim keeps widget text readable over the image.
+    w.style.backgroundImage = `linear-gradient(rgba(0,0,0,.32),rgba(0,0,0,.32)), url("${h.url}")`;
+    w.style.backgroundSize = 'cover';
+    w.style.backgroundPosition = 'center';
+  }).catch(()=>{});
 }
 function _setWidgetVideoBg(w, mediaId, base){
   w.style.background = base;
   w.style.position = 'relative';
   w.style.overflow = 'hidden';
-  try {
-    fetchUrl(mediaId).then(url => {
-      const v = document.createElement('video');
-      v.className = 'widget-bg-video';
-      v.src = url; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
-      v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;border-radius:inherit;filter:brightness(.7)';
-      w.insertBefore(v, w.firstChild);
-      // Keep the widget's real content above the video.
-      [...w.children].forEach(ch => { if (ch !== v){ if(getComputedStyle(ch).position==='static') ch.style.position='relative'; ch.style.zIndex = '1'; } });
-      v.play().catch(()=>{});
-    }).catch(()=>{});
-  } catch{}
+  const token = w._bgToken = (w._bgToken || 0) + 1;
+  ImgCache.acquireRaw(mediaId).then(h => {
+    if(w._bgToken !== token || !w.isConnected){ h.release(); return; }
+    w._bgHandle = h;
+    const v = document.createElement('video');
+    v.className = 'widget-bg-video';
+    v.src = h.url; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+    v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;border-radius:inherit;filter:brightness(.7)';
+    w.insertBefore(v, w.firstChild);
+    // Keep the widget's real content above the video.
+    [...w.children].forEach(ch => { if (ch !== v){ if(getComputedStyle(ch).position==='static') ch.style.position='relative'; ch.style.zIndex = '1'; } });
+    v.play().catch(()=>{});
+  }).catch(()=>{});
 }
 function hexToRgba(hex, a){
   const h = (hex||'#000000').replace('#','');
@@ -5979,16 +6090,27 @@ function openWidgetStyleModal(){
 function _wsStyleOf(id){ return (settings.widgetStyles||{})[id] || {mode:'default'}; }
 function _wsModeLabel(st){ return (!st || !st.mode || st.mode==='default') ? 'Default' : st.mode; }
 function _wsPaintSwatch(el, st){
+  if(el._bgHandle){ try{ el._bgHandle.release(); }catch{} el._bgHandle=null; }
+  el._bgToken = (el._bgToken||0)+1;
+  const token = el._bgToken;
   el.style.background=''; el.style.backgroundImage=''; el.innerHTML='';
   if(!st || !st.mode || st.mode==='default'){ el.style.background='rgba(255,255,255,.08)'; el.innerHTML='<span style="opacity:.5;font-size:.75em">Default</span>'; return; }
   const so = ((st.op ?? 100)/100).toFixed(2);
   if(st.mode==='solid'){ el.style.background = hexToRgba(st.c1||'#2e8b3d', so); }
   else if(st.mode==='gradient'){ el.style.background = `linear-gradient(135deg, ${hexToRgba(st.c1||'#2e8b3d',so)}, ${hexToRgba(st.c2||'#004675',so)})`; }
-  else if(st.mode==='image'){ el.innerHTML=_WS_MEDIA_SVG; if(st.mediaId){ try{ fetchUrl(st.mediaId).then(u=>{ el.style.backgroundImage=`url(${u})`; el.innerHTML=''; }).catch(()=>{}); }catch{} } }
+  else if(st.mode==='image'){
+    el.innerHTML=_WS_MEDIA_SVG;
+    // A 40px swatch only ever needs the tiny variant.
+    if(st.mediaId) ImgCache.acquire(st.mediaId,'thumb').then(h=>{
+      if(el._bgToken!==token){ h.release(); return; }
+      el._bgHandle=h; el.style.backgroundImage=`url("${h.url}")`; el.style.backgroundSize='cover'; el.style.backgroundPosition='center'; el.innerHTML='';
+    }).catch(()=>{});
+  }
   else if(st.mode==='video'){ el.style.background='#0b1220'; el.innerHTML=_WS_VIDEO_SVG; }
 }
 function renderWidgetStyleList(){
   const list = document.getElementById('widgetStyleList'); if(!list) return;
+  list.querySelectorAll('.ws-swatch').forEach(s=>{ if(s._bgHandle){ try{ s._bgHandle.release(); }catch{} s._bgHandle=null; } });
   list.innerHTML='';
   WIDGET_STYLE_TYPES.forEach(wt=>{
     const st = _wsStyleOf(wt.id);
@@ -6002,6 +6124,9 @@ function renderWidgetStyleList(){
   });
 }
 function openWidgetStyleEditor(id){
+  // The editor body is rebuilt from scratch below, so let go of the old
+  // preview's handle before its element disappears.
+  _wsReleasePreview();
   _wsEditingId = id;
   const cur = _wsStyleOf(id);
   _wsDraft = { mode: cur.mode||'default', c1: cur.c1||'#2e8b3d', c2: cur.c2||'#004675', op: cur.op ?? 100, mediaId: cur.mediaId||'', _mediaName: cur._mediaName||'' };
@@ -6025,6 +6150,7 @@ function openWidgetStyleEditor(id){
   _wsSyncEditor();
 }
 function _wsBackToList(){
+  _wsReleasePreview();
   document.getElementById('widgetStyleEditor').style.display='none';
   document.getElementById('widgetStyleList').style.display='';
   const hint = document.getElementById('widgetStyleHint'); if(hint) hint.style.display='';
@@ -6045,17 +6171,43 @@ function _wsSyncEditor(){
   const op=document.getElementById('wsOp'); if(op) op.value=_wsDraft.op;
   const opv=document.getElementById('wsOpVal'); if(opv) opv.textContent=_wsDraft.op+'%';
   const mn=document.getElementById('wsMediaName'); if(mn) mn.textContent=_wsDraft.mediaId ? (_wsDraft._mediaName||'Selected') : 'None';
-  // Live preview
+  // Live preview. This re-runs on every input event (colour drag, mode change),
+  // so it has to release the previous handle or a few seconds of fiddling pins
+  // a dozen decoded images.
   const pv=document.getElementById('wsPreview');
   if(pv){
+    _wsReleasePreview(pv);
+    const token = pv._bgToken = (pv._bgToken||0)+1;
     pv.innerHTML=''; pv.style.background=''; pv.style.backgroundImage='';
     const so=((_wsDraft.op ?? 100)/100).toFixed(2);
     if(m==='solid'){ pv.style.background=hexToRgba(_wsDraft.c1,so); }
     else if(m==='gradient'){ pv.style.background=`linear-gradient(135deg, ${hexToRgba(_wsDraft.c1,so)}, ${hexToRgba(_wsDraft.c2,so)})`; }
-    else if(m==='image' && _wsDraft.mediaId){ try{ fetchUrl(_wsDraft.mediaId).then(u=>{ pv.style.backgroundImage=`url(${u})`; }).catch(()=>{}); }catch{} }
-    else if(m==='video' && _wsDraft.mediaId){ try{ fetchUrl(_wsDraft.mediaId).then(u=>{ const v=document.createElement('video'); v.src=u; v.autoplay=true;v.loop=true;v.muted=true;v.playsInline=true; pv.appendChild(v); v.play().catch(()=>{}); }).catch(()=>{}); }catch{} }
+    else if(m==='image' && _wsDraft.mediaId){
+      ImgCache.acquire(_wsDraft.mediaId,'widget').then(h=>{
+        if(pv._bgToken!==token || !pv.isConnected){ h.release(); return; }
+        pv._bgHandle=h; pv.style.backgroundImage=`url("${h.url}")`; pv.style.backgroundSize='cover'; pv.style.backgroundPosition='center';
+      }).catch(()=>{});
+    }
+    else if(m==='video' && _wsDraft.mediaId){
+      ImgCache.acquireRaw(_wsDraft.mediaId).then(h=>{
+        if(pv._bgToken!==token || !pv.isConnected){ h.release(); return; }
+        pv._bgHandle=h;
+        const v=document.createElement('video'); v.src=h.url; v.autoplay=true;v.loop=true;v.muted=true;v.playsInline=true; pv.appendChild(v); v.play().catch(()=>{});
+      }).catch(()=>{});
+    }
     else { pv.style.background='rgba(255,255,255,.07)'; pv.textContent='Default'; }
   }
+}
+function _wsReleaseAll(){
+  _wsReleasePreview();
+  const list = document.getElementById('widgetStyleList');
+  if(list) list.querySelectorAll('.ws-swatch').forEach(s=>{ if(s._bgHandle){ try{ s._bgHandle.release(); }catch{} s._bgHandle=null; } });
+}
+function _wsReleasePreview(pv){
+  const el = pv || document.getElementById('wsPreview');
+  if(!el) return;
+  el.querySelectorAll('video').forEach(v=>{ try{ v.pause(); v.removeAttribute('src'); v.load(); }catch{} });
+  if(el._bgHandle){ try{ el._bgHandle.release(); }catch{} el._bgHandle=null; }
 }
 function saveWidgetStyle(){
   if(!_wsEditingId || !_wsDraft) return;
@@ -7404,28 +7556,426 @@ function sanitizeRichHtml(html, opts){
 // ═══════════════════════════════════════════════════════
 //  INDEXEDDB
 // ═══════════════════════════════════════════════════════
+const DB_VERSION = 5;
 function initDB() {
   return new Promise((res,rej)=>{
-    const req=indexedDB.open('MediaManagerDB',4);
-    req.onerror=e=>rej(e.target.errorCode);
+    let settled=false;
+    const done=fn=>(...a)=>{ if(settled) return; settled=true; fn(...a); };
+    const ok=done(res), fail=done(rej);
+    let req;
+    try{ req=indexedDB.open('MediaManagerDB',DB_VERSION); }
+    catch(e){ fail(e); return; }
+    req.onerror=e=>fail(e.target.error||new Error('IndexedDB open failed'));
     req.onupgradeneeded=e=>{
       db=e.target.result;
       if(!db.objectStoreNames.contains('media')){ const s=db.createObjectStore('media',{keyPath:'id'}); s.createIndex('name','name',{unique:false}); }
       if(!db.objectStoreNames.contains('webapps')){ const s=db.createObjectStore('webapps',{keyPath:'id'}); s.createIndex('name','name',{unique:false}); }
       if(!db.objectStoreNames.contains('files')){ const s=db.createObjectStore('files',{keyPath:'id'}); s.createIndex('name','name',{unique:false}); }
+      // v5 — derived, re-creatable render variants of images (see ImgCache).
+      if(!db.objectStoreNames.contains('imgcache')){ const s=db.createObjectStore('imgcache',{keyPath:'key'}); s.createIndex('mediaId','mediaId',{unique:false}); s.createIndex('used','used',{unique:false}); }
     };
-    req.onsuccess=e=>{ db=e.target.result; res(); };
-    req.onblocked=()=>showToast('Database blocked. Close other tabs.','warn');
+    req.onsuccess=e=>{
+      db=e.target.result;
+      // Another tab upgrading later would otherwise throw on every transaction.
+      db.onversionchange=()=>{ try{ db.close(); }catch{} db=null; try{ showToast('Data updated in another tab — reload this page','warn'); }catch{} };
+      ok();
+    };
+    // Previously this only showed a toast, so the promise never settled and the
+    // whole `await initDB()` boot sequence stalled forever behind a stale tab —
+    // no background, no widgets, no settings applied.
+    req.onblocked=()=>{
+      try{ showToast('Database blocked — close other Googoke tabs','warn'); }catch{}
+      setTimeout(()=>fail(new Error('IndexedDB blocked by another tab')), 8000);
+    };
   });
 }
+// One-shot object URL straight from the stored original. Callers own the URL and
+// MUST revoke it. For anything that paints an image into the UI use ImgCache
+// instead — it hands out shared, downscaled, refcounted URLs.
 function fetchUrl(id) {
   return new Promise((res,rej)=>{
-    const tx=db.transaction(['media'],'readonly');
+    if(!db){ rej(new Error('DB not ready')); return; }
+    let tx;
+    try{ tx=db.transaction(['media'],'readonly'); }catch(e){ rej(e); return; }
     const req=tx.objectStore('media').get(id);
     req.onsuccess=e=>{ if(e.target.result?.data) res(URL.createObjectURL(e.target.result.data)); else rej(new Error('Not found')); };
     req.onerror=e=>rej(e.target.error);
   });
 }
+
+// ═══════════════════════════════════════════════════════
+//  IMAGE CACHE  (encrypted, downscaled, WebP)
+// ═══════════════════════════════════════════════════════
+// Why this exists: a phone photo used as a background is ~4000x3000. Its file
+// size is irrelevant — the browser decodes it to width*height*4 bytes of RGBA
+// (~48MB here) and keeps one decoded copy alive per element that paints it.
+// The page background plus eight widgets on a `backdrop-filter` grid meant
+// hundreds of MB of bitmaps and constant GC pressure, which is the stutter.
+//
+// Fix: decode once, downscale to what the screen can actually show, re-encode
+// as WebP, and store that variant. Stored bytes are AES-256-GCM encrypted with
+// the same per-install device key as the rest of the app, in an internal object
+// store that no UI surface lists — the cache is invisible to the user except
+// for the Settings toggle. Everything in it is derived data that can be
+// regenerated from the original media, so losing it is never data loss.
+const ImgCache = (function(){
+  const STORE = 'imgcache';
+  const KEYVER = 'v1';
+  const MAX_BYTES = 24 * 1024 * 1024;   // persistent budget
+  const MAX_ENTRIES = 120;
+  const MEM_MAX = 12;                    // decoded variants kept in RAM
+  const URL_IDLE_MS = 30000;             // grace before revoking an unused URL
+  const URL_IDLE_MAX = 8;
+  const SRC_LIMIT = 80 * 1024 * 1024;    // refuse to decode absurd sources
+  const TOUCH_MS = 12 * 60 * 60 * 1000;  // don't rewrite `used` more often
+  // Formats where rasterising would destroy the asset (animation / vector).
+  const PASSTHROUGH = /^image\/(gif|svg\+xml|apng)$/i;
+
+  // Cap the long edge at what the device can actually show. A background sits
+  // behind blurred, translucent panels, so rendering it at the full 3x device
+  // pixel ratio buys nothing visible and costs ~4x the decoded bytes — 1.5x is
+  // already denser than the panels in front of it. On a 412x915pt phone this
+  // lands at ~1370px instead of the source's 4000.
+  function _screenMax(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const side = Math.max(screen.width || 0, screen.height || 0, window.innerWidth || 0, window.innerHeight || 0) || 1280;
+    return Math.max(640, Math.min(1600, Math.round(side * dpr)));
+  }
+  const PROFILES = {
+    bg:     { max: _screenMax, q: 0.82 },
+    // A widget is a card a few hundred px wide; it never needs more.
+    widget: { max: () => Math.min(720, _screenMax()), q: 0.80 },
+    thumb:  { max: () => 320, q: 0.72 }
+  };
+  function _profile(name){ return PROFILES[name] || PROFILES.widget; }
+
+  const enabled = () => (typeof settings === 'undefined') || settings.imageCaching !== false;
+
+  // ── crypto ──────────────────────────────────────────
+  let _keyP = null;
+  function _aesKey(){
+    if(_keyP) return _keyP;
+    _keyP = (async () => {
+      // Same device key the localStorage shim uses; not in ENCRYPTED_KEYS, so a
+      // plain read returns it verbatim.
+      const devkey = localStorage.getItem('__googoke_devkey') || '';
+      if(!devkey) throw new Error('no device key');
+      let salt = null;
+      const stored = localStorage.getItem('__googoke_imgsalt');
+      if(stored){ try{ salt = Uint8Array.from(atob(stored), c => c.charCodeAt(0)); }catch{} }
+      if(!salt || salt.length !== 16){
+        salt = crypto.getRandomValues(new Uint8Array(16));
+        localStorage.setItem('__googoke_imgsalt', btoa(String.fromCharCode(...salt)));
+      }
+      const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(devkey), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey(
+        { name:'PBKDF2', salt, iterations: 100000, hash:'SHA-256' },
+        km, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+    })();
+    _keyP.catch(()=>{ _keyP = null; });   // let a transient failure retry
+    return _keyP;
+  }
+  async function _seal(blob){
+    const key = await _aesKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, await blob.arrayBuffer());
+    return { iv, ct, type: blob.type || 'image/webp' };
+  }
+  async function _unseal(rec){
+    const key = await _aesKey();
+    const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv: rec.iv }, key, rec.ct);
+    return new Blob([pt], { type: rec.type || 'image/webp' });
+  }
+
+  // ── idb helpers (one transaction per op; awaiting inside one closes it) ──
+  function _tx(mode){
+    if(!db) throw new Error('DB not ready');
+    if(!db.objectStoreNames.contains(STORE)) throw new Error('cache store missing');
+    return db.transaction([STORE], mode).objectStore(STORE);
+  }
+  function _req(r){ return new Promise((res,rej)=>{ r.onsuccess=e=>res(e.target.result); r.onerror=e=>rej(e.target.error); }); }
+  async function _idbGet(key){ try{ return await _req(_tx('readonly').get(key)); }catch{ return null; } }
+  async function _idbPut(rec){ try{ await _req(_tx('readwrite').put(rec)); return true; }catch{ return false; } }
+  async function _idbDel(key){ try{ await _req(_tx('readwrite').delete(key)); }catch{} }
+  // Summaries only. getAll() would deserialize every cached image at once —
+  // the whole 24MB budget resident in one allocation — so walk a cursor and
+  // keep just the few fields the callers actually need.
+  function _idbIndex(){
+    return new Promise(res => {
+      const rows = [];
+      let store;
+      try{ store = _tx('readonly'); }catch{ res(rows); return; }
+      const r = store.openCursor();
+      r.onsuccess = e => {
+        const c = e.target.result;
+        if(!c){ res(rows); return; }
+        const v = c.value || {};
+        rows.push({ key: c.key, mediaId: v.mediaId, bytes: v.bytes || 0, used: v.used || 0 });
+        c.continue();
+      };
+      r.onerror = () => res(rows);
+    });
+  }
+
+  // ── decode / downscale / encode ─────────────────────
+  let _webpP = null;
+  function _webpOk(){
+    if(_webpP) return _webpP;
+    _webpP = new Promise(res => {
+      try{
+        const c = document.createElement('canvas'); c.width = c.height = 1;
+        c.toBlob(b => res(!!b && b.type === 'image/webp'), 'image/webp', 0.8);
+      }catch{ res(false); }
+    });
+    return _webpP;
+  }
+  function _toBlob(canvas, type, q){
+    if(canvas.convertToBlob) return canvas.convertToBlob({ type, quality: q });
+    return new Promise((res, rej) => {
+      try{ canvas.toBlob(b => b ? res(b) : rej(new Error('encode failed')), type, q); }
+      catch(e){ rej(e); }
+    });
+  }
+  function _canvas(w, h){
+    if(typeof OffscreenCanvas !== 'undefined'){ try{ return new OffscreenCanvas(w, h); }catch{} }
+    const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
+  }
+  // Decode to *something* with .width/.height that drawImage accepts, without
+  // ever attaching it to the document.
+  async function _decode(blob){
+    if(typeof createImageBitmap === 'function'){
+      try{ return { src: await createImageBitmap(blob), close(){ try{ this.src.close(); }catch{} } }; }catch{}
+    }
+    const url = URL.createObjectURL(blob);
+    try{
+      const img = await new Promise((res, rej) => {
+        const i = new Image();
+        const t = setTimeout(() => rej(new Error('decode timeout')), 20000);
+        i.onload = () => { clearTimeout(t); res(i); };
+        i.onerror = () => { clearTimeout(t); rej(new Error('decode failed')); };
+        i.src = url;
+      });
+      return { src: img, close(){ try{ URL.revokeObjectURL(url); }catch{} } };
+    }catch(e){ try{ URL.revokeObjectURL(url); }catch{} throw e; }
+  }
+  async function _transcode(blob, max, q){
+    if(PASSTHROUGH.test(blob.type || '')) return blob;      // keep animation/vector intact
+    if(blob.size > SRC_LIMIT) return blob;
+    const dec = await _decode(blob);
+    try{
+      const iw = dec.src.width || dec.src.naturalWidth || 0;
+      const ih = dec.src.height || dec.src.naturalHeight || 0;
+      if(!iw || !ih) return blob;
+      const scale = Math.min(1, max / Math.max(iw, ih));
+      // Already small enough — re-encoding would only lose quality.
+      if(scale >= 1) return blob;
+      const w = Math.max(1, Math.round(iw * scale));
+      const h = Math.max(1, Math.round(ih * scale));
+      const c = _canvas(w, h);
+      const ctx = c.getContext('2d', { alpha: true });
+      if(!ctx) return blob;
+      ctx.imageSmoothingEnabled = true;
+      try{ ctx.imageSmoothingQuality = 'high'; }catch{}
+      ctx.drawImage(dec.src, 0, 0, w, h);
+      const type = (await _webpOk()) ? 'image/webp' : 'image/jpeg';
+      const out = await _toBlob(c, type, q);
+      // Free the backing store immediately rather than waiting for GC.
+      c.width = c.height = 1;
+      // A pathological source can encode larger than it started; keep the smaller.
+      return (out && out.size && out.size < blob.size) ? out : blob;
+    }finally{ dec.close(); }
+  }
+
+  // ── live object URLs, refcounted ────────────────────
+  // Every widget painting the same background shares one URL and one decode.
+  const _live = new Map();   // key -> {url, blob, refs, timer}
+  const _mem  = new Map();   // key -> Blob   (session LRU, survives release)
+  const _inflight = new Map();
+
+  function _memPut(key, blob){
+    if(_mem.has(key)) _mem.delete(key);
+    _mem.set(key, blob);
+    while(_mem.size > MEM_MAX) _mem.delete(_mem.keys().next().value);
+  }
+  function _memGet(key){
+    const b = _mem.get(key);
+    if(b){ _mem.delete(key); _mem.set(key, b); }   // touch
+    return b || null;
+  }
+  function _sweepIdleUrls(){
+    const idle = [...(_live.entries())].filter(([, e]) => e.refs <= 0);
+    for(let i = 0; i < idle.length - URL_IDLE_MAX; i++) _drop(idle[i][0]);
+  }
+  function _drop(key){
+    const e = _live.get(key);
+    if(!e) return;
+    clearTimeout(e.timer);
+    try{ URL.revokeObjectURL(e.url); }catch{}
+    _live.delete(key);
+  }
+  function _acquireUrl(key, blob){
+    let e = _live.get(key);
+    if(e){ clearTimeout(e.timer); e.timer = null; e.refs++; return e.url; }
+    e = { url: URL.createObjectURL(blob), blob, refs: 1, timer: null };
+    _live.set(key, e);
+    _sweepIdleUrls();
+    return e.url;
+  }
+  function _releaseUrl(key){
+    const e = _live.get(key);
+    if(!e || e.refs <= 0) return;
+    if(--e.refs > 0) return;
+    // Hold briefly: loadWidgets() tears everything down and rebuilds it in the
+    // same tick, so an immediate revoke would throw away a decode we are about
+    // to ask for again.
+    clearTimeout(e.timer);
+    e.timer = setTimeout(() => { if(_live.get(key) === e && e.refs <= 0) _drop(key); }, URL_IDLE_MS);
+    _sweepIdleUrls();
+  }
+
+  // ── persistence ─────────────────────────────────────
+  async function _evict(incoming){
+    const all = await _idbIndex();
+    let bytes = all.reduce((n, r) => n + r.bytes, 0) + incoming;
+    let count = all.length + 1;
+    if(bytes <= MAX_BYTES && count <= MAX_ENTRIES) return;
+    all.sort((a, b) => a.used - b.used);   // least recently used first
+    for(const r of all){
+      if(bytes <= MAX_BYTES && count <= MAX_ENTRIES) break;
+      await _idbDel(r.key);
+      bytes -= r.bytes; count--;
+    }
+  }
+  async function _load(mediaId, key, max, q){
+    // 1. session RAM
+    const hit = _memGet(key);
+    if(hit) return hit;
+    // 2. encrypted cache on disk
+    if(enabled()){
+      const rec = await _idbGet(key);
+      if(rec && rec.ct && rec.iv){
+        try{
+          const blob = await _unseal(rec);
+          _memPut(key, blob);
+          const now = Date.now();
+          if(now - (rec.used || 0) > TOUCH_MS){ rec.used = now; _idbPut(rec); }
+          return blob;
+        }catch{
+          // Device key rotated or record corrupt — it is only derived data.
+          await _idbDel(key);
+        }
+      }
+    }
+    // 3. build it from the original
+    const src = await _req(_tx0Media(mediaId));
+    if(!src || !src.data) throw new Error('media not found');
+    // A format the browser can't decode (HEIC is the common one) or an
+    // out-of-memory on a big source must not take the background down with it —
+    // fall back to the original, which is exactly the old behaviour.
+    let out;
+    try{ out = await _transcode(src.data, max, q); }
+    catch(e){ console.warn('[ImgCache] transcode', e); out = src.data; }
+    _memPut(key, out);
+    if(enabled() && out !== src.data){
+      // Persist in the background; a failed write just means a rebuild later.
+      (async () => {
+        try{
+          const sealed = await _seal(out);
+          await _evict(sealed.ct.byteLength);
+          await _idbPut({ key, mediaId, iv: sealed.iv, ct: sealed.ct, type: sealed.type, bytes: sealed.ct.byteLength, used: Date.now(), made: Date.now() });
+        }catch(e){ console.warn('[ImgCache] persist', e); }
+      })();
+    }
+    return out;
+  }
+  function _tx0Media(id){
+    if(!db) throw new Error('DB not ready');
+    return db.transaction(['media'], 'readonly').objectStore('media').get(id);
+  }
+
+  // ── public ──────────────────────────────────────────
+  // Resolves to a handle {url, release()}. Call release() exactly once when the
+  // element stops using it; the underlying decode is shared until the last
+  // holder lets go.
+  async function acquire(mediaId, profileName){
+    if(!mediaId) throw new Error('no media id');
+    const p = _profile(profileName);
+    const max = p.max();
+    const key = mediaId + '|' + (profileName || 'widget') + '|' + max + '|' + KEYVER;
+    let blob;
+    const live = _live.get(key);
+    if(live) blob = live.blob;
+    else {
+      let job = _inflight.get(key);
+      // Eight widgets asking at once must produce one decode, not eight.
+      if(!job){
+        job = _load(mediaId, key, max, p.q).finally(() => _inflight.delete(key));
+        _inflight.set(key, job);
+      }
+      blob = await job;
+    }
+    const url = _acquireUrl(key, blob);
+    let freed = false;
+    return { url, key, release(){ if(freed) return; freed = true; _releaseUrl(key); } };
+  }
+  // Raw original, refcounted the same way. For video, where transcoding is not
+  // an option but sharing one URL across widgets still is.
+  async function acquireRaw(mediaId){
+    if(!mediaId) throw new Error('no media id');
+    const key = mediaId + '|raw';
+    let blob = _live.get(key)?.blob || _memGet(key);
+    if(!blob){
+      let job = _inflight.get(key);
+      if(!job){
+        job = (async () => {
+          const src = await _req(_tx0Media(mediaId));
+          if(!src || !src.data) throw new Error('media not found');
+          return src.data;
+        })().finally(() => _inflight.delete(key));
+        _inflight.set(key, job);
+      }
+      blob = await job;
+      _memPut(key, blob);
+    }
+    const url = _acquireUrl(key, blob);
+    let freed = false;
+    return { url, key, release(){ if(freed) return; freed = true; _releaseUrl(key); } };
+  }
+  // Drop every variant of one media item (called when the original is deleted).
+  async function purge(mediaId){
+    for(const k of [..._mem.keys()]) if(k.split('|')[0] === mediaId) _mem.delete(k);
+    for(const k of [..._live.keys()]) if(k.split('|')[0] === mediaId) _drop(k);
+    try{
+      const idx = _tx('readwrite').index('mediaId');
+      await new Promise(res => {
+        const r = idx.openCursor(IDBKeyRange.only(mediaId));
+        r.onsuccess = e => { const c = e.target.result; if(!c){ res(); return; } c.delete(); c.continue(); };
+        r.onerror = () => res();
+      });
+    }catch{}
+  }
+  async function clearAll(){
+    _mem.clear();
+    for(const k of [..._live.keys()]) _drop(k);
+    try{ await _req(_tx('readwrite').clear()); }catch{}
+  }
+  async function stats(){
+    const all = await _idbIndex();
+    return { count: all.length, bytes: all.reduce((n, r) => n + r.bytes, 0) };
+  }
+  // Variants whose original is gone (deleted before this build shipped, or a
+  // failed purge) are dead weight — drop them once at startup, off the
+  // critical path.
+  async function purgeOrphans(){
+    try{
+      const ids = new Set((mediaMetadata || []).map(m => m.id));
+      if(!ids.size) return;
+      for(const r of await _idbIndex()) if(!ids.has(r.mediaId)) await _idbDel(r.key);
+    }catch{}
+  }
+  return { acquire, acquireRaw, purge, clearAll, stats, purgeOrphans, enabled };
+})();
+window.ImgCache = ImgCache;
 function loadMediaMetadata(){ mediaMetadata=JSON.parse(localStorage.getItem('mediaMetadata'))||[]; }
 function loadWebappsMetadata(){ webappsMetadata=JSON.parse(localStorage.getItem('webappsMetadata'))||[]; }
 function formatFileSize(b){ if(b<1024)return b+' B'; if(b<1048576)return(b/1024).toFixed(1)+' KB'; return(b/1048576).toFixed(1)+' MB'; }
@@ -7664,11 +8214,37 @@ function renameMediaItem(){
     mediaMetadata[selectedIndex].name=newName.trim(); saveMediaMetadata(); loadMedia(); showToast('Renamed');
   });
 }
+// Deleting the original has to take its cached variants with it, and clear any
+// setting still pointing at it — otherwise the background silently fails to
+// load forever and the Settings row keeps showing a name that no longer exists.
+function _afterMediaRemoved(ids){
+  const gone = new Set(ids);
+  gone.forEach(id => { try{ ImgCache.purge(id); }catch{} });
+  let touched = false;
+  if(gone.has(settings.bgMediaId)){
+    settings.bgMediaId = '';
+    if(settings.bgType==='image'||settings.bgType==='video') settings.bgType='gradient';
+    touched = true;
+  }
+  if(gone.has(settings.widgetBgMediaId)){ settings.widgetBgMediaId=''; settings.widgetBgMediaType='none'; touched = true; }
+  Object.entries(settings.widgetStyles||{}).forEach(([k, st])=>{
+    if(st && gone.has(st.mediaId)){ delete settings.widgetStyles[k]; touched = true; }
+  });
+  if(touched){
+    saveSettings();
+    try{ updateSelectedMediaName(); }catch{}
+    try{ loadSettingsForm(); }catch{}
+    try{ applySettings(); }catch{}
+  }
+  try{ refreshMediaWidgets(); }catch{}
+  if(touched) try{ loadWidgets(); }catch{}
+  try{ refreshImgCacheStat(); }catch{}
+}
 function deleteMedia(){
   if(selectedIndex===null){ showToast('Select an item first','error'); return; }
   const item=mediaMetadata[selectedIndex]; if(!item||!confirm(`Delete "${item.name}"?`)) return;
   const tx=db.transaction(['media'],'readwrite');
-  tx.objectStore('media').delete(item.id).onsuccess=()=>{ mediaMetadata.splice(selectedIndex,1); saveMediaMetadata(); selectedIndex=null; loadMedia(); try{ refreshMediaWidgets(); }catch{} showToast('Deleted'); };
+  tx.objectStore('media').delete(item.id).onsuccess=()=>{ mediaMetadata.splice(selectedIndex,1); saveMediaMetadata(); selectedIndex=null; loadMedia(); _afterMediaRemoved([item.id]); showToast('Deleted'); };
 }
 function openMedia(){ if(selectedIndex===null){ showToast('Select an item first','error'); return; } showInViewer(mediaMetadata[selectedIndex]); }
 function downloadMedia(){
@@ -10605,7 +11181,17 @@ async function clearAllStorage(){
   if(!ok) return;
   if(!confirm('DELETE EVERYTHING?\n\nThis erases all notes, files, media, web apps, bookmarks, events, saved URLs and settings. It cannot be undone.')) return;
   if(!confirm('Last chance — permanently delete all app data?')) return;
-  try{ indexedDB.deleteDatabase('MediaManagerDB'); }catch{}
+  // The open connection blocks deleteDatabase, so the old code reloaded before
+  // the delete could run and the media survived the "delete everything".
+  try{ if(db){ db.onversionchange=null; db.close(); db=null; } }catch{}
+  await new Promise(res=>{
+    let done=false; const finish=()=>{ if(!done){ done=true; res(); } };
+    try{
+      const req=indexedDB.deleteDatabase('MediaManagerDB');
+      req.onsuccess=finish; req.onerror=finish; req.onblocked=finish;
+    }catch{ finish(); }
+    setTimeout(finish, 5000);
+  });
   try{ localStorage.clear(); }catch{}
   location.reload();
 }
@@ -10736,13 +11322,18 @@ function toggleWebAppSelectMode(){
     if(mediaSelectMode && selectedMediaIds.size){
       if(!confirm(`Delete ${selectedMediaIds.size} item(s)?`)) return;
       const ids=[...selectedMediaIds];
-      ids.forEach(id=>{
-        try{ const tx=db.transaction(['media'],'readwrite'); tx.objectStore('media').delete(id); }catch{}
-      });
+      // One transaction for the whole batch instead of N.
+      try{
+        const tx=db.transaction(['media'],'readwrite');
+        const st=tx.objectStore('media');
+        ids.forEach(id=>{ try{ st.delete(id); }catch{} });
+      }catch{}
       mediaMetadata = mediaMetadata.filter(m=>!selectedMediaIds.has(m.id));
-      localStorage.setItem('mediaMetadata',JSON.stringify(mediaMetadata));
+      // saveMediaMetadata() (not a raw setItem) so the quota fallback still runs.
+      saveMediaMetadata();
       selectedMediaIds.clear();
       loadMedia();
+      _afterMediaRemoved(ids);
       showToast('Deleted');
       return;
     }
@@ -10755,11 +11346,14 @@ function toggleWebAppSelectMode(){
     if(webAppSelectMode && selectedAppIds.size){
       if(!confirm(`Delete ${selectedAppIds.size} item(s)?`)) return;
       const ids=[...selectedAppIds];
-      ids.forEach(id=>{
-        try{ const tx=db.transaction(['webapps'],'readwrite'); tx.objectStore('webapps').delete(id); }catch{}
-      });
+      try{
+        const tx=db.transaction(['webapps'],'readwrite');
+        const st=tx.objectStore('webapps');
+        ids.forEach(id=>{ try{ st.delete(id); }catch{} });
+      }catch{}
       webappsMetadata = webappsMetadata.filter(m=>!selectedAppIds.has(m.id));
-      localStorage.setItem('webappsMetadata',JSON.stringify(webappsMetadata));
+      // Was a raw setItem, which skipped the quota-shedding fallback.
+      saveWebappsMetadata();
       selectedAppIds.clear();
       loadWebApps();
       showToast('Deleted');
@@ -10963,6 +11557,11 @@ let _floatingSyncing = false;
     });
   }
   function updateToggleVisibility(){
+    // getBoundingClientRect() forces a synchronous layout. This used to run for
+    // every modal, on every scroll event, plus a 400ms timer that never stopped
+    // — so the page was paying for reflows 2.5x a second forever with nothing
+    // even open. Bail out before touching layout when no modal is active.
+    if(!activeModal()) return;
     Object.keys(FS_MODAL_INPUTS).forEach(modalId=>{
       const modal=document.getElementById(modalId); if(!modal) return;
       const toggle=modal.querySelector('.modal-search-toggle');
@@ -10989,9 +11588,18 @@ let _floatingSyncing = false;
       closeFloatingSearch();
     }
   }
-  document.addEventListener('scroll',updateToggleVisibility,true);
-  window.addEventListener('scroll',updateToggleVisibility);
-  setInterval(updateToggleVisibility,400);
+  // Coalesce bursts of scroll events into one layout read per frame.
+  let _fsRaf = null;
+  function _scheduleToggleVisibility(){
+    if(_fsRaf) return;
+    _fsRaf = requestAnimationFrame(()=>{ _fsRaf = null; try{ updateToggleVisibility(); }catch{} });
+  }
+  document.addEventListener('scroll',_scheduleToggleVisibility,{capture:true,passive:true});
+  window.addEventListener('scroll',_scheduleToggleVisibility,{passive:true});
+  // Backstop for layout changes that don't emit a scroll event (keyboard
+  // opening, a list re-rendering). Idles at a cheap class check when nothing
+  // is open, and pauses entirely while the tab is hidden.
+  setInterval(()=>{ if(document.hidden) return; _scheduleToggleVisibility(); },400);
 })();
 
 window.toggleModalSearch=function(modalId){
