@@ -322,6 +322,40 @@ body.light-mode #taskEditor .ne-topbar,body.light-mode .note-editor .ne-topbar{b
 .te-sub.active{background:rgba(46,139,61,.14);box-shadow:inset 0 0 0 1px rgba(46,139,61,.32)}
 .te-sub.waiting{opacity:.62}
 .te-sub.waiting .te-sub-time{opacity:.75}
+/* Tasks run in sequence too, driven by the one job-level button. */
+.te-item.active{box-shadow:inset 0 0 0 1px rgba(46,139,61,.34);background:rgba(46,139,61,.11)}
+.te-item.active .te-item-text{font-weight:600}
+/* The whole row is the checkbox now, so it has to look clickable — except a
+   locked one, which has no click handler at all. */
+.te-item{cursor:pointer}
+.te-item.locked{cursor:default}
+/* body{text-align:center} reaches in here and centred every task row. Notes
+   opts out the same way, per surface rather than globally. */
+.te-body,.te-items,.te-item,.te-sub,.te-sub-panel,.te-notes,.te-job-limit,.te-select-bar{text-align:left}
+.te-item-inline-time{text-align:right}
+/* ── Reordering ──
+   Rows drag on desktop; the right-click menu carries the same moves for touch,
+   where HTML5 drag events never fire. */
+.te-item.dragging,.te-sub.dragging{opacity:.35}
+.te-item.drop-before,.te-sub.drop-before{box-shadow:inset 0 3px 0 var(--accent)}
+.te-item.drop-after,.te-sub.drop-after{box-shadow:inset 0 -3px 0 var(--accent)}
+.te-grip{background:none;color:inherit;opacity:.22;cursor:grab;padding:3px 1px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;transition:.15s}
+.te-grip:hover{opacity:.8;background:rgba(255,255,255,.1)}
+.te-grip:active{cursor:grabbing}
+.te-grip svg{width:15px;height:15px;fill:currentColor;pointer-events:none}
+/* A job that hasn't been started yet can't be ticked off, so the boxes say so
+   rather than silently doing nothing. */
+.te-items.job-idle .te-item:not(.done) .cchk{opacity:.45}
+.te-items.job-idle .te-item:not(.done){cursor:not-allowed}
+.te-idle-hint{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+  padding:11px 14px;border-radius:10px;font-size:.85em;opacity:.8;margin-bottom:12px;text-align:left}
+.te-idle-hint svg{width:18px;height:18px;fill:var(--accent);flex-shrink:0}
+/* Empty states: centred, and spanning the whole grid instead of one column —
+   width:100% only ever filled the first track. */
+.tree-empty{grid-column:1/-1;width:100%;text-align:center;opacity:.45;padding:34px 12px;font-size:.92em}
+.te-empty{text-align:center;opacity:.45;padding:26px 10px;font-size:.9em}
+.te-run-btn{flex-shrink:0}
+.te-run-btn.running{background:var(--accent-bg)!important;color:#fff;box-shadow:0 0 0 1px var(--accent) inset}
 /* Colour inputs: native swatches are tiny and unstyled. Give them a real
    surface, a readable hex readout and the same rounding as everything else. */
 .color-field{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 12px}
@@ -360,7 +394,7 @@ body.light-mode #taskEditor .ne-topbar,body.light-mode .note-editor .ne-topbar{b
    supplies its own top spacing so nothing scrolls through above it. */
 @media(max-width:480px){ .te-body{padding:0 12px 90px} }
 
-/* ═══ Info Base ═══ */
+/* ═══ InfoBase ═══ */
 /* Solid backing behind the editor toolbar so list content can't show through
    it while scrolling. */
 .ne-topbar-solid{position:sticky;top:0;z-index:120;background:linear-gradient(180deg,#141c2b,#161f30);box-shadow:0 4px 14px rgba(0,0,0,.42);border-bottom:1px solid rgba(255,255,255,.10)}
@@ -386,6 +420,13 @@ body.light-mode #taskEditor .ne-topbar,body.light-mode .note-editor .ne-topbar{b
 .info-head-item.lvl2{padding-left:20px;font-size:.82em;opacity:.75}
 .info-head-item.lvl3{padding-left:32px;font-size:.8em;opacity:.65}
 .info-side-empty{opacity:.45;font-size:.82em;padding:12px 6px;line-height:1.5}
+/* Card preview: exactly two lines, each clipped rather than wrapped, so every
+   card is the same height however long the file is. */
+.note-preview.info-preview-lines{display:flex;flex-direction:column;gap:1px;-webkit-line-clamp:none}
+.note-preview.info-preview-lines .ipl{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* Drill-in chevron on a move/copy destination row. */
+.copy-dialog .cd-item .cd-open{flex-shrink:0;opacity:.55;font-size:1.3em;line-height:1;padding:0 4px;border-radius:5px}
+.copy-dialog .cd-item .cd-open:hover{opacity:1;background:rgba(255,255,255,.16)}
 .info-side-scrim{display:none;position:absolute;inset:0;z-index:55;background:rgba(0,0,0,.5)}
 .info-main{flex:1;min-width:0;display:flex;flex-direction:column}
 /* ID selector so it beats the generic `.note-editor .ne-title`, which would
@@ -438,6 +479,12 @@ body.light-mode #taskEditor .ne-topbar,body.light-mode .note-editor .ne-topbar{b
    flash makes that landing visible instead of something to go hunting for. */
 .info-flash{animation:infoFlash 1s ease-out}
 @keyframes infoFlash{0%{background:color-mix(in srgb,var(--accent) 30%,transparent)}100%{background:transparent}}
+/* On a phone the panel covers the whole screen, so by the time it closes you
+   have lost sight of where you were. This mark stays on the subheading you
+   picked until you touch the document again. */
+.info-picked{background:color-mix(in srgb,var(--accent) 18%,transparent);
+  box-shadow:-10px 0 0 color-mix(in srgb,var(--accent) 18%,transparent),inset 3px 0 0 var(--accent);
+  border-radius:0 6px 6px 0;transition:background .3s,box-shadow .3s}
 /* Read-only view of the markdown actually stored on disk. */
 .info-md-source{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   font-size:.88em;line-height:1.6;opacity:.85;margin:0}
@@ -445,11 +492,37 @@ body.light-mode #taskEditor .ne-topbar,body.light-mode .note-editor .ne-topbar{b
 .info-preview img{max-width:100%;height:auto;border-radius:9px}
 @media(max-width:820px){
   /* The sidebar overlays the body, which already starts below the toolbar —
-     offsetting it by the toolbar height again pushed it off the bottom. */
-  .info-sidebar.open{position:absolute;top:0;left:0;bottom:0;width:min(280px,82vw);z-index:60;background:#141c2b;box-shadow:8px 0 26px rgba(0,0,0,.5)}
-  .info-editor-body.side-open .info-side-scrim{display:block}
+     offsetting it by the toolbar height again pushed it off the bottom.
+     It takes the full width: a 280px drawer over a phone screen left a useless
+     sliver of unreadable text beside it, and long subheadings were clipped. */
+  .info-sidebar.open{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;max-width:none;
+    z-index:60;background:#141c2b;box-shadow:none;padding:14px 16px 16px}
+  .info-sidebar.open .info-heading-list{gap:4px}
+  .info-sidebar.open .info-head-item{padding:12px 12px;font-size:.95em;white-space:normal}
+  .info-sidebar.open .info-head-item.lvl2{font-size:.9em}
+  .info-sidebar.open .info-head-item.lvl3{font-size:.86em}
+  /* The scrim has nothing left to dim, and it would sit over the panel's own
+     close button. */
+  .info-editor-body.side-open .info-side-scrim{display:none}
   .info-source,.info-preview{padding-left:14px;padding-right:14px}
   #infoEditor .ne-title{padding:14px 14px 4px;font-size:1.45em}
+}
+/* Desktop: with the toolbar button gone, this is how a closed panel is
+   reopened — a floating icon in the top corner of the text area. Deliberately
+   desktop-only; on a phone it would sit on top of the writing surface, so the
+   three-dot menu carries it instead. */
+.info-side-fab{position:absolute;top:10px;left:10px;z-index:40;width:36px;height:36px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:9px;
+  background:rgba(255,255,255,.10);color:#fff;cursor:pointer;opacity:.55;
+  box-shadow:0 2px 10px rgba(0,0,0,.35);transition:.16s}
+.info-side-fab:hover{background:rgba(255,255,255,.24);opacity:1}
+.info-side-fab svg{width:19px;height:19px;fill:currentColor;pointer-events:none}
+.info-editor-body.side-open .info-side-fab{display:none}
+@media(max-width:820px){ .info-side-fab{display:none!important} }
+/* The title has to clear the floating button, or the first characters sit
+   underneath it. Scoped to the widths where the button actually exists. */
+@media(min-width:821px){
+  #infoEditor .info-editor-body:not(.side-open) .ne-title{padding-left:56px}
 }
 /* Colour fields — a bare swatch was easy to miss. */
 .color-field{display:flex;align-items:center;gap:11px}
@@ -493,32 +566,64 @@ body.light-mode #taskEditor .ne-topbar,body.light-mode .note-editor .ne-topbar{b
    above these at 10001, and the context menu above everything. */
 #knowledgeSearchModal.active,#ksScopeModal.active,
 #bgSelectModal.active,#zonePickerModal.active{z-index:10000}
-.ks-filters{display:flex;flex-direction:column;gap:10px;margin:14px 0 6px;padding:12px 14px;background:rgba(255,255,255,.045);border-radius:11px}
-.ks-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.ks-row>label{font-size:.8em;opacity:.6;min-width:56px;flex-shrink:0}
-.ks-chips{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
-.ks-chips .nf-chip{padding:8px 14px;font-size:.82em}
-.ks-scope-label{opacity:.85;font-size:.85em;margin-right:8px}
+/* One row at the top: the query, and a single button holding every filter.
+   The filters used to sit permanently under the field as four stacked rows,
+   which ate most of the screen before a result ever appeared. */
+.ks-topbar{display:flex;gap:9px;align-items:center;max-width:680px;width:100%;margin:18px auto 6px;padding:6px 4px}
+.ks-query{flex:1;min-width:0;padding:14px 18px;border-radius:12px;border:none;
+  background:rgba(255,255,255,.1);color:#fff;font-family:var(--font);font-size:.93em;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.ks-query::placeholder{color:rgba(255,255,255,.42)}
+.ks-query:focus{outline:none;background:rgba(255,255,255,.16)}
+.ks-menu-wrap{position:relative;flex:0 0 auto}
+.ks-filter-btn{position:relative;width:50px;height:50px;padding:0;display:inline-flex;align-items:center;justify-content:center;
+  border:none;border-radius:12px;cursor:pointer;color:#fff;background:rgba(255,255,255,.1);
+  box-shadow:0 2px 8px rgba(0,0,0,.15);transition:background .18s,transform .12s}
+.ks-filter-btn:hover{background:rgba(255,255,255,.22)}
+.ks-filter-btn:active{transform:scale(.96)}
+.ks-filter-btn svg{width:22px;height:22px;fill:currentColor;pointer-events:none}
+.ks-filter-btn.filtered{background:var(--accent-bg);box-shadow:0 0 0 1px var(--accent) inset}
+/* A dot rather than a count: the point is "something is narrowing this", not
+   how many knobs happen to be turned. */
+.ks-filter-dot{display:none;position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.ks-filter-btn.filtered .ks-filter-dot{display:block}
+/* Anchored to the button's right edge and grown leftwards, so it never runs off
+   the screen however narrow the viewport is. */
+.ks-filter-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;width:320px;max-width:calc(100vw - 28px);z-index:10060;
+  background:#1e2a38;border-radius:12px;padding:12px;box-shadow:0 14px 38px rgba(0,0,0,.6);
+  max-height:min(70vh,520px);overflow-y:auto;text-align:left}
+.ks-menu-wrap.open .ks-filter-menu{display:block}
+.ks-group{margin-bottom:12px}
+.ks-group-label{font-size:.72em;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.55;margin-bottom:6px}
+.ks-group-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;
+  border:1px solid rgba(255,255,255,.1);border-radius:9px;background:rgba(255,255,255,.06);color:#fff;
+  font-family:var(--font);font-size:.86em;cursor:pointer;text-align:left}
+.ks-group-btn:hover{background:rgba(255,255,255,.14)}
+.ks-group-btn span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ks-group-btn svg{width:16px;height:16px;fill:currentColor;opacity:.6;flex-shrink:0}
+.ks-group .styled-select{width:100%;padding:10px 32px 10px 12px;font-size:.86em;background-position:right 10px center;background-size:15px}
+.ks-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ks-chips .nf-chip{padding:6px 11px;font-size:.8em}
 .ks-scope-actions{display:flex;gap:9px;align-items:center;margin:10px 0 4px;flex-wrap:wrap}
-/* Date controls share one height so Clear reads as a peer of the inputs rather
-   than an afterthought tucked on the end. */
-.ks-dates{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;flex:1;min-width:0}
-.ks-dates .styled-select,.ks-date,.ks-clear{height:44px;box-sizing:border-box}
-.ks-date{padding:11px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.08);color:#fff;font-family:var(--font);font-size:.9em;cursor:pointer;min-width:0}
+/* From → to, as two date fields on one line: "1/7/26 – 9/7/26". */
+.ks-range{display:flex;align-items:center;gap:7px}
+.ks-range-sep{opacity:.45;flex-shrink:0}
+.ks-date{flex:1;min-width:0;height:40px;box-sizing:border-box;padding:8px 10px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.08);color:#fff;
+  font-family:var(--font);font-size:.85em;cursor:pointer}
 .ks-date:focus{outline:none;border-color:var(--accent)}
 .ks-date::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.65;cursor:pointer}
-.ks-clear{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 18px;border-radius:9px;
-  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#fff;
-  font-family:var(--font);font-size:.9em;cursor:pointer;transition:.16s;white-space:nowrap;flex-shrink:0}
-.ks-clear:hover{background:rgba(255,255,255,.18)}
-.ks-clear svg{width:15px;height:15px;fill:currentColor;opacity:.8}
+.ks-menu-foot{display:flex;gap:8px;justify-content:flex-end;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);margin-top:2px}
+.ks-menu-foot button{padding:8px 15px;font-size:.84em}
 /* Buttons already flip to dark text in light mode; the select and the date
    inputs keep their hardcoded white and would read white-on-white. */
-body.light-mode .ks-dates .styled-select,body.light-mode .ks-date{color:#111;background-color:rgba(0,0,0,.06);border-color:rgba(0,0,0,.14)}
-body.light-mode .ks-clear{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.14)}
+body.light-mode .ks-date{color:#111;background-color:rgba(0,0,0,.06);border-color:rgba(0,0,0,.14)}
 body.light-mode .ks-date::-webkit-calendar-picker-indicator{filter:none}
-body.light-mode .ks-dates .styled-select{background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='2'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")}
+@media(max-width:600px){
+  .ks-topbar{margin-top:12px}
+  .ks-query{padding:13px 15px}
+  .ks-filter-btn{width:46px;height:46px}
+  .ks-filter-menu{width:calc(100vw - 28px)}
+}
 .ks-results{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-height:56vh;overflow-y:auto;padding-right:4px}
 .ks-count{font-size:.78em;opacity:.5;padding:2px 2px 4px}
 .ks-empty{opacity:.45;text-align:center;padding:34px 12px;font-size:.92em}
@@ -532,11 +637,6 @@ body.light-mode .ks-dates .styled-select{background-image:url("data:image/svg+xm
 .ks-val{font-size:.95em;line-height:1.45;word-break:break-word}
 .ks-meta{font-size:.74em;opacity:.5;word-break:break-word}
 .ks-result mark,.info-head-item mark{background:rgba(255,214,102,.32);color:inherit;border-radius:3px;padding:0 2px;font-weight:700}
-@media(max-width:600px){
-  .ks-row>label{min-width:0;width:100%}
-  .ks-dates .styled-select,.ks-date{flex:1 1 140px}
-  .ks-clear{flex:1 1 100%}
-}
 
 /* ═══ Clock widget timezone switcher ═══ */
 .clock-zone-row{display:flex;justify-content:center;margin-bottom:2px}
@@ -576,11 +676,7 @@ body.light-mode .ks-dates .styled-select{background-image:url("data:image/svg+xm
 .wc-item .wc-del svg{width:17px;height:17px;fill:currentColor}
 
 /* Alarms */
-.tasks-sort-row{display:flex;align-items:center;gap:9px;justify-content:flex-end;max-width:1200px;margin:0 auto 12px;padding:0 2px}
-.tasks-sort-row label{font-size:.8em;opacity:.65}
 @media(max-width:600px){
-  .tasks-sort-row{justify-content:stretch}
-  .tasks-sort-row select{flex:1;min-width:0}
 }
 .sort-row{display:flex;align-items:center;gap:9px;margin-top:12px;justify-content:flex-end}
 .sort-row label{font-size:.8em;opacity:.65}
@@ -1553,6 +1649,22 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .notes-list .note-card .note-preview *{font-size:1em!important;color:inherit!important;background:transparent!important;font-weight:inherit!important;margin:0!important;padding:0!important;text-decoration:inherit!important}
 .notes-list .note-card .note-meta{font-size:.75em;opacity:.5;margin-top:8px}
 .notes-list .note-card .note-swatch{width:8px;align-self:stretch;border-radius:4px;background:var(--note-color,transparent);flex-shrink:0}
+/* Tasks and InfoBase reuse the Notes grid, but their cards are built from
+   .note-card-title / .note-meta rather than the Notes card parts. The list
+   view's row layout would turn those into three columns, so .tree-card opts
+   back into a stacked block. */
+.note-card.tree-card{text-align:left}
+.note-card.tree-card .note-card-title{font-weight:600;line-height:1.3;color:#fff;word-break:break-word;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.notes-grid .note-card.tree-card{min-height:118px}
+.notes-grid .note-card.tree-card .note-card-title{font-size:1em;margin-bottom:8px}
+.notes-list .note-card.tree-card{display:block}
+.notes-list .note-card.tree-card .note-card-title{font-size:1.05em;margin-bottom:4px;-webkit-line-clamp:1}
+.notes-list .note-card.tree-card .note-meta{border-top:none;padding-top:0;margin-top:6px}
+.notes-list .note-card.tree-card .note-preview{-webkit-line-clamp:2}
+.note-card.tree-card.folder-card .note-card-title{color:#ffd54f}
+/* Which sort is in force, shown inside the menu that sets it. */
+.notes-mini-menu button.sel{color:var(--accent);font-weight:600}
 
 /* ═══ WIDGET STYLES MODAL ═══ */
 #widgetStyleModal .modal-content-area{max-width:760px;width:100%}
@@ -2486,6 +2598,8 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
           <div class="widget-checkbox"><input type="checkbox" id="notifyTaskStart"><label for="notifyTaskStart">Task timer started</label></div>
           <div class="widget-checkbox"><input type="checkbox" id="notifyTaskEnd"><label for="notifyTaskEnd">Task timer stopped</label></div>
           <div class="widget-checkbox"><input type="checkbox" id="notifyTaskLimit"><label for="notifyTaskLimit">Approaching or passing a task/job time limit</label></div>
+          <div class="widget-checkbox"><input type="checkbox" id="notifyJobPause"><label for="notifyJobPause">A job left paused too long ("get back to it")</label></div>
+          <div class="widget-checkbox"><input type="checkbox" id="notifyJobAutoStart"><label for="notifyJobAutoStart">A job starting itself at its scheduled time</label></div>
           <div class="inactivity-hint">Alarms and the timer always show their in-app dialog and play a sound while Googoke is open. These add a system notification on top, which is what reaches you when the app is in the background.</div>
         </div>
       </div>
@@ -3522,30 +3636,41 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
       </div>
     </div>
     <div id="tasksContent">
+      <!-- Same shape as the Notes toolbar: crumb, new (two buttons on desktop,
+           one + menu on a phone), view toggle, sort menu. -->
       <div class="notes-toolbar" id="tasksToolbar">
         <div class="notes-crumb" id="tasksCrumb"></div>
-        <button class="notes-icon-btn" onclick="createTaskList()" title="New job" aria-label="New job"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
-        <button class="notes-icon-btn" onclick="createTaskFolder()" title="New folder" aria-label="New folder"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></button>
+        <button class="notes-icon-btn ntb-new-sep" onclick="createTaskFolder()" title="New folder" aria-label="New folder"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg></button>
+        <button class="notes-icon-btn ntb-new-sep" onclick="createTaskList()" title="New job" aria-label="New job"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+        <div class="notes-menu-wrap ntb-new-combined" id="tasksNewWrap">
+          <button class="notes-icon-btn" onclick="toggleNotesMenu(event,'tasksNewWrap')" title="New" aria-label="New"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+          <div class="notes-mini-menu">
+            <button onclick="closeNotesMenus();createTaskFolder()">New folder</button>
+            <button onclick="closeNotesMenus();createTaskList()">New job</button>
+          </div>
+        </div>
+        <button class="notes-icon-btn" id="tasksViewToggleBtn" onclick="toggleTasksView()" title="Toggle grid / list view" aria-label="Toggle view">
+          <svg viewBox="0 0 24 24" id="tasksViewToggleIcon"><path d="M4 11h5V4H4v7zm0 9h5v-7H4v7zm6 0h5v-7h-5v7zm6 0h5v-7h-5v7zm-6-9h5V4h-5v7zm6-7v7h5V4h-5z"/></svg>
+        </button>
+        <div class="notes-menu-wrap" id="tasksSortWrap">
+          <button class="notes-icon-btn has-caret" onclick="toggleNotesMenu(event,'tasksSortWrap')" title="Sort" aria-label="Sort"><svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></button>
+          <div class="notes-mini-menu" id="tasksSortMenu">
+            <button data-sort="manual" onclick="setTasksSort('manual')">Custom order</button>
+            <button data-sort="name" onclick="setTasksSort('name')">Name (A–Z)</button>
+            <button data-sort="nameDesc" onclick="setTasksSort('nameDesc')">Name (Z–A)</button>
+            <button data-sort="updated" onclick="setTasksSort('updated')">Recently updated</button>
+            <button data-sort="created" onclick="setTasksSort('created')">Recently created</button>
+            <button data-sort="progress" onclick="setTasksSort('progress')">Least complete</button>
+          </div>
+        </div>
       </div>
-      <!-- Sort sits under the toolbar rather than inside it: on a phone the
-           toolbar scrolls sideways, which buried the dropdown off-screen. -->
-      <div class="tasks-sort-row">
-        <label for="tasksSortBy">Sort</label>
-        <select id="tasksSortBy" class="styled-select" onchange="_onTasksSortChange()" title="Sort">
-          <option value="manual">Custom order</option>
-          <option value="name">Name (A–Z)</option>
-          <option value="nameDesc">Name (Z–A)</option>
-          <option value="updated">Recently updated</option>
-          <option value="created">Recently created</option>
-          <option value="progress">Least complete</option>
-        </select>
-      </div>
+      <!-- Search above the filter chips, matching Notes. -->
+      <div class="search-bar-wrapper" id="tasksSearchWrapper"><input type="text" id="tasksSearchInput" placeholder="Search tasks..." oninput="searchTasks()"></div>
       <div class="notes-filter-row" id="tasksFilterRow">
         <button class="nf-chip active" data-filter="all" onclick="setTasksFilter('all')">All</button>
         <button class="nf-chip" data-filter="folders" onclick="setTasksFilter('folders')">Folders only</button>
         <button class="nf-chip" data-filter="lists" onclick="setTasksFilter('lists')">Jobs only</button>
       </div>
-      <div class="search-bar-wrapper" id="tasksSearchWrapper"><input type="text" id="tasksSearchInput" placeholder="Search tasks..." oninput="searchTasks()"></div>
       <div id="tasksGrid" class="notes-grid"></div>
     </div>
   </div>
@@ -3557,6 +3682,9 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
     <button class="ne-btn" onclick="closeTaskEditor()" title="Back" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
     <input type="text" id="taskEditorTitle" class="ne-title" placeholder="Job title" maxlength="120" oninput="onTaskEditorTitleInput()">
     <span class="te-progress" id="taskEditorProgress"></span>
+    <!-- One clock for the whole job. It always runs the first unchecked task, so
+         there is nothing to start per row — see _syncTaskSequence(). -->
+    <button class="ne-btn te-run-btn" id="taskRunBtn" onclick="toggleJobRunning()" title="Start the job" aria-label="Start the job"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
     <!-- Desktop keeps these inline; on a phone they collapse into the menu below. -->
     <button class="ne-btn te-desk-only" id="taskLockBtn" onclick="toggleTaskListLock()" title="Lock this job" aria-label="Lock this job"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg></button>
     <button class="ne-btn te-desk-only" onclick="openTaskColorPopup()" title="Colours" aria-label="Colours"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></button>
@@ -3575,7 +3703,13 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
     </div>
     <div class="te-job-limit" id="taskJobLimit">
       <span id="taskJobLimitText"></span>
-      <button class="btn-ghost te-joblimit-btn" onclick="openJobLimitPopup()">Job time limit…</button>
+      <button class="btn-ghost te-joblimit-btn" onclick="openJobLimitPopup()">Job timing…</button>
+    </div>
+    <!-- Nothing can be ticked off a job that isn't running, so say so up front
+         rather than letting the taps quietly fail. -->
+    <div class="te-idle-hint" id="taskIdleHint" style="display:none">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <span>Start the job to begin timing and tick tasks off.</span>
     </div>
     <div class="te-select-bar" id="taskSelectBar">
       <button class="btn-ghost" onclick="toggleTaskSelectAll()" id="taskSelectAllBtn">Select all</button>
@@ -3603,7 +3737,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
       <label class="tk-switch-row"><span id="taskItemTimerState">Off</span>
         <span id="taskItemTimerChk"></span>
       </label>
-      <div class="ae-hint">Counts up while the item is unchecked, including time when Googoke is closed. Checking the item stops it.</div>
+      <div class="ae-hint">Whether this task keeps an elapsed counter. What actually runs is decided by the job: start it from the top bar and the first unchecked task counts, including time when Googoke is closed. Checking it hands the clock to the next one.</div>
     </div>
     <div class="ae-field">
       <label class="ae-label" for="taskItemLimit">Time limit (optional)</label>
@@ -3628,15 +3762,25 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 
 <!-- Job time limit -->
 <div class="popup-overlay" id="jobLimitPopup">
-  <div class="popup-box" style="max-width:400px">
-    <h3>Job Time Limit</h3>
+  <div class="popup-box" style="max-width:420px">
+    <h3>Job Timing</h3>
     <div class="ae-field">
-      <label class="ae-label" for="jobLimitInput">Limit</label>
+      <label class="ae-label" for="jobLimitInput">Time limit</label>
       <input type="text" id="jobLimitInput" class="ae-input" placeholder="e.g. 3d, 2d 4h, 90m — blank for none" autocomplete="off">
-      <div class="ae-hint">Applies to the whole job: the total time across every task in it. Accepts days and weeks as well as hours and minutes; a bare number means minutes.</div>
+      <div class="ae-hint">How long the whole job may take. Counted only while the job is started — it does not run down while the job sits paused or before you begin. Accepts days and weeks as well as hours and minutes; a bare number means minutes.</div>
     </div>
     <div class="ae-field">
-      <span class="ae-label">Total time so far</span>
+      <label class="ae-label" for="jobPauseLimitInput">Maximum pause</label>
+      <input type="text" id="jobPauseLimitInput" class="ae-input" placeholder="e.g. 2h, 45m — blank for none" autocomplete="off">
+      <div class="ae-hint">If the job stays paused longer than this, you get a notification telling you to get back to it. Blank means it can sit paused indefinitely.</div>
+    </div>
+    <div class="ae-field">
+      <label class="ae-label" for="jobAutoStartInput">Start automatically at</label>
+      <input type="datetime-local" id="jobAutoStartInput" class="ae-input" autocomplete="off">
+      <div class="ae-hint">The job starts itself at this date and time and notifies you, the same way a reminder does. Leave blank to always start it by hand.</div>
+    </div>
+    <div class="ae-field">
+      <span class="ae-label">Time worked so far</span>
       <div class="tk-elapsed" id="jobLimitElapsed">—</div>
     </div>
     <div class="popup-btn-row">
@@ -3684,7 +3828,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
   </div>
 </div>
 
-<!-- ═══ INFO BASE ═══ -->
+<!-- ═══ INFOBASE ═══ -->
 <div class="modal-overlay" id="infoModal">
   <button class="close-btn" onclick="closeModal('infoModal')">&times;</button>
   <button class="modal-search-toggle" onclick="openSearchDock('infoModal')" title="Search" aria-label="Search"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.5 6.5 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
@@ -3697,9 +3841,9 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
     </svg>
   </button>
   <div class="modal-content-area">
-    <div class="modal-header"><h2>Info Base</h2></div>
+    <div class="modal-header"><h2>InfoBase</h2></div>
     <div class="password-screen" id="infoPasswordScreen">
-      <div class="pw-title">Info Base</div>
+      <div class="pw-title">InfoBase</div>
       <div class="pw-sub">Enter Password</div>
       <input type="password" class="password-input" id="infoPasswordInput" placeholder="Password" onkeydown="if(event.key==='Enter')verifyPassword('infoModal')">
       <div class="pw-btns">
@@ -3708,28 +3852,35 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
       </div>
     </div>
     <div id="infoContent">
+      <!-- Same shape as the Notes toolbar — see #tasksToolbar. -->
       <div class="notes-toolbar" id="infoToolbar">
         <div class="notes-crumb" id="infoCrumb"></div>
-        <button class="notes-icon-btn" onclick="createInfoFile()" title="New file" aria-label="New file"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
-        <button class="notes-icon-btn" onclick="createInfoFolder()" title="New folder" aria-label="New folder"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></button>
+        <button class="notes-icon-btn ntb-new-sep" onclick="createInfoFolder()" title="New folder" aria-label="New folder"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg></button>
+        <button class="notes-icon-btn ntb-new-sep" onclick="createInfoFile()" title="New file" aria-label="New file"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16h-4v-2h4v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></button>
+        <div class="notes-menu-wrap ntb-new-combined" id="infoNewWrap">
+          <button class="notes-icon-btn" onclick="toggleNotesMenu(event,'infoNewWrap')" title="New" aria-label="New"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+          <div class="notes-mini-menu">
+            <button onclick="closeNotesMenus();createInfoFolder()">New folder</button>
+            <button onclick="closeNotesMenus();createInfoFile()">New file</button>
+          </div>
+        </div>
+        <button class="notes-icon-btn" id="infoViewToggleBtn" onclick="toggleInfoView()" title="Toggle grid / list view" aria-label="Toggle view">
+          <svg viewBox="0 0 24 24" id="infoViewToggleIcon"><path d="M4 11h5V4H4v7zm0 9h5v-7H4v7zm6 0h5v-7h-5v7zm6 0h5v-7h-5v7zm-6-9h5V4h-5v7zm6-7v7h5V4h-5z"/></svg>
+        </button>
+        <div class="notes-menu-wrap" id="infoSortWrap">
+          <button class="notes-icon-btn has-caret" onclick="toggleNotesMenu(event,'infoSortWrap')" title="Sort" aria-label="Sort"><svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></button>
+          <div class="notes-mini-menu" id="infoSortMenu">
+            <button data-sort="updated" onclick="setInfoSort('updated')">Recently updated</button>
+            <button data-sort="created" onclick="setInfoSort('created')">Recently created</button>
+            <button data-sort="name" onclick="setInfoSort('name')">Name (A–Z)</button>
+            <button data-sort="nameDesc" onclick="setInfoSort('nameDesc')">Name (Z–A)</button>
+            <button data-sort="facts" onclick="setInfoSort('facts')">Most facts</button>
+          </div>
+        </div>
       </div>
-      <div class="tasks-sort-row">
-        <label for="infoSortBy">Sort</label>
-        <select id="infoSortBy" class="styled-select" onchange="_onInfoSortChange()">
-          <option value="updated">Recently updated</option>
-          <option value="created">Recently created</option>
-          <option value="name">Name (A–Z)</option>
-          <option value="nameDesc">Name (Z–A)</option>
-          <option value="facts">Most facts</option>
-        </select>
-      </div>
-      <div class="notes-filter-row" id="infoFilterRow">
-        <button class="nf-chip active" data-filter="all" onclick="setInfoFilter('all')">All</button>
-        <button class="nf-chip" data-filter="folders" onclick="setInfoFilter('folders')">Folders only</button>
-        <button class="nf-chip" data-filter="files" onclick="setInfoFilter('files')">Files only</button>
-      </div>
-      <!-- Knowledge search rides beside the file search at rest; the floating
-           button only takes over once this row has scrolled away. -->
+      <!-- Search above the filter chips, matching Notes. Knowledge search rides
+           beside the file search at rest; the floating button only takes over
+           once this row has scrolled away. -->
       <div class="search-bar-wrapper has-ks" id="infoSearchWrapper">
         <input type="text" id="infoSearchInput" placeholder="Search files..." oninput="searchInfoFiles()">
         <button type="button" class="ks-inline-btn" onclick="openKnowledgeSearch()" title="Search knowledge — ask for a fact" aria-label="Search knowledge">
@@ -3741,6 +3892,11 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
             <path d="M9.5 6.4l.86 2.24 2.24.86-2.24.86-.86 2.24-.86-2.24L6.4 9.5l2.24-.86z"/>
           </svg>
         </button>
+      </div>
+      <div class="notes-filter-row" id="infoFilterRow">
+        <button class="nf-chip active" data-filter="all" onclick="setInfoFilter('all')">All</button>
+        <button class="nf-chip" data-filter="folders" onclick="setInfoFilter('folders')">Folders only</button>
+        <button class="nf-chip" data-filter="files" onclick="setInfoFilter('files')">Files only</button>
       </div>
       <div id="infoGrid" class="notes-grid"></div>
     </div>
@@ -3795,7 +3951,9 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
       <button class="ne-btn" onclick="openInfoDatePopup()" title="Insert date" aria-label="Insert date"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V9h14v10zM7 11h5v5H7z"/></svg></button>
       <button class="ne-btn" onclick="insertInfoAttachment()" title="Insert attachment" aria-label="Insert attachment"><svg viewBox="0 0 24 24"><path d="M16.5 6v11.5a4 4 0 0 1-8 0V5a2.5 2.5 0 0 1 5 0v10.5a1 1 0 0 1-2 0V6H10v9.5a2.5 2.5 0 0 0 5 0V5a4 4 0 0 0-8 0v12.5a5.5 5.5 0 0 0 11 0V6h-1.5z"/></svg></button>
       <div class="ne-sep"></div>
-      <button class="ne-btn ne-desk-only" id="infoSidebarBtn" onclick="toggleInfoSidebar()" title="Subheadings panel  (Ctrl+Shift+O)" aria-label="Subheadings panel"><svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h12v2H3zm0 6h18v2H3z"/></svg></button>
+      <!-- The subheadings toggle used to live here. It moved to a floating icon
+           over the text (desktop) / the three-dot menu (mobile) — see
+           .info-side-fab. -->
       <button class="ne-btn ne-desk-only" onclick="openInfoColorPopup()" title="Colours" aria-label="Colours"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></button>
       <!-- Mobile: preview / subheadings / lock / colours / delete collapse in here. -->
       <div class="ne-right-fixed">
@@ -3806,6 +3964,10 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
     </div>
   </div>
   <div class="info-editor-body" id="infoEditorBody">
+    <!-- Desktop-only reopen control; hidden while the panel is open. -->
+    <button class="info-side-fab" id="infoSidebarFab" onclick="toggleInfoSidebar()" title="Subheadings panel  (Ctrl+Shift+O)" aria-label="Show subheadings panel">
+      <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h12v2H3zm0 6h18v2H3z"/></svg>
+    </button>
     <aside class="info-sidebar" id="infoSidebar">
       <div class="info-side-head">
         <strong>Subheadings</strong>
@@ -3821,8 +3983,42 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
            the fact parser, knowledge search and written-stamps are unchanged —
            but the user sees real headings, lists and images, never the syntax. -->
       <div id="infoSource" class="info-source rich-content" contenteditable="true" spellcheck="true"
-           data-placeholder="Start writing..."></div>
+           data-placeholder="Write freely.  A line like “cat name: bird” becomes a searchable fact — use the : button to add the marker. Use the heading buttons for subheadings."></div>
       <div id="infoPreview" class="info-preview rich-content" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Shared move/copy dialog for the folder trees (Tasks, InfoBase) -->
+<div class="popup-overlay" id="treeMovePopup">
+  <div class="popup-box copy-dialog has-close" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closePopup('treeMovePopup')">&times;</button>
+    <h3 id="treeMoveTitle">Move to folder</h3>
+    <input type="text" class="cd-search" id="treeMoveSearch" placeholder="Search folders..." oninput="renderTreeMoveDialog()" autocomplete="off">
+    <div class="cd-path" id="treeMovePath"></div>
+    <div class="cd-list" id="treeMoveList"></div>
+    <div class="cd-actions">
+      <div class="cd-left"><button class="btn-ghost" onclick="closePopup('treeMovePopup')">Cancel</button></div>
+      <button class="btn-primary" onclick="confirmTreeMove()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Insert / edit link -->
+<div class="popup-overlay" id="infoLinkPopup">
+  <div class="popup-box" style="max-width:420px">
+    <h3>Link</h3>
+    <div class="ae-field">
+      <label class="ae-label" for="infoLinkText">Text</label>
+      <input type="text" id="infoLinkText" class="ae-input" placeholder="Link text" autocomplete="off">
+    </div>
+    <div class="ae-field">
+      <label class="ae-label" for="infoLinkUrl">Address</label>
+      <input type="url" id="infoLinkUrl" class="ae-input" placeholder="https://example.com" autocomplete="off">
+    </div>
+    <div class="popup-btn-row">
+      <button class="btn-ghost" onclick="closePopup('infoLinkPopup')">Cancel</button>
+      <button class="btn-primary" onclick="applyInfoLink()">Insert</button>
     </div>
   </div>
 </div>
@@ -3880,7 +4076,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
           <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.5 6.5 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
           <svg class="sd-star" viewBox="0 0 24 24"><path d="M12 2l1.6 4.6L18 8l-4.4 1.4L12 14l-1.6-4.6L6 8l4.4-1.4z"/></svg>
         </span>
-        <span><strong>Search knowledge</strong><em></em></span>
+        <span><strong>Search knowledge</strong><em>Ask for a fact, e.g. “cat name”</em></span>
       </button>
     </div>
     <div class="popup-btn-row"><button class="btn-ghost" onclick="closePopup('searchDockPopup')">Cancel</button></div>
@@ -3892,35 +4088,52 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
   <button class="close-btn" onclick="closeModal('knowledgeSearchModal')">&times;</button>
   <div class="modal-content-area">
     <div class="modal-header"><h2>Knowledge Search</h2></div>
-    <input type="text" id="ksQuery" class="search-input" placeholder="Search your info base..." oninput="runKnowledgeSearch()" autocomplete="off">
-    <div class="ks-filters">
-      <div class="ks-row">
-        <label>Scope</label>
-        <span><span id="ksScopeLabel" class="ks-scope-label">Everything</span><button class="btn-ghost" onclick="openKsScopePicker()" style="padding:7px 14px;font-size:.84em">Choose…</button></span>
-      </div>
-      <div class="ks-row">
-        <label>Match</label>
-        <span class="ks-chips">
-          <button class="nf-chip active" data-match="both" onclick="_ksSetMatch('both')">Facts &amp; subheadings</button>
-          <button class="nf-chip" data-match="info" onclick="_ksSetMatch('info')">Facts only</button>
-          <button class="nf-chip" data-match="heading" onclick="_ksSetMatch('heading')">Subheadings only</button>
-        </span>
-      </div>
-      <div class="ks-row">
-        <label>Dates</label>
-        <span class="ks-dates">
-          <select id="ksDateBasis" class="styled-select" onchange="runKnowledgeSearch()" aria-label="Which date to filter on">
-            <option value="any">Any date</option>
-            <option value="specified">Specified date</option>
-            <option value="written">Date written</option>
-          </select>
-          <input type="date" id="ksFrom" class="ks-date" onchange="runKnowledgeSearch()" title="From" aria-label="From date">
-          <input type="date" id="ksTo" class="ks-date" onchange="runKnowledgeSearch()" title="To" aria-label="To date">
-          <button type="button" class="ks-clear" onclick="clearKsDates()" title="Clear the date filter">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            Clear
-          </button>
-        </span>
+    <!-- Search bar first, everything else behind one dropdown. Same width and
+         padding as the search rows in Settings and the other apps. -->
+    <div class="ks-topbar">
+      <input type="text" id="ksQuery" class="ks-query" placeholder="What do you want to know? e.g. cat name" oninput="runKnowledgeSearch()" autocomplete="off">
+      <div class="ks-menu-wrap" id="ksFilterWrap">
+        <button class="ks-filter-btn" id="ksFilterBtn" onclick="toggleKsFilterMenu(event)" title="Sorting &amp; filters" aria-label="Sorting and filters" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3zm3 6h12v2H6zm3 6h6v2H9z"/></svg>
+          <span class="ks-filter-dot" aria-hidden="true"></span>
+        </button>
+        <div class="ks-filter-menu" id="ksFilterMenu">
+          <div class="ks-group">
+            <div class="ks-group-label">Look in</div>
+            <button type="button" class="ks-group-btn" onclick="openKsScopePicker()">
+              <span id="ksScopeLabel">Everything</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </button>
+          </div>
+          <div class="ks-group">
+            <div class="ks-group-label">Match</div>
+            <div class="ks-chips">
+              <button class="nf-chip active" data-match="both" onclick="_ksSetMatch('both')">Facts &amp; subheadings</button>
+              <button class="nf-chip" data-match="info" onclick="_ksSetMatch('info')">Facts only</button>
+              <button class="nf-chip" data-match="heading" onclick="_ksSetMatch('heading')">Subheadings only</button>
+            </div>
+          </div>
+          <div class="ks-group">
+            <div class="ks-group-label">Dates</div>
+            <select id="ksDateBasis" class="styled-select" onchange="runKnowledgeSearch()" aria-label="Which date to filter on">
+              <option value="any">Any date</option>
+              <option value="specified">Date specified in the text</option>
+              <option value="written">Date it was written</option>
+            </select>
+          </div>
+          <div class="ks-group">
+            <div class="ks-group-label">From</div>
+            <div class="ks-range">
+              <input type="date" id="ksFrom" class="ks-date" onchange="runKnowledgeSearch()" title="From" aria-label="From date">
+              <span class="ks-range-sep">–</span>
+              <input type="date" id="ksTo" class="ks-date" onchange="runKnowledgeSearch()" title="To" aria-label="To date">
+            </div>
+          </div>
+          <div class="ks-menu-foot">
+            <button type="button" class="btn-ghost" onclick="clearKsFilters()">Clear all</button>
+            <button type="button" class="btn-primary" onclick="closeKsFilterMenu()">Done</button>
+          </div>
+        </div>
       </div>
     </div>
     <div id="ksResults" class="ks-results"></div>
@@ -3970,8 +4183,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
       <button class="btn-ghost" onclick="copyRecoveryKey()">Copy</button>
       <button class="btn-ghost" onclick="downloadRecoveryKey()">Download</button>
     </div>
-    <input type="checkbox" id="recoveryConfirmChk" onchange="_onRecoveryConfirmToggle()">
-    <label for="recoveryConfirmChk">I understand the risks.</label>
+    <label class="rk-confirm"><input type="checkbox" id="recoveryConfirmChk" onchange="_onRecoveryConfirmToggle()"> I have saved this code somewhere safe</label>
     <div class="popup-btn-row" style="justify-content:center">
       <button class="btn-primary" id="recoveryDoneBtn" disabled onclick="closePopup('recoveryKeyPopup')">Done</button>
     </div>
@@ -4863,6 +5075,8 @@ const DEFAULT_SETTINGS = {
   notifyTaskStart: false,      // a task counter starting
   notifyTaskEnd: false,        // a task counter stopping
   notifyTaskLimit: true,       // approaching / passing a task or job limit
+  notifyJobPause: true,        // a job left paused past its maximum pause
+  notifyJobAutoStart: true,    // a job starting itself at its scheduled time
   // ── RSS ──
   rssShowImages: true,         // article thumbnails inside the RSS app
   // ── Page Viewer ──
@@ -5213,7 +5427,7 @@ function openLockedModal(modalId) {
   const pwScreen = document.getElementById(MODAL_SCREENS[modalId]);
   const contentEl = document.getElementById(MODAL_CONTENTS[modalId]);
   // Toggle search icon button: only when content is visible AND modal supports search
-  // querySelectorAll, not querySelector — Info Base carries two (file search and
+  // querySelectorAll, not querySelector — InfoBase carries two (file search and
   // knowledge search) and only the first was ever being shown.
   const searchIcons = document.querySelectorAll(`#${modalId} .modal-search-toggle`);
   searchIcons.forEach(i => i.classList.remove('visible'));
@@ -5363,7 +5577,7 @@ function _purgeSectionData(modalId){
     viewerHistory:   () => { viewerHistory = []; },
     tasksData:       () => { tasksData = []; },
     infoData:        () => { infoData = []; },
-    infoMeta:        () => { infoMeta = { sort:'updated', sidebarOpen:true }; },
+    infoMeta:        () => { infoMeta = { sort:'updated', view:'grid', sidebarOpen:false }; },
     tasksMeta:       () => { tasksMeta = { view:'grid', sort:'manual', activeWidgetListId:null }; },
     filesTree:       () => { try{ filesTree = { root:{ id:'root', name:'Files', type:'folder', parentId:null, children:[], dateCreated:new Date().toISOString() } }; }catch{} }
   };
@@ -6878,6 +7092,18 @@ const _NOTES_VIEW_ICON = {
   // Shown when currently in LIST → icon depicts GRID
   list: '<path d="M4 11h5V4H4v7zm0 9h5v-7H4v7zm6 0h5v-7h-5v7zm6 0h5v-7h-5v7zm-6-9h5V4h-5v7zm6-7v7h5V4h-5z"/>'
 };
+// Shared by the three folder-tree apps (Notes, Tasks, InfoBase), which all use
+// the same toolbar. Kept here beside the icon table they read from.
+function _syncTreeViewToggle(btnId, iconId, view){
+  const icon = document.getElementById(iconId);
+  if(icon) icon.innerHTML = _NOTES_VIEW_ICON[view] || _NOTES_VIEW_ICON.grid;
+  const btn = document.getElementById(btnId);
+  if(btn) btn.title = view === 'grid' ? 'Switch to list view' : 'Switch to grid view';
+}
+function _syncTreeSortMenu(menuId, sort){
+  const menu = document.getElementById(menuId); if(!menu) return;
+  menu.querySelectorAll('button[data-sort]').forEach(b => b.classList.toggle('sel', b.dataset.sort === sort));
+}
 function setNotesFilter(filter){
   _notesFilter = filter;
   document.querySelectorAll('#notesFilterRow .nf-chip').forEach(chip => {
@@ -7239,7 +7465,9 @@ function toggleNotesMenu(e, wrapId){
     }
   }
 }
-function closeNotesMenus(){ document.querySelectorAll('#notesContent .notes-menu-wrap.open').forEach(d=>d.classList.remove('open')); }
+// Not scoped to #notesContent any more: Tasks and InfoBase reuse this toolbar
+// and its menus, so a menu opened there has to close the same way.
+function closeNotesMenus(){ document.querySelectorAll('.notes-menu-wrap.open').forEach(d=>d.classList.remove('open')); }
 function toggleNotesSelectMenu(e){ _refreshNotesSelectionUI(); toggleNotesMenu(e, 'notesSelectWrap'); }
 document.addEventListener('click', (e) => { if (!e.target.closest('.notes-menu-wrap')) closeNotesMenus(); });
 async function deleteSelectedNotes(){
@@ -7780,18 +8008,37 @@ function onNoteTitleKeydown(e){
     sel.removeAllRanges(); sel.addRange(r);
   } catch{}
 }
+// Is the caret inside a heading block of the note body?
+function _noteHeadingAtCaret(){
+  const root = document.getElementById('noteEditorContent');
+  const sel = window.getSelection();
+  if(!root || !sel || !sel.rangeCount) return null;
+  let node = sel.getRangeAt(0).startContainer;
+  if(!root.contains(node)) return null;
+  if(node.nodeType === 3) node = node.parentNode;
+  while(node && node !== root){
+    if(node.nodeType === 1 && /^H[1-6]$/.test(node.tagName)) return node;
+    node = node.parentNode;
+  }
+  return null;
+}
 function _refreshNoteFormatState(){
-  // A checked checklist item renders with line-through via CSS, which some
-  // browsers report back as an active "strikeThrough" command state. Suppress
-  // that so the strike button doesn't falsely light up on ticked items — only
-  // the genuinely-applied format should show as enabled.
+  // ── Don't report formatting that the block already implies ──
+  // A checked checklist item renders with line-through via CSS, and a heading
+  // renders bold — both of which queryCommandState dutifully reports as an
+  // active inline command. Neither is something the user applied, and pressing
+  // the button to "turn it off" does nothing visible, so the button stays dark.
+  // Same rule in the InfoBase editor; worth copying into any other rich-text
+  // toolbar driven by queryCommandState.
   const li = _checklistLiAtCaret();
   const inChecked = !!(li && li.getAttribute('data-checked') === '1');
+  const inHeading = !!_noteHeadingAtCaret();
   document.querySelectorAll('.ne-topbar .ne-btn[data-cmd]').forEach(btn => {
     const cmd = btn.dataset.cmd;
     let on = false;
     try { on = document.queryCommandState(cmd); } catch {}
     if (cmd === 'strikeThrough' && inChecked) on = false;
+    if (cmd === 'bold' && inHeading) on = false;
     btn.classList.toggle('active', on);
   });
 }
@@ -9522,7 +9769,8 @@ function _updateNotifPermUI(){
       : perm === 'denied'  ? 'Blocked. Re-enable notifications for this page in your browser settings.'
       : 'Not granted yet — the options below stay off until you allow it.';
   }
-  ['enableNotifications','notifyAlarms','notifyTimer','notifyTaskStart','notifyTaskEnd','notifyTaskLimit'].forEach(id => {
+  ['enableNotifications','notifyAlarms','notifyTimer','notifyTaskStart','notifyTaskEnd','notifyTaskLimit',
+   'notifyJobPause','notifyJobAutoStart'].forEach(id => {
     const cb = document.getElementById(id); if(!cb) return;
     const usable = supported && perm === 'granted';
     cb.disabled = !usable;
@@ -14112,8 +14360,14 @@ function searchTasks(){
   _tasksQuery = (document.getElementById('tasksSearchInput')||{}).value || '';
   renderTasksApp();
 }
-function _onTasksSortChange(){
-  tasksMeta.sort = (document.getElementById('tasksSortBy')||{}).value || 'manual';
+function setTasksSort(v){
+  closeNotesMenus();
+  tasksMeta.sort = v || 'manual';
+  _saveTasksMeta(); renderTasksApp();
+}
+// Grid ⇄ list, exactly as Notes does it — the icon shows the view you'll get.
+function toggleTasksView(){
+  tasksMeta.view = (tasksMeta.view || 'grid') === 'grid' ? 'list' : 'grid';
   _saveTasksMeta(); renderTasksApp();
 }
 function _tasksVisibleChildren(){
@@ -14150,14 +14404,16 @@ function _tasksVisibleChildren(){
 }
 function renderTasksApp(){
   const grid = document.getElementById('tasksGrid'); if(!grid) return;
-  const sel = document.getElementById('tasksSortBy');
-  if(sel && sel.value !== (tasksMeta.sort||'manual')) sel.value = tasksMeta.sort||'manual';
+  const view = tasksMeta.view || 'grid';
+  grid.className = view === 'list' ? 'notes-list' : 'notes-grid';
+  _syncTreeViewToggle('tasksViewToggleBtn','tasksViewToggleIcon', view);
+  _syncTreeSortMenu('tasksSortMenu', tasksMeta.sort || 'manual');
   _renderTasksCrumb();
   grid.innerHTML = '';
   const items = _tasksVisibleChildren();
   if(!items.length){
     const d = document.createElement('div');
-    d.style.cssText = 'opacity:.45;text-align:center;padding:34px 12px;width:100%;font-size:.92em';
+    d.className = 'tree-empty';
     d.textContent = _tasksQuery.trim() ? 'Nothing matches that search.'
       : (_tasksCurrentFolder ? 'This folder is empty.' : 'No jobs yet — create one to get started.');
     grid.appendChild(d); return;
@@ -14189,7 +14445,7 @@ function _renderTasksCrumb(){
 }
 function _taskFolderCard(n){
   const card = document.createElement('div');
-  card.className = 'note-card folder-card';
+  card.className = 'note-card tree-card folder-card';
   const locked = _taskIsLockedNow(n);
   card.innerHTML =
     `<div class="note-card-title"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="vertical-align:-3px;margin-right:6px"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>${_escapeText(n.title||'Folder')}${locked?' <span class="ns-badge">🔒</span>':''}</div>`+
@@ -14204,7 +14460,7 @@ function _taskFolderCard(n){
 }
 function _taskListCard(n){
   const card = document.createElement('div');
-  card.className = 'note-card';
+  card.className = 'note-card tree-card';
   const locked = _taskIsLockedNow(n);
   const p = _taskListProgress(n);
   const pct = p.total ? Math.round(p.done/p.total*100) : 0;
@@ -14247,6 +14503,16 @@ function _showTaskCtxMenu(e, n){
     showToast(n.locked ? 'Locked' : 'Unlocked');
   }});
   items.push({sep:true});
+  items.push(..._treeMoveMenuItems({
+    node: n,
+    all: () => tasksData,
+    save: _saveTasks,
+    render: () => { renderTasksApp(); refreshTasksWidget(); },
+    rootLabel: 'Tasks',
+    idPrefix: o => o.type === 'folder' ? 'tf_' : 'tl_',
+    isLocked: _taskIsLockedNow
+  }));
+  items.push({sep:true});
   items.push({label:'Delete', action: async () => {
     if(_taskIsLockedNow(n)){ showToast('Unlock it before deleting','warn'); return; }
     if(!await askDelete(`Delete "${n.title||'this item'}"?${n.type==='folder'?' The folder and everything inside it will be removed.':''}`)) return;
@@ -14276,7 +14542,10 @@ function createTaskFolder(){
 function createTaskList(){
   const now = new Date().toISOString();
   const node = { id:newUid('tl_'), type:'list', title:'', parentId:_tasksCurrentFolder, locked:false,
-                 items:[], textColor:'', bgColor:'', createdAt:now, updatedAt:now };
+                 items:[], textColor:'', bgColor:'', createdAt:now, updatedAt:now,
+                 // The job clock starts at zero and only moves while `running`.
+                 running:false, jobAccumulatedMs:0, jobRunningSince:null,
+                 limitMs:0, maxPauseMs:0, autoStartAt:'', pausedSince:null };
   tasksData.push(node);
   _saveTasks();
   openTaskEditor(node.id);
@@ -14341,7 +14610,9 @@ function _startTaskTicker(){
         document.querySelectorAll('[data-sub-timer]').forEach(el => {
           for(const it of (list.items||[])){
             const st = (it.subtasks||[]).find(s => s.id === el.dataset.subTimer);
-            if(st){ el.textContent = _fmtTaskDur(_taskElapsed(st)); break; }
+            // Same formatter as the renderer, or the "· waiting" tail vanished on
+            // the first tick after a row was drawn.
+            if(st){ el.textContent = _subTimeText(it, st); break; }
           }
         });
         _updateJobLimitReadout(list);
@@ -14360,6 +14631,10 @@ function renderTaskItems(){
   const n = _findTaskNode(_currentEditingTaskListId);
   const host = document.getElementById('taskItemList'); if(!host || !n) return;
   _startTaskTicker();
+  // Cheap and idempotent — keeps the stored clocks honest even if something
+  // changed the list without going through a toggle.
+  _syncTaskSequence(n);
+  _updateJobRunBtn(n);
   host.innerHTML = '';
   const p = _taskListProgress(n);
   const prog = document.getElementById('taskEditorProgress');
@@ -14368,13 +14643,80 @@ function renderTaskItems(){
   if(banner) banner.style.display = p.complete ? 'flex' : 'none';
   _updateJobLimitReadout(n);
   _updateTaskSelectBar();
+  // Idle = has tasks, isn't finished, isn't running. Drives both the hint and
+  // the dimmed checkboxes.
+  const idle = !n.running && !p.complete && n.items.length > 0;
+  host.classList.toggle('job-idle', idle);
+  const hint = document.getElementById('taskIdleHint');
+  if(hint) hint.style.display = idle ? 'flex' : 'none';
   if(!n.items.length){
     const d = document.createElement('div');
-    d.style.cssText='opacity:.45;text-align:center;padding:26px 10px;font-size:.9em';
-    d.textContent = 'No items yet. Add the first one below.';
+    d.className = 'te-empty';
+    d.textContent = 'No tasks yet. Add the first one above.';
     host.appendChild(d); return;
   }
   n.items.forEach((item, idx) => host.appendChild(_taskItemRow(n, item, idx)));
+}
+// ── Reordering ──
+// Order is meaningful here in a way it isn't in Notes: it decides which task the
+// job clock runs next. So a reorder has to re-run the sequence, not just repaint.
+let _tkDrag = null;   // {kind:'item'|'sub', itemId, subId}
+function _tkClearDropMarks(){
+  document.querySelectorAll('#taskItemList .drop-before,#taskItemList .drop-after')
+    .forEach(el => el.classList.remove('drop-before','drop-after'));
+}
+function _tkAfterReorder(list){
+  list.updatedAt = new Date().toISOString();
+  _syncTaskSequence(list);
+  _saveTasks(); renderTaskItems(); refreshTasksWidget();
+}
+// Pull `fromId` out and drop it beside `toId`. Splicing after the removal is
+// what makes dragging downwards land where the marker was shown.
+function _tkReorder(arr, fromId, toId, after){
+  const from = arr.findIndex(x => x.id === fromId);
+  if(from < 0 || fromId === toId) return false;
+  const [moved] = arr.splice(from, 1);
+  const to = arr.findIndex(x => x.id === toId);
+  if(to < 0){ arr.splice(from, 0, moved); return false; }
+  arr.splice(after ? to + 1 : to, 0, moved);
+  return true;
+}
+// Where in a row the pointer is, so the marker (and the drop) match.
+function _tkDropAfter(el, e){
+  const r = el.getBoundingClientRect();
+  return (e.clientY - r.top) > r.height / 2;
+}
+// Shared by the context-menu moves at both levels.
+function _tkNudge(arr, id, where){
+  const i = arr.findIndex(x => x.id === id);
+  if(i < 0) return false;
+  const j = where === 'up' ? i - 1 : where === 'down' ? i + 1 : where === 'top' ? 0 : arr.length - 1;
+  if(j === i || j < 0 || j >= arr.length){
+    showToast(/^(up|top)$/.test(where) ? 'Already at the top' : 'Already at the bottom');
+    return false;
+  }
+  const [m] = arr.splice(i, 1);
+  arr.splice(j, 0, m);
+  return true;
+}
+function moveTaskItem(listId, itemId, where){
+  const list = _findTaskNode(listId); if(!list) return;
+  if(_tkNudge(list.items || [], itemId, where)) _tkAfterReorder(list);
+}
+function moveSubtaskItem(listId, itemId, subId, where){
+  const list = _findTaskNode(listId); if(!list) return;
+  const item = (list.items||[]).find(i => i.id === itemId); if(!item) return;
+  if(_tkNudge(item.subtasks || [], subId, where)) _tkAfterReorder(list);
+}
+// Four entries rather than a drag hint, because HTML5 drag events never fire on
+// touch — this IS the mobile reorder path.
+function _tkMoveMenuItems(label, onMove){
+  return [
+    {label:'Move '+label+' up', action: () => onMove('up')},
+    {label:'Move '+label+' down', action: () => onMove('down')},
+    {label:'Move to top', action: () => onMove('top')},
+    {label:'Move to bottom', action: () => onMove('bottom')}
+  ];
 }
 function _taskItemRow(list, item, idx){
   const wrap = document.createElement('div');
@@ -14382,17 +14724,57 @@ function _taskItemRow(list, item, idx){
   const subs = item.subtasks || [];
   const row = document.createElement('div');
   const itemLocked = _taskItemLockedNow(item);
+  const isActive = !!item.runningSince && !item.done;
   row.className = 'te-item' + (item.done ? ' done' : '') + (_taskOverLimit(item) && !item.done ? ' over' : '')
-                + (itemLocked ? ' locked' : '') + (_selectedTaskIds.has(item.id) ? ' selected' : '');
+                + (itemLocked ? ' locked' : '') + (_selectedTaskIds.has(item.id) ? ' selected' : '')
+                + (isActive ? ' active' : '');
   row.dataset.taskId = item.id;
+  // The whole row is the target: hitting a 20px checkbox is fiddly, and there is
+  // nothing else a tap on a task could reasonably mean. Every control inside it
+  // stops propagation, so the buttons keep doing their own job.
+  if(!itemLocked){
+    row.onclick = () => {
+      if(_taskSelectMode){ _toggleTaskSelected(item.id); _updateTaskSelectBar(); return; }
+      toggleTaskItem(list.id, item.id);
+    };
+  }
+  // Drag to reorder. A completed drag suppresses the click, so this doesn't
+  // fight with click-to-check.
+  if(!itemLocked && !_taskSelectMode){
+    row.draggable = true;
+    row.ondragstart = (e) => {
+      _tkDrag = {kind:'item', itemId:item.id};
+      row.classList.add('dragging');
+      try{ e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.id); }catch{}
+    };
+    row.ondragend = () => { row.classList.remove('dragging'); _tkClearDropMarks(); _tkDrag = null; };
+    row.ondragover = (e) => {
+      if(!_tkDrag || _tkDrag.kind !== 'item' || _tkDrag.itemId === item.id) return;
+      e.preventDefault();
+      _tkClearDropMarks();
+      row.classList.add(_tkDropAfter(row, e) ? 'drop-after' : 'drop-before');
+    };
+    row.ondragleave = () => row.classList.remove('drop-before','drop-after');
+    row.ondrop = (e) => {
+      if(!_tkDrag || _tkDrag.kind !== 'item') return;
+      e.preventDefault(); e.stopPropagation();
+      const after = _tkDropAfter(row, e);
+      const from = _tkDrag.itemId; _tkDrag = null;
+      _tkClearDropMarks();
+      if(_tkReorder(list.items || [], from, item.id, after)) _tkAfterReorder(list);
+    };
+  }
   // Long-press / right-click starts selection, matching Notes.
   row.oncontextmenu = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if(_taskSelectMode) return;
     showCtxMenu(e, [
+      ..._tkMoveMenuItems('task', w => moveTaskItem(list.id, item.id, w)),
+      {sep:true},
       {label:'Select tasks', action: () => enterTaskSelectMode(item.id)},
       {label: item.locked ? 'Unlock task' : 'Lock task', action: () => toggleTaskItemLock(list.id, item.id)},
-      {label: item.runningSince ? 'Pause timer' : 'Start timer', action: () => toggleTaskRunning(list.id, item.id)},
+      {label: list.running ? 'Pause the job' : 'Start the job', action: () => toggleJobRunning()},
       {sep:true},
       {label:'Timer, limit & notes…', action: () => openTaskItemSettings(list.id, item.id)}
     ]);
@@ -14418,6 +14800,16 @@ function _taskItemRow(list, item, idx){
     row.appendChild(unlock);
     wrap.appendChild(row);
     return wrap;
+  }
+
+  // A visible affordance for the drag — the row is draggable anywhere, but
+  // nothing about a plain row says so.
+  if(!_taskSelectMode){
+    const grip = document.createElement('span');
+    grip.className = 'te-grip'; grip.title = 'Drag to reorder (or right-click)';
+    grip.setAttribute('aria-hidden','true');
+    grip.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 4h2v2H9zm4 0h2v2h-2zM9 9h2v2H9zm4 0h2v2h-2zm-4 5h2v2H9zm4 0h2v2h-2zm-4 5h2v2H9zm4 0h2v2h-2z"/></svg>';
+    row.appendChild(grip);
   }
 
   // Expander — only meaningful when there is something to reveal.
@@ -14454,17 +14846,8 @@ function _taskItemRow(list, item, idx){
   inline.textContent = _taskInlineTimeText(item);
   row.appendChild(inline);
 
-  // Manual start/pause, independent of the checkbox.
-  const run = document.createElement('button');
-  run.className = 'te-item-btn' + (item.runningSince ? ' running' : '');
-  run.title = item.runningSince ? 'Pause timer' : 'Start timer';
-  run.setAttribute('aria-label', run.title);
-  run.innerHTML = item.runningSince
-    ? '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
-    : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-  run.onclick = (e) => { e.stopPropagation(); toggleTaskRunning(list.id, item.id); };
-  row.appendChild(run);
-
+  // No per-row start button any more: one job-level button in the top bar runs
+  // the sequence, so whichever task is first-unchecked is the one counting.
   const cfg = document.createElement('button');
   cfg.className = 'te-item-btn'; cfg.title = 'Timer, limit & notes';
   cfg.innerHTML = '<svg viewBox="0 0 24 24"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0 0 12 4a9 9 0 0 0-9 9 9 9 0 0 0 9 9 8.994 8.994 0 0 0 7.03-14.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>';
@@ -14476,8 +14859,10 @@ function _taskItemRow(list, item, idx){
   del.onclick = async (e) => {
     e.stopPropagation();
     if(!await askDelete(`Remove "${item.text||'this task'}"?`, 'Remove task')) return;
+    _taskStopTimer(item);   // bank its time before it disappears
     list.items = list.items.filter(i => i.id !== item.id);
     list.updatedAt = new Date().toISOString();
+    _syncTaskSequence(list); _syncJobCompletion(list);
     _saveTasks(); renderTaskItems(); refreshTasksWidget();
   };
   row.appendChild(del);
@@ -14486,17 +14871,6 @@ function _taskItemRow(list, item, idx){
   // ── expanded detail: notes + subtasks ──
   if(item.expanded){
     const panel = document.createElement('div'); panel.className = 'te-sub-panel';
-    // Composer first, matching the task list above it.
-    const addRow0 = document.createElement('div'); addRow0.className = 'te-sub-add';
-    const si0 = document.createElement('input');
-    si0.type = 'text'; si0.className = 'search-input'; si0.placeholder = 'Add a subtask…';
-    si0.onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); addSubtask(list.id, item.id, si0.value); } };
-    const sb0 = document.createElement('button');
-    sb0.className = 'te-add-btn small'; sb0.title = 'Add subtask'; sb0.setAttribute('aria-label','Add subtask');
-    sb0.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
-    sb0.onclick = () => addSubtask(list.id, item.id, si0.value);
-    addRow0.appendChild(si0); addRow0.appendChild(sb0);
-    panel.appendChild(addRow0);
     if(item.notes && item.notes.trim()){
       const nt = document.createElement('div'); nt.className = 'te-notes';
       nt.textContent = item.notes;
@@ -14504,10 +14878,55 @@ function _taskItemRow(list, item, idx){
     }
     const activeSub = _activeSubtask(item);
     subs.forEach(st => {
-      const isActive = activeSub && activeSub.id === st.id;
+      // "Active" means actually accruing time, not merely next in line — a paused
+      // job should not have a green row in it.
+      const isActive = !!(activeSub && activeSub.id === st.id && item.runningSince);
       const sr = document.createElement('div');
       sr.className = 'te-sub' + (st.done ? ' done' : '') + (isActive ? ' active' : '') +
                      (!st.done && !isActive ? ' waiting' : '');
+      sr.dataset.subId = st.id;
+      // Whole row checks it, same as the task rows — the delete button stops
+      // propagation, so it keeps doing its own job.
+      sr.onclick = (e) => { e.stopPropagation(); toggleSubtask(list.id, item.id, st.id); };
+      // Same two reorder paths as the tasks above: drag on desktop, menu on touch.
+      sr.draggable = true;
+      sr.ondragstart = (e) => {
+        _tkDrag = {kind:'sub', itemId:item.id, subId:st.id};
+        sr.classList.add('dragging');
+        try{ e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', st.id); }catch{}
+        e.stopPropagation();
+      };
+      sr.ondragend = () => { sr.classList.remove('dragging'); _tkClearDropMarks(); _tkDrag = null; };
+      sr.ondragover = (e) => {
+        // Subtasks only reorder within their own task — dropping one into another
+        // task's panel would silently change what it belongs to.
+        if(!_tkDrag || _tkDrag.kind !== 'sub' || _tkDrag.itemId !== item.id || _tkDrag.subId === st.id) return;
+        e.preventDefault(); e.stopPropagation();
+        _tkClearDropMarks();
+        sr.classList.add(_tkDropAfter(sr, e) ? 'drop-after' : 'drop-before');
+      };
+      sr.ondragleave = () => sr.classList.remove('drop-before','drop-after');
+      sr.ondrop = (e) => {
+        if(!_tkDrag || _tkDrag.kind !== 'sub' || _tkDrag.itemId !== item.id) return;
+        e.preventDefault(); e.stopPropagation();
+        const after = _tkDropAfter(sr, e);
+        const from = _tkDrag.subId; _tkDrag = null;
+        _tkClearDropMarks();
+        if(_tkReorder(item.subtasks || [], from, st.id, after)) _tkAfterReorder(list);
+      };
+      sr.oncontextmenu = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        showCtxMenu(e, [
+          ..._tkMoveMenuItems('subtask', w => moveSubtaskItem(list.id, item.id, st.id, w)),
+          {sep:true},
+          {label:'Remove subtask', action: () => _removeSubtask(list.id, item.id, st.id)}
+        ]);
+      };
+      const grip = document.createElement('span');
+      grip.className = 'te-grip'; grip.title = 'Drag to reorder (or right-click)';
+      grip.setAttribute('aria-hidden','true');
+      grip.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 4h2v2H9zm4 0h2v2h-2zM9 9h2v2H9zm4 0h2v2h-2zm-4 5h2v2H9zm4 0h2v2h-2zm-4 5h2v2H9zm4 0h2v2h-2z"/></svg>';
+      sr.appendChild(grip);
       const scb = makeCustomCheckbox(!!st.done, true, () => toggleSubtask(list.id, item.id, st.id));
       sr.appendChild(scb);
       const stx = document.createElement('span'); stx.className = 'te-sub-text'; stx.textContent = st.text || '';
@@ -14515,26 +14934,51 @@ function _taskItemRow(list, item, idx){
       // Subtasks have no limit of their own — they just record how long they took.
       const sm = document.createElement('span'); sm.className = 'te-sub-time';
       sm.dataset.subTimer = st.id;
-      sm.textContent = _fmtTaskDur(_taskElapsed(st)) + (isActive ? '' : (st.done ? '' : ' · waiting'));
+      sm.textContent = _subTimeText(item, st);
       sr.appendChild(sm);
       const sd = document.createElement('button'); sd.className = 'te-item-btn danger'; sd.title = 'Remove subtask';
       sd.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>';
-      sd.onclick = async () => {
-        if(!await askDelete(`Remove subtask "${st.text||''}"?`, 'Remove subtask')) return;
-        item.subtasks = (item.subtasks||[]).filter(x => x.id !== st.id);
-        list.updatedAt = new Date().toISOString();
-        _saveTasks(); renderTaskItems(); refreshTasksWidget();
-      };
+      sd.onclick = (e) => { e.stopPropagation(); _removeSubtask(list.id, item.id, st.id); };
       sr.appendChild(sd);
       panel.appendChild(sr);
     });
+    // Composer LAST, so a new subtask appears directly above it at the end of the
+    // run rather than the field sitting on top of the list it feeds.
+    const addRow0 = document.createElement('div'); addRow0.className = 'te-sub-add';
+    const si0 = document.createElement('input');
+    si0.type = 'text'; si0.className = 'search-input'; si0.placeholder = 'Add a subtask…';
+    si0.onkeydown = (e) => { if(e.key === 'Enter'){ e.preventDefault(); addSubtask(list.id, item.id, si0.value); } };
+    si0.onclick = (e) => e.stopPropagation();
+    const sb0 = document.createElement('button');
+    sb0.className = 'te-add-btn small'; sb0.title = 'Add subtask'; sb0.setAttribute('aria-label','Add subtask');
+    sb0.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+    sb0.onclick = (e) => { e.stopPropagation(); addSubtask(list.id, item.id, si0.value); };
+    addRow0.appendChild(si0); addRow0.appendChild(sb0);
+    panel.appendChild(addRow0);
     wrap.appendChild(panel);
   }
   return wrap;
 }
-// Subtasks run in sequence: exactly one is "active" (the first unchecked one),
-// and only that one accrues time. This is what makes the numbers mean "how long
-// this step took" rather than "how long since the whole task started".
+async function _removeSubtask(listId, itemId, subId){
+  const list = _findTaskNode(listId); if(!list) return;
+  const item = (list.items||[]).find(i => i.id === itemId); if(!item) return;
+  const st = (item.subtasks||[]).find(s => s.id === subId); if(!st) return;
+  if(!await askDelete(`Remove subtask "${st.text||''}"?`, 'Remove subtask')) return;
+  _taskStopTimer(st);   // bank its time before it disappears
+  item.subtasks = (item.subtasks||[]).filter(x => x.id !== subId);
+  // Removing the last outstanding step can complete the task it belonged to.
+  _autoCompleteFromSubtasks(item);
+  _syncJobCompletion(list);
+  _tkAfterReorder(list);
+}
+// ── The sequence engine ──
+// One clock per job, not per task. Starting the job runs the first unchecked
+// task; checking it hands the clock to the next one, and so on down the list.
+// Inside a task, its subtasks hand off the same way. Nothing runs in parallel,
+// so an elapsed figure always answers "how long did this step take".
+function _activeTaskItem(list){
+  return ((list && list.items) || []).find(i => !i.done && !_taskItemLockedNow(i)) || null;
+}
 function _activeSubtask(item){
   return (item.subtasks || []).find(s => !s.done) || null;
 }
@@ -14543,11 +14987,122 @@ function _activeSubtask(item){
 // banks real elapsed time, never invents or discards any.
 function _syncSubtaskSequence(item){
   if(!item || !item.subtasks || !item.subtasks.length) return;
-  const active = (item.done || item.paused) ? null : _activeSubtask(item);
+  // A subtask only runs while its own task is the one running.
+  const active = (item.done || !item.runningSince) ? null : _activeSubtask(item);
   item.subtasks.forEach(st => {
     if(active && st.id === active.id){ if(!st.runningSince) _taskStartTimer(st); }
     else if(st.runningSince) _taskStopTimer(st);
   });
+}
+// Same rule one level up: exactly one task's clock runs, and only while the job
+// itself is started. Idempotent, so every mutation can just call it afterwards.
+function _syncTaskSequence(list){
+  if(!list || list.type !== 'list') return;
+  const items = list.items || [];
+  // A finished job has nothing left to time.
+  if(list.running && _taskListProgress(list).complete) list.running = false;
+  const active = list.running ? _activeTaskItem(list) : null;
+  items.forEach(item => {
+    if(active && item.id === active.id){
+      // Its turn has come, so it keeps a counter whether or not one was asked
+      // for in the item settings.
+      item.timerOn = true;
+      _taskStartTimer(item);
+    } else if(item.runningSince){
+      _taskStopTimer(item);
+    }
+    _syncSubtaskSequence(item);
+  });
+  // The job's own clock follows the same flag, so the readout and the limit can
+  // never disagree with what the tasks are doing.
+  if(list.running) _jobStartClock(list);
+  else {
+    _jobStopClock(list);
+    // Only an unfinished job that has actually been worked on is "paused" in the
+    // sense the nudge cares about.
+    if(!_taskListProgress(list).complete && _jobEverStarted(list)){
+      if(!list.pausedSince) list.pausedSince = new Date().toISOString();
+    } else { list.pausedSince = null; list.pauseNotified = false; }
+  }
+}
+// Start / pause the whole job from the editor's top bar.
+function toggleJobRunning(){
+  const list = _findTaskNode(_currentEditingTaskListId); if(!list) return;
+  const started = _startStopJob(list, !list.running);
+  if(!started) return;
+  _saveTasks(); renderTaskItems(); refreshTasksWidget();
+}
+// The one place a job's running flag changes, so the manual button, the
+// auto-start watcher and anything else all take the same path.
+function _startStopJob(list, run, opts){
+  opts = opts || {};
+  if(run){
+    if(_taskListProgress(list).complete){
+      if(!opts.silent) showToast('Every task is already done','warn');
+      return false;
+    }
+    const next = _activeTaskItem(list);
+    if(!next){
+      if(!opts.silent) showToast('Nothing left to start','warn');
+      return false;
+    }
+    list.running = true;
+    list.pausedSince = null; list.pauseNotified = false;
+    _syncTaskSequence(list);
+    _notifyTaskEvent('start', list, next);
+    if(!opts.silent) showToast('Started — “' + (next.text || 'first task') + '”');
+  } else {
+    const was = _activeTaskItem(list);
+    list.running = false;
+    _syncTaskSequence(list);
+    if(was) _notifyTaskEvent('end', list, was);
+    if(!opts.silent) showToast('Paused');
+  }
+  list.updatedAt = new Date().toISOString();
+  return true;
+}
+// Nothing can be ticked off a job that isn't running: the point of the sequence
+// is that a tick means "I finished this while the clock was on it".
+function _taskJobIdleBlocked(list){
+  if(list && list.running) return false;
+  showToast('Start the job first', 'warn');
+  return true;
+}
+function _updateJobRunBtn(list){
+  const b = document.getElementById('taskRunBtn'); if(!b) return;
+  const on = !!(list && list.running);
+  b.classList.toggle('running', on);
+  b.title = on ? 'Pause the job' : 'Start the job';
+  b.setAttribute('aria-label', b.title);
+  b.innerHTML = on
+    ? '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+    : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+}
+// A task with subtasks is done when its subtasks are done — ticking it again by
+// hand is busywork. `doneBySubtasks` records that WE closed it, so reopening a
+// subtask can undo that without overriding a tick the user made deliberately.
+function _autoCompleteFromSubtasks(item){
+  const subs = item.subtasks || [];
+  if(!subs.length) return false;
+  const all = subs.every(s => s.done);
+  if(all && !item.done){
+    _taskStopTimer(item);
+    item.done = true; item.doneBySubtasks = true;
+    item.completedAt = new Date().toISOString();
+    return true;
+  }
+  if(!all && item.done && item.doneBySubtasks){
+    item.done = false; item.doneBySubtasks = false; item.completedAt = null;
+    return true;
+  }
+  return false;
+}
+// One subtask's counter plus its queue state, shared by the renderer and the
+// per-second ticker so the two can't drift.
+function _subTimeText(item, st){
+  const active = _activeSubtask(item);
+  const isActive = !!(active && active.id === st.id && item.runningSince);
+  return _fmtTaskDur(_taskElapsed(st)) + (st.done || isActive ? '' : ' · waiting');
 }
 // Compact form for the inline (desktop) slot — just the number and its state.
 function _taskInlineTimeText(item){
@@ -14570,6 +15125,7 @@ function _taskItemMetaHtml(item, subs){
   } else if(item.limitMs) bits.push('<span class="tk-time-group">limit ' + _escapeText(_fmtTaskDur(item.limitMs)) + '</span>');
   if(_taskOverLimit(item) && !item.done) bits.push('<span class="tk-over">over limit</span>');
   else if(item.runningSince && !item.done) bits.push('<span class="tk-running">running</span>');
+  else if(!item.done && elapsed > 0) bits.push('waiting');
   if(subs.length) bits.push(subs.filter(s=>s.done).length + '/' + subs.length + ' subtasks');
   if(item.notes && item.notes.trim()) bits.push('<span class="tk-note-dot" title="Has notes">note</span>');
   return bits.join(' · ');
@@ -14594,9 +15150,12 @@ function addSubtask(listId, itemId, text){
   if(!item.subtasks) item.subtasks = [];
   const st = { id:newUid('ts_'), text:t, done:false, accumulatedMs:0, runningSince:null, createdAt:new Date().toISOString() };
   item.subtasks.push(st);
+  // A new unchecked step can reopen a task that its steps had auto-completed.
+  _autoCompleteFromSubtasks(item);
   // Only the first unchecked subtask runs; a newly added one waits its turn
   // unless it happens to be next in line.
-  _syncSubtaskSequence(item);
+  _syncTaskSequence(list);
+  _syncJobCompletion(list);
   item.expanded = true;
   list.updatedAt = new Date().toISOString();
   _saveTasks(); renderTaskItems(); refreshTasksWidget();
@@ -14606,39 +15165,34 @@ function toggleSubtask(listId, itemId, subId){
   const list = _findTaskNode(listId); if(!list) return;
   const item = (list.items||[]).find(i => i.id === itemId); if(!item) return;
   const st = (item.subtasks||[]).find(s => s.id === subId); if(!st) return;
+  // Unchecking is always allowed — otherwise a completed job (which stops
+  // itself) could never be reopened.
+  if(!st.done && _taskJobIdleBlocked(list)) return;
   st.done = !st.done;
   if(st.done){ _taskStopTimer(st); st.completedAt = new Date().toISOString(); }
   else { st.completedAt = null; }
+  // Ticking the last step ticks the task itself; reopening one reopens it.
+  const flipped = _autoCompleteFromSubtasks(item);
   // Checking one hands the clock to the next in line; unchecking hands it back.
-  _syncSubtaskSequence(item);
+  _syncTaskSequence(list);
+  _syncJobCompletion(list);
   list.updatedAt = new Date().toISOString();
   _saveTasks(); renderTaskItems(); refreshTasksWidget();
+  const p = _taskListProgress(list);
+  if(flipped && item.done && !p.complete) showToast('“'+(item.text||'Task')+'” done — every subtask is checked');
+  if(p.complete) showToast('“'+(list.title||'Job')+'” complete');
 }
-// Manual control over a task's own counter, independent of its checkbox.
-function toggleTaskRunning(listId, itemId){
-  const list = _findTaskNode(listId); if(!list) return;
-  const item = (list.items||[]).find(i => i.id === itemId); if(!item) return;
-  if(item.done){ showToast('Uncheck the task to time it again','warn'); return; }
-  if(item.runningSince){
-    _taskStopTimer(item); item.paused = true;
-    _syncSubtaskSequence(item);
-    _notifyTaskEvent('end', list, item);
-    showToast('Timer paused');
-  } else {
-    item.timerOn = true; item.paused = false;
-    _taskStartTimer(item);
-    _syncSubtaskSequence(item);
-    _notifyTaskEvent('start', list, item);
-    showToast('Timer started');
-  }
-  list.updatedAt = new Date().toISOString();
-  _saveTasks(); renderTaskItems(); refreshTasksWidget();
-}
-// Checking an item stops its counter; unchecking resumes it.
+// Checking an item stops its counter and hands the job clock to the next
+// unchecked task; unchecking gives it back.
 function toggleTaskItem(listId, itemId){
   const list = _findTaskNode(listId); if(!list) return;
   const item = (list.items||[]).find(i => i.id === itemId); if(!item) return;
+  // See toggleSubtask: checking needs a running job, unchecking never does.
+  if(!item.done && _taskJobIdleBlocked(list)) return;
   item.done = !item.done;
+  // Either way this was a deliberate tick, so the subtask cascade no longer
+  // owns the item's state.
+  item.doneBySubtasks = false;
   if(item.done){
     _taskStopTimer(item);
     item.completedAt = new Date().toISOString();
@@ -14650,13 +15204,11 @@ function toggleTaskItem(listId, itemId){
     });
   } else {
     item.completedAt = null;
-    item.paused = false;
     // Only reopen the subtasks that were closed by this auto-check, so ones the
     // user ticked deliberately stay ticked.
     (item.subtasks||[]).forEach(st => { if(st.autoDone){ st.done = false; st.completedAt = null; st.autoDone = false; } });
-    if(item.timerOn) _taskStartTimer(item);
   }
-  _syncSubtaskSequence(item);
+  _syncTaskSequence(list);
   _syncJobCompletion(list);
   list.updatedAt = new Date().toISOString();
   _saveTasks();
@@ -14680,13 +15232,56 @@ const TASK_LIMIT_WARN_AT = 0.9;   // warn once the counter passes 90% of its lim
 let _taskLimitChecker = null;
 function startTaskLimitWatcher(){
   if(_taskLimitChecker) clearInterval(_taskLimitChecker);
+  // Also drives auto-start and the pause nudge, both of which are minute-grained
+  // — 30s is comfortably inside that. Runs immediately on load, so anything that
+  // came due while Googoke was closed fires as soon as it opens.
   _taskLimitChecker = setInterval(_checkTaskLimits, 30000);
   _checkTaskLimits();
 }
-function _checkTaskLimits(){
-  if(!settings.notifyTaskLimit) return;
-  if(!Array.isArray(tasksData) || !tasksData.length) return;
+// ── Auto-start & the pause nudge ──
+// Split out of _checkTaskLimits because they must run even with the limit
+// notifications switched off: auto-start changes state, not just messaging.
+function _checkJobSchedules(){
+  if(!Array.isArray(tasksData) || !tasksData.length) return false;
+  const now = Date.now();
   let dirty = false;
+  tasksData.forEach(list => {
+    if(list.type !== 'list') return;
+    if(_taskIsLockedNow(list) || _taskInsideLockedFolder(list)) return;
+    // Start itself at the appointed time, like a reminder coming due.
+    if(list.autoStartAt && !list.autoStartFired && !list.running){
+      const due = Date.parse(list.autoStartAt);
+      if(!isNaN(due) && now >= due){
+        list.autoStartFired = true; dirty = true;
+        // silent: a toast is pointless when the whole point is that you weren't
+        // looking. The system notification is the signal.
+        if(_startStopJob(list, true, {silent:true})){
+          _notify(settings.notifyJobAutoStart, 'Job started',
+                  (list.title||'Job') + ' started as scheduled', 'tk-autostart-'+list.id);
+          if(_currentEditingTaskListId === list.id) renderTaskItems();
+          refreshTasksWidget();
+        }
+      }
+    }
+    // Been sitting paused too long? Nudge once per pause.
+    if(list.maxPauseMs && !list.running && list.pausedSince && !list.pauseNotified &&
+       !_taskListProgress(list).complete){
+      const since = Date.parse(list.pausedSince);
+      if(!isNaN(since) && now - since >= list.maxPauseMs){
+        list.pauseNotified = true; dirty = true;
+        _notify(settings.notifyJobPause, 'Time to get back to it',
+                'Start working again on ' + (list.title||'this job') +
+                ' — paused for ' + _fmtTaskDur(now - since),
+                'tk-pause-'+list.id);
+      }
+    }
+  });
+  return dirty;
+}
+function _checkTaskLimits(){
+  let dirty = _checkJobSchedules();
+  if(!settings.notifyTaskLimit){ if(dirty) _saveTasks(); return; }
+  if(!Array.isArray(tasksData) || !tasksData.length){ if(dirty) _saveTasks(); return; }
   tasksData.forEach(list => {
     if(list.type !== 'list') return;
     (list.items||[]).forEach(item => {
@@ -14703,7 +15298,8 @@ function _checkTaskLimits(){
           'tk-lim-'+item.id);
       }
     });
-    if(list.limitMs){
+    // A limit on a job that has never been started has nothing to measure yet.
+    if(list.limitMs && _jobEverStarted(list)){
       const jel = _jobElapsed(list);
       const jstage = jel >= list.limitMs ? 2 : (jel >= list.limitMs * TASK_LIMIT_WARN_AT ? 1 : 0);
       if(jstage > (list.limitNotified || 0)){
@@ -14780,8 +15376,10 @@ async function deleteSelectedTasks(){
   const n = _selectedTaskIds.size;
   if(!n){ showToast('Nothing selected','warn'); return; }
   if(!await askDelete(`Delete ${n} task${n>1?'s':''}? This cannot be undone.`, 'Delete tasks')) return;
+  (list.items||[]).forEach(i => { if(_selectedTaskIds.has(i.id)) _taskStopTimer(i); });
   list.items = (list.items||[]).filter(i => !_selectedTaskIds.has(i.id));
   list.updatedAt = new Date().toISOString();
+  _syncTaskSequence(list);
   _syncJobCompletion(list);
   _saveTasks(); exitTaskSelectMode(); refreshTasksWidget();
   showToast(`${n} task${n>1?'s':''} deleted`);
@@ -14802,16 +15400,20 @@ function moveSelectedTasks(mode){
         const c = JSON.parse(JSON.stringify(i));
         c.id = newUid('ti_');
         c.accumulatedMs = 0; c.runningSince = null; c.done = false; c.completedAt = null;
-        c.limitNotified = 0; c.paused = false;
+        c.limitNotified = 0; c.doneBySubtasks = false;
         (c.subtasks||[]).forEach(s => { s.id = newUid('ts_'); s.accumulatedMs = 0; s.runningSince = null; s.done = false; s.completedAt = null; s.autoDone = false; });
         dest.items.push(c);
       } else {
+        // Moving a task out of a running job must not leave its clock ticking
+        // in a list it no longer belongs to.
+        _taskStopTimer(i);
         dest.items.push(i);
       }
     });
     if(mode !== 'copy') src.items = (src.items||[]).filter(i => !_selectedTaskIds.has(i.id));
     const now = new Date().toISOString();
     src.updatedAt = now; dest.updatedAt = now;
+    _syncTaskSequence(src); _syncTaskSequence(dest);
     _syncJobCompletion(src); _syncJobCompletion(dest);
     _saveTasks(); exitTaskSelectMode(); refreshTasksWidget();
     showToast(`${picked.length} task${picked.length>1?'s':''} ${mode==='copy'?'copied':'moved'} to “${dest.title||'Untitled job'}”`);
@@ -14842,7 +15444,7 @@ function openTaskEditorMenu(e){
   showCtxMenu(e, [
     {label: (n && n.locked) ? 'Unlock job' : 'Lock job', action: () => toggleTaskListLock()},
     {label:'Colours…', action: () => openTaskColorPopup()},
-    {label:'Job time limit…', action: () => openJobLimitPopup()},
+    {label:'Job timing…', action: () => openJobLimitPopup()},
     {label:'Select tasks', action: () => enterTaskSelectMode()},
     {sep:true},
     {label:'Delete job', action: () => deleteCurrentTaskList()}
@@ -14850,24 +15452,42 @@ function openTaskEditorMenu(e){
 }
 
 // ── Job-level time ──
-// The job clock is wall-clock, running from the moment the job was created and
-// independent of whether any task has a timer. That is what a job-wide deadline
-// means: "this job may take up to N days", not "the sum of time people happened
-// to log against it".
+// The job clock only runs while the job is started. It used to run from the
+// moment the job was CREATED, which meant a job you set up on Monday and began
+// on Friday had already burned four days of its limit before you touched it.
+// Same accumulate-and-stamp trick as the task clocks, so time still accrues
+// while Googoke is closed — but only across the stretches you actually started.
+function _jobStartClock(list){
+  if(!list || list.jobRunningSince) return;
+  list.jobRunningSince = Date.now();
+}
+function _jobStopClock(list){
+  if(!list || !list.jobRunningSince) return;
+  const d = Date.now() - list.jobRunningSince;
+  list.jobAccumulatedMs = (list.jobAccumulatedMs || 0) + (d > 0 ? d : 0);
+  list.jobRunningSince = null;
+}
 function _jobElapsed(list){
   if(!list) return 0;
-  const started = list.startedAt ? Date.parse(list.startedAt)
-                : (list.createdAt ? Date.parse(list.createdAt) : NaN);
-  if(isNaN(started)) return 0;
-  const end = list.completedAt ? Date.parse(list.completedAt) : Date.now();
-  return Math.max(0, (isNaN(end) ? Date.now() : end) - started);
+  const base = list.jobAccumulatedMs || 0;
+  if(list.jobRunningSince && list.running){
+    const d = Date.now() - list.jobRunningSince;
+    return base + (d > 0 ? d : 0);
+  }
+  return base;
+}
+// Has this job ever been started? Nothing about a limit means anything before
+// that, so the readout and the watcher both need to know.
+function _jobEverStarted(list){
+  return !!(list && (list.jobAccumulatedMs || list.jobRunningSince));
 }
 // Kept separate so the editor can still show effort logged against tasks.
 function _jobLoggedTime(list){
   return (list && list.items || []).reduce((n, i) => n + _taskElapsed(i), 0);
 }
 function _jobOverLimit(list){
-  return !!(list && list.limitMs) && _jobElapsed(list) >= list.limitMs;
+  if(!list || !list.limitMs || !_jobEverStarted(list)) return false;
+  return _jobElapsed(list) >= list.limitMs;
 }
 // A job stops its clock once every task is done, and resumes if one reopens.
 function _syncJobCompletion(list){
@@ -14884,29 +15504,74 @@ function _updateJobLimitReadout(list){
   const logged = _jobLoggedTime(list);
   const over = _jobOverLimit(list);
   box.classList.toggle('over', over);
+  if(!_jobEverStarted(list)){
+    const parts = ['Not started yet'];
+    if(list.limitMs) parts.push('limit ' + _escapeText(_fmtTaskDur(list.limitMs)) + ' (counts from the moment you start)');
+    else parts.push('no limit set');
+    if(list.autoStartAt) parts.push('auto-start ' + _escapeText(_fmtJobStamp(list.autoStartAt)));
+    txt.innerHTML = parts.join(' · ');
+    return;
+  }
   const suffix = logged ? ` · ${_escapeText(_fmtTaskDur(logged))} logged` : '';
-  const stopped = list.completedAt ? ' · stopped' : '';
+  const state = list.completedAt ? ' · complete' : (list.running ? '' : ' · paused');
   txt.innerHTML = list.limitMs
-    ? `<span class="tk-time">${_escapeText(_fmtTaskDur(total))}</span> of ${_escapeText(_fmtTaskDur(list.limitMs))}` + (over ? ' · <strong>over limit</strong>' : '') + suffix + stopped
-    : `<span class="tk-time">${_escapeText(_fmtTaskDur(total))}</span> since started${suffix}${stopped} · no limit set`;
+    ? `<span class="tk-time">${_escapeText(_fmtTaskDur(total))}</span> of ${_escapeText(_fmtTaskDur(list.limitMs))}` + (over ? ' · <strong>over limit</strong>' : '') + suffix + state
+    : `<span class="tk-time">${_escapeText(_fmtTaskDur(total))}</span> worked${suffix}${state} · no limit set`;
 }
+function _fmtJobStamp(iso){
+  try { return Chrono.fmtDateTime(iso, {style:'medium'}); } catch { return String(iso||''); }
+}
+// ── Job timing dialog ──
+// One place for the three things that are about the job's clock rather than its
+// contents: how long it may take, how long it may sit paused, and when it should
+// start itself.
 function openJobLimitPopup(){
   const list = _findTaskNode(_currentEditingTaskListId); if(!list) return;
   document.getElementById('jobLimitInput').value = list.limitMs ? _fmtTaskDur(list.limitMs) : '';
-  document.getElementById('jobLimitElapsed').textContent = _fmtTaskDur(_jobElapsed(list));
+  document.getElementById('jobPauseLimitInput').value = list.maxPauseMs ? _fmtTaskDur(list.maxPauseMs) : '';
+  // <input type=datetime-local> wants local wall time with no zone, so the
+  // stored ISO instant is converted rather than sliced.
+  document.getElementById('jobAutoStartInput').value = list.autoStartAt ? _isoToLocalInput(list.autoStartAt) : '';
+  document.getElementById('jobLimitElapsed').textContent = _jobEverStarted(list)
+    ? _fmtTaskDur(_jobElapsed(list)) + (list.running ? ' · running' : ' · paused')
+    : 'Not started yet';
   openPopup('jobLimitPopup');
+}
+function _isoToLocalInput(iso){
+  const t = Date.parse(iso); if(isNaN(t)) return '';
+  const d = new Date(t - new Date(t).getTimezoneOffset()*60000);
+  return d.toISOString().slice(0,16);
 }
 function saveJobLimit(){
   const list = _findTaskNode(_currentEditingTaskListId); if(!list) return;
   const raw = document.getElementById('jobLimitInput').value;
   const ms = _parseDurationInput(raw);
   if(raw.trim() && !ms){ showToast('Could not read that duration — try "3d" or "2h 30m"','error'); return; }
+  const rawPause = document.getElementById('jobPauseLimitInput').value;
+  const pauseMs = _parseDurationInput(rawPause);
+  if(rawPause.trim() && !pauseMs){ showToast('Could not read the pause limit — try "2h" or "45m"','error'); return; }
+  const rawStart = (document.getElementById('jobAutoStartInput').value || '').trim();
+  let autoStart = '';
+  if(rawStart){
+    const t = Date.parse(rawStart);          // datetime-local parses as local time
+    if(isNaN(t)){ showToast('Could not read that start time','error'); return; }
+    autoStart = new Date(t).toISOString();
+  }
   list.limitMs = ms;
   list.limitNotified = 0;      // re-arm the approaching/over warnings
+  list.maxPauseMs = pauseMs;
+  list.pauseNotified = false;  // a new pause limit deserves a fresh nudge
+  const startChanged = (list.autoStartAt || '') !== autoStart;
+  list.autoStartAt = autoStart;
+  if(startChanged) list.autoStartFired = false;
   list.updatedAt = new Date().toISOString();
   _saveTasks(); closePopup('jobLimitPopup');
   _updateJobLimitReadout(list); renderTasksApp();
-  showToast(ms ? 'Job limit set to ' + _fmtTaskDur(ms) : 'Job limit removed');
+  const bits = [];
+  if(ms) bits.push('limit ' + _fmtTaskDur(ms));
+  if(pauseMs) bits.push('pause nudge after ' + _fmtTaskDur(pauseMs));
+  if(autoStart) bits.push('auto-start ' + _fmtJobStamp(autoStart));
+  showToast(bits.length ? 'Saved — ' + bits.join(' · ') : 'Job timing cleared');
 }
 
 // ── Tasks: item settings ──
@@ -14946,9 +15611,11 @@ function saveTaskItemSettings(){
   item.notes = document.getElementById('taskItemNotes').value || '';
   const wasOn = !!item.timerOn;
   item.timerOn = _taskItemTimerDraft;
-  // Starting the counter stamps "now"; stopping folds the accrued time in.
-  if(item.timerOn && !wasOn && !item.done){ _taskStartTimer(item); _notifyTaskEvent('start', list, item); }
+  // Stopping folds the accrued time in. Starting is not done here: the job's
+  // own button owns that, and the sequence will switch this task's counter on
+  // when its turn comes round.
   if(!item.timerOn && wasOn){ _taskStopTimer(item); _notifyTaskEvent('end', list, item); }
+  _syncTaskSequence(list);
   list.updatedAt = new Date().toISOString();
   _saveTasks(); closePopup('taskItemPopup'); renderTaskItems(); refreshTasksWidget();
 }
@@ -14957,7 +15624,8 @@ function resetTaskItemTimer(){
   const list = _findTaskNode(_taskItemEditing.listId); if(!list) return;
   const item = (list.items||[]).find(i => i.id === _taskItemEditing.itemId); if(!item) return;
   item.accumulatedMs = 0;
-  item.runningSince = (item.timerOn && !item.done) ? Date.now() : null;
+  item.runningSince = null;
+  _syncTaskSequence(list);   // picks the clock back up if this is the active task
   _saveTasks();
   document.getElementById('taskItemElapsed').textContent = _fmtTaskDur(0);
   renderTaskItems();
@@ -15019,7 +15687,7 @@ async function deleteCurrentTaskList(){
 }
 
 // ═══════════════════════════════════════════════════════
-//  INFO BASE
+//  INFOBASE
 // ═══════════════════════════════════════════════════════
 // A knowledge store shaped like Notes, but the text carries structure the app
 // can query. Two markers do all the work:
@@ -15029,7 +15697,7 @@ async function deleteCurrentTaskList(){
 // fact also records when it was first written, so searches can filter on the
 // date the user specified OR the date it was entered.
 let infoData = [];
-let infoMeta = { sort:'updated', sidebarOpen:true };
+let infoMeta = { sort:'updated', view:'grid', sidebarOpen:false };
 const _unlockedInfoIds = new Set();
 let _infoFilter = 'all', _infoQuery = '', _infoCurrentFolder = null, _currentEditingInfoId = null;
 
@@ -15166,7 +15834,7 @@ function _infoFilesUnder(folderId){
   return out;
 }
 
-// ── Info Base: app shell ──
+// ── InfoBase: app shell ──
 function openInfoModal(){ closeAllModals(); _openLockedOrPlain('infoModal'); }
 // The two floating buttons in the corner are a fallback for when the real
 // search row has scrolled out of reach. While that row is on screen it already
@@ -15205,11 +15873,33 @@ function searchInfoFiles(){
   _infoQuery = (document.getElementById('infoSearchInput')||{}).value || '';
   renderInfoApp();
 }
-function _onInfoSortChange(){
-  infoMeta.sort = (document.getElementById('infoSortBy')||{}).value || 'updated';
+function setInfoSort(v){
+  closeNotesMenus();
+  infoMeta.sort = v || 'updated';
+  _saveInfoMeta(); renderInfoApp();
+}
+function toggleInfoView(){
+  infoMeta.view = (infoMeta.view || 'grid') === 'grid' ? 'list' : 'grid';
   _saveInfoMeta(); renderInfoApp();
 }
 function _infoFactCount(f){ return f.type === 'file' ? parseInfoDoc(f.content||'').entries.length : 0; }
+// A card shows the first two meaningful lines, not the whole file. Markdown
+// syntax is stripped so the preview reads the way the editor renders it, and
+// each line is clipped with an ellipsis by CSS if it's too long.
+function _infoCardPreview(content){
+  const lines = String(content||'').split(/\r?\n/)
+    .map(l => l
+      .replace(/^\s*(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|>\s+)/, '')  // block markers
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')                                     // image → its label
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')                                      // link → its text
+      .replace(/\*\*|~~|`|\*/g, '')                                                 // inline marks
+      .replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/, '')                                // dividers
+      .trim())
+    .filter(Boolean)
+    .slice(0, 2);
+  if(!lines.length) return '<em>Empty</em>';
+  return lines.map(l => `<span class="ipl">${_escapeText(l)}</span>`).join('');
+}
 function _infoVisibleChildren(){
   const q = _infoQuery.trim().toLowerCase();
   let items = infoData.filter(n => {
@@ -15246,16 +15936,18 @@ function _infoIsDescendantOf(n, folderId){
 }
 function renderInfoApp(){
   const grid = document.getElementById('infoGrid'); if(!grid) return;
-  const sel = document.getElementById('infoSortBy');
-  if(sel && sel.value !== (infoMeta.sort||'updated')) sel.value = infoMeta.sort||'updated';
+  const view = infoMeta.view || 'grid';
+  grid.className = view === 'list' ? 'notes-list' : 'notes-grid';
+  _syncTreeViewToggle('infoViewToggleBtn','infoViewToggleIcon', view);
+  _syncTreeSortMenu('infoSortMenu', infoMeta.sort || 'updated');
   _renderInfoCrumb();
   grid.innerHTML = '';
   const items = _infoVisibleChildren();
   if(!items.length){
     const d = document.createElement('div');
-    d.style.cssText='opacity:.45;text-align:center;padding:34px 12px;width:100%;font-size:.92em';
+    d.className = 'tree-empty';
     d.textContent = _infoQuery.trim() ? 'Nothing matches that search.'
-      : (_infoCurrentFolder ? 'This folder is empty.' : 'No files yet — create one to start building your info base.');
+      : (_infoCurrentFolder ? 'This folder is empty.' : 'No files in InfoBase yet — create one to start building it.');
     grid.appendChild(d); return;
   }
   items.forEach(n => grid.appendChild(n.type === 'folder' ? _infoFolderCard(n) : _infoFileCard(n)));
@@ -15274,12 +15966,12 @@ function _renderInfoCrumb(){
   const name = document.createElement('span'); name.className = 'crumb-name';
   const trail = []; let cur = _infoCurrentFolder ? _findInfo(_infoCurrentFolder) : null; const seen = new Set();
   while(cur && !seen.has(cur.id)){ seen.add(cur.id); trail.unshift(cur.title||'Folder'); cur = cur.parentId ? _findInfo(cur.parentId) : null; }
-  name.textContent = trail.length ? trail.join(' / ') : 'Info Base';
+  name.textContent = trail.length ? trail.join(' / ') : 'InfoBase';
   name.title = name.textContent;
   host.appendChild(name);
 }
 function _infoFolderCard(n){
-  const card = document.createElement('div'); card.className = 'note-card folder-card';
+  const card = document.createElement('div'); card.className = 'note-card tree-card folder-card';
   const locked = _infoLockedNow(n);
   card.innerHTML =
     `<div class="note-card-title"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="vertical-align:-3px;margin-right:6px"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>${_escapeText(n.title||'Folder')}${locked?' <span class="ns-badge">🔒</span>':''}</div>`+
@@ -15293,7 +15985,7 @@ function _infoFolderCard(n){
   return card;
 }
 function _infoFileCard(n){
-  const card = document.createElement('div'); card.className = 'note-card';
+  const card = document.createElement('div'); card.className = 'note-card tree-card';
   const locked = _infoLockedNow(n);
   if(n.bgColor) card.style.background = n.bgColor;
   if(n.textColor) card.style.color = n.textColor;
@@ -15301,7 +15993,7 @@ function _infoFileCard(n){
   card.innerHTML =
     `<div class="note-card-title">${_escapeText(n.title||'Untitled')}${locked?' <span class="ns-badge">🔒</span>':''}</div>`+
     (locked ? `<div class="note-meta">Locked</div>`
-            : `<div class="note-preview">${_escapeText((n.content||'').replace(/[#*_>`]/g,'').trim().slice(0,140)) || '<em>Empty</em>'}</div>`+
+            : `<div class="note-preview info-preview-lines">${_infoCardPreview(n.content)}</div>`+
               `<div class="note-meta">${facts} fact${facts===1?'':'s'} · ${_escapeText(Chrono.fmtDate(n.updatedAt||n.createdAt,{style:'medium'}))}</div>`);
   card.onclick = async () => { if(locked && !await _unlockInfoNode(n)) return; openInfoEditor(n.id); };
   card.oncontextmenu = e => { e.preventDefault(); _showInfoCtxMenu(e, n); };
@@ -15327,6 +16019,16 @@ function _showInfoCtxMenu(e, n){
     _saveInfo(); renderInfoApp(); showToast(n.locked?'Locked':'Unlocked');
   }});
   items.push({sep:true});
+  items.push(..._treeMoveMenuItems({
+    node: n,
+    all: () => infoData,
+    save: _saveInfo,
+    render: renderInfoApp,
+    rootLabel: 'InfoBase',
+    idPrefix: o => o.type === 'folder' ? 'if_' : 'ii_',
+    isLocked: _infoLockedNow
+  }));
+  items.push({sep:true});
   items.push({label:'Delete', action: async () => {
     if(_infoLockedNow(n)){ showToast('Unlock it before deleting','warn'); return; }
     if(!await askDelete(`Delete "${n.title||'this item'}"?${n.type==='folder'?' The folder and everything inside it will be removed.':''}`)) return;
@@ -15334,6 +16036,152 @@ function _showInfoCtxMenu(e, n){
   }});
   showCtxMenu(e, items);
 }
+// ═══════════════════════════════════════════════════════
+//  SHARED MOVE / COPY DIALOG
+// ═══════════════════════════════════════════════════════
+// Tasks and InfoBase both store a flat list of {id, type, title, parentId}
+// nodes, so one dialog drives both rather than two near-identical copies.
+// Notes keeps its own version because it acts on a multi-selection.
+let _tm = null;
+function openTreeMoveDialog(cfg){
+  // cfg: {mode, node, all(), save(), render(), rootLabel, folderType, idPrefix, isLocked()}
+  _tm = Object.assign({ browseId: null, destId: null }, cfg);
+  const s = document.getElementById('treeMoveSearch'); if(s) s.value = '';
+  // Start browsing from where the item already lives — usually one step from
+  // wherever the user wants to put it.
+  _tm.browseId = _tm.node.parentId || null;
+  _tm.destId = _tm.browseId;
+  renderTreeMoveDialog();
+  openPopup('treeMovePopup');
+}
+function _tmDescendants(id){
+  const all = _tm.all();
+  const out = [];
+  const walk = pid => all.forEach(n => { if(n.parentId === pid){ out.push(n); walk(n.id); } });
+  walk(id);
+  return out;
+}
+function _tmPath(id){
+  const all = _tm.all();
+  const find = i => all.find(n => n.id === i);
+  const trail = []; const seen = new Set();
+  let cur = id ? find(id) : null;
+  while(cur && !seen.has(cur.id)){ seen.add(cur.id); trail.unshift(cur); cur = cur.parentId ? find(cur.parentId) : null; }
+  return trail;
+}
+function renderTreeMoveDialog(){
+  if(!_tm) return;
+  const titleEl = document.getElementById('treeMoveTitle');
+  const listEl = document.getElementById('treeMoveList');
+  const pathEl = document.getElementById('treeMovePath');
+  if(!listEl) return;
+  const what = _escapeText(_tm.node.title || 'this item');
+  titleEl.textContent = (_tm.mode === 'move' ? 'Move “' : 'Copy “') + (_tm.node.title || 'this item') + '” to…';
+  // Breadcrumb back to the root.
+  const path = _tmPath(_tm.browseId);
+  pathEl.innerHTML = `<span data-fid="">${_escapeText(_tm.rootLabel)}</span>` +
+    path.map(f => `<span> › </span><span data-fid="${_escapeAttr(f.id)}">${_escapeText(f.title||'Untitled')}</span>`).join('');
+  pathEl.querySelectorAll('span[data-fid]').forEach(sp => {
+    sp.onclick = () => { _tm.browseId = sp.dataset.fid || null; _tm.destId = _tm.browseId; renderTreeMoveDialog(); };
+  });
+  // Folders inside the one being browsed, minus the item itself and anything
+  // under it — a folder cannot be moved into its own subtree.
+  const banned = new Set([_tm.node.id, ..._tmDescendants(_tm.node.id).map(n => n.id)]);
+  const q = ((document.getElementById('treeMoveSearch')||{}).value||'').trim().toLowerCase();
+  const folders = _tm.all().filter(n =>
+    n.type === 'folder' && (n.parentId || null) === _tm.browseId &&
+    !banned.has(n.id) && !_tm.isLocked(n) &&
+    (!q || (n.title||'').toLowerCase().includes(q)));
+  listEl.innerHTML = '';
+  // "Place here" is only offered when here is a legal destination — browsing
+  // into the folder you're moving must not present itself as a target.
+  const hereAllowed = !banned.has(_tm.browseId);
+  if(hereAllowed){
+    const here = document.createElement('div');
+    here.className = 'cd-item' + (_tm.destId === _tm.browseId ? ' selected' : '');
+    here.innerHTML = `<span class="cd-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></span>`+
+                     `<span class="cd-name"><em>${_tm.browseId ? 'Place in this folder' : 'Place in ' + _escapeText(_tm.rootLabel)}</em></span>`;
+    here.onclick = () => { _tm.destId = _tm.browseId; renderTreeMoveDialog(); };
+    listEl.appendChild(here);
+  }
+  folders.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'cd-item' + (_tm.destId === f.id ? ' selected' : '');
+    row.innerHTML = `<span class="cd-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>`+
+                    `<span class="cd-name">${_escapeText(f.title||'Untitled folder')}</span>`+
+                    `<span class="cd-open" title="Open this folder">›</span>`;
+    row.onclick = e => {
+      // The chevron drills in; the row itself just picks the destination.
+      if(e.target.closest('.cd-open')){ _tm.browseId = f.id; _tm.destId = f.id; }
+      else _tm.destId = f.id;
+      renderTreeMoveDialog();
+    };
+    row.ondblclick = () => { _tm.browseId = f.id; _tm.destId = f.id; renderTreeMoveDialog(); };
+    listEl.appendChild(row);
+  });
+  if(!folders.length){
+    const empty = document.createElement('div');
+    empty.className = 'cd-empty';
+    empty.textContent = q ? 'No folder matches that.'
+      : hereAllowed ? 'No subfolders here — use “Place in this folder”.'
+      : 'You can’t put this inside itself. Go back up a level.';
+    listEl.appendChild(empty);
+  }
+}
+function confirmTreeMove(){
+  if(!_tm) return;
+  const dest = _tm.destId || null;
+  const node = _tm.node;
+  if(node.type === 'folder'){
+    if(dest === node.id || _tmDescendants(node.id).some(d => d.id === dest)){
+      showToast('Cannot put a folder inside itself','error'); return;
+    }
+  }
+  if((node.parentId || null) === dest && _tm.mode === 'move'){
+    showToast('Already in that folder','warn'); closePopup('treeMovePopup'); return;
+  }
+  const now = new Date().toISOString();
+  if(_tm.mode === 'move'){
+    node.parentId = dest;
+    node.updatedAt = now;
+  } else {
+    // Deep copy: the node plus its whole subtree, with fresh ids and parents
+    // remapped so the copied hierarchy matches the original.
+    const all = _tm.all();
+    const idMap = new Map();
+    const clones = [];
+    const cloneOne = (orig, parentId) => {
+      const c = JSON.parse(JSON.stringify(orig));
+      c.id = newUid(_tm.idPrefix(orig));
+      c.parentId = parentId;
+      c.createdAt = now; c.updatedAt = now;
+      // A copy of a locked item starts unlocked, or it would be unopenable
+      // without the original's unlock state.
+      c.locked = false;
+      idMap.set(orig.id, c.id);
+      clones.push(c);
+      return c;
+    };
+    cloneOne(node, dest);
+    if(node.type === 'folder'){
+      _tmDescendants(node.id).forEach(d => cloneOne(d, idMap.get(d.parentId) || dest));
+    }
+    all.push(...clones);
+  }
+  _tm.save();
+  closePopup('treeMovePopup');
+  _tm.render();
+  showToast(_tm.mode === 'move' ? 'Moved' : 'Copied');
+  _tm = null;
+}
+// Menu entries shared by both apps' context menus.
+function _treeMoveMenuItems(cfg){
+  return [
+    {label:'Move to folder…', action: () => openTreeMoveDialog({...cfg, mode:'move'})},
+    {label:'Copy to folder…', action: () => openTreeMoveDialog({...cfg, mode:'copy'})}
+  ];
+}
+
 function _deleteInfoTree(id){
   const kill = new Set([id]); let grew = true;
   while(grew){ grew=false; infoData.forEach(n => { if(n.parentId && kill.has(n.parentId) && !kill.has(n.id)){ kill.add(n.id); grew=true; } }); }
@@ -15353,7 +16201,7 @@ function createInfoFile(){
   infoData.push(node); _saveInfo(); openInfoEditor(node.id);
 }
 
-// ── Info Base: editor ──
+// ── InfoBase: editor ──
 let _infoPreviewOn = false;
 function openInfoEditor(id){
   const n = _findInfo(id); if(!n) return;
@@ -15374,6 +16222,9 @@ function openInfoEditor(id){
   ed.style.color = n.textColor || '';
   const lb = document.getElementById('infoLockBtn'); if(lb) lb.classList.toggle('active', !!n.locked);
   _infoPreviewOn = false; _applyInfoPreviewState();
+  // A phone opens straight into the document, never into the full-screen
+  // subheadings panel — see _infoSidebarOn().
+  _infoSidebarMobileOpen = false;
   _applyInfoSidebarState();
   renderInfoSidebar();
   _syncScrollLock();
@@ -15381,6 +16232,7 @@ function openInfoEditor(id){
 }
 function closeInfoEditor(){
   const n = _findInfo(_currentEditingInfoId);
+  _clearInfoPicked();
   // A pending debounced save would otherwise land after the editor is gone and
   // re-stamp a file the user may have just discarded.
   clearTimeout(_infoSaveTimer); _infoSaveTimer = null;
@@ -15411,6 +16263,8 @@ let _infoSaveTimer = null;
 function onInfoSourceInput(){
   const n = _findInfo(_currentEditingInfoId); if(!n) return;
   const el = document.getElementById('infoSource'); if(!el) return;
+  // Writing means you have found your place again — drop the jump marker.
+  _clearInfoPicked();
   // Cheap guard first — reshaping the DOM on every keystroke is wasteful and
   // risks disturbing the caret when there is nothing to fix.
   if(_infoNeedsNormalize(el)) _infoNormalize(el);
@@ -15478,26 +16332,42 @@ function _hydrateInfoImage(img){
     img.removeAttribute('src');
   });
 }
+// ── Which state the panel is in ──
+// On a phone the panel is a full-screen takeover, so it must never be what you
+// land on when opening a file — it starts closed every time, and that is a
+// transient flag rather than a stored preference. On desktop it's a 262px
+// column beside the text, so there the choice is worth remembering.
+function _infoSideMobile(){ return window.innerWidth <= 820; }
+let _infoSidebarMobileOpen = false;
+function _infoSidebarOn(){ return _infoSideMobile() ? _infoSidebarMobileOpen : !!infoMeta.sidebarOpen; }
+function _setInfoSidebarOn(on){
+  if(_infoSideMobile()){ _infoSidebarMobileOpen = !!on; }
+  else { infoMeta.sidebarOpen = !!on; _saveInfoMeta(); }
+  _applyInfoSidebarState();
+}
 function toggleInfoSidebar(){
-  infoMeta.sidebarOpen = !infoMeta.sidebarOpen; _saveInfoMeta(); _applyInfoSidebarState();
-  if(infoMeta.sidebarOpen){
+  const next = !_infoSidebarOn();
+  _setInfoSidebarOn(next);
+  if(next){
     renderInfoSidebar();
     setTimeout(()=>{ const s=document.getElementById('infoHeadingSearch'); if(s && window.innerWidth>820) s.focus(); }, 220);
   }
 }
 function closeInfoSidebar(){
-  if(!infoMeta.sidebarOpen) return;
-  infoMeta.sidebarOpen = false; _saveInfoMeta(); _applyInfoSidebarState();
+  if(!_infoSidebarOn()) return;
+  _setInfoSidebarOn(false);
 }
 function _applyInfoSidebarState(){
   const sb = document.getElementById('infoSidebar'); if(!sb) return;
-  const on = !!infoMeta.sidebarOpen;
+  const on = _infoSidebarOn();
   sb.classList.toggle('open', on);
   sb.setAttribute('aria-hidden', on ? 'false' : 'true');
   // Drives the mobile scrim, which sits in the body rather than the aside.
   const body = document.getElementById('infoEditorBody');
   if(body) body.classList.toggle('side-open', on);
-  const b = document.getElementById('infoSidebarBtn');
+  // The toolbar button is gone; the floating one is CSS-hidden while open, but
+  // still gets the pressed state for screen readers.
+  const b = document.getElementById('infoSidebarFab');
   if(b){ b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
 }
 function renderInfoSidebar(){
@@ -15546,7 +16416,7 @@ function _infoCaretLine(){
 // you are and not just what exists.
 function _syncInfoSidebarCurrent(){
   const host = document.getElementById('infoHeadingList');
-  if(!host || !infoMeta.sidebarOpen) return;
+  if(!host || !_infoSidebarOn()) return;
   const caretLine = _infoCaretLine();
   if(caretLine < 0) return;
   let bestLine = -1;
@@ -15557,12 +16427,21 @@ function _syncInfoSidebarCurrent(){
   host.querySelectorAll('.info-head-item').forEach(b =>
     b.classList.toggle('current', +b.dataset.line === bestLine));
 }
+// The block a jump last landed on, kept marked until the user writes again.
+let _infoPickedNode = null;
+function _clearInfoPicked(){
+  if(!_infoPickedNode) return;
+  try{ _infoPickedNode.classList.remove('info-picked'); }catch{}
+  _infoPickedNode = null;
+}
 // Put the caret on a line, scroll it into view, and flash it so the jump is
 // visible rather than something you have to hunt for.
 function _jumpToInfoLine(lineIdx){
   const el = document.getElementById('infoSource'); if(!el) return;
   if(_infoPreviewOn){ _infoPreviewOn = false; _applyInfoPreviewState(); }
-  // On a phone the panel is an overlay covering the text it just scrolled to.
+  // On a phone the panel covers the whole screen, so it has to get out of the
+  // way before there is anything to look at.
+  const wasFullScreenPanel = _infoSideMobile() && _infoSidebarOn();
   if(window.innerWidth <= 820) closeInfoSidebar();
   const { map } = _infoSerialize(el);
   // The last block at or before the target line — a fenced code block covers
@@ -15580,6 +16459,14 @@ function _jumpToInfoLine(lineIdx){
   try { node.scrollIntoView({block:'center', behavior:'smooth'}); } catch { node.scrollIntoView(); }
   node.classList && node.classList.add('info-flash');
   setTimeout(()=>{ try{ node.classList.remove('info-flash'); }catch{} }, 1000);
+  // A one-second flash is enough when the panel was a narrow drawer beside the
+  // text. Coming back from a full-screen panel you have lost your place
+  // entirely, so the subheading stays marked until the document is touched.
+  _clearInfoPicked();
+  if(wasFullScreenPanel && node.classList){
+    node.classList.add('info-picked');
+    _infoPickedNode = node;
+  }
   _syncInfoSidebarCurrent();
 }
 // ═══ Info editor: markdown ⇄ formatted HTML ═══
@@ -16182,8 +17069,18 @@ function _refreshInfoFormatState(){
   const ed = document.getElementById('infoEditor');
   if(!ed || !ed.classList.contains('open')) return;
   const q = cmd => { try { return document.queryCommandState(cmd); } catch { return false; } };
+  const block = _infoCurrentBlock();
+  const inHeading = !!(block && /^H[1-6]$/.test(block.tagName));
+  // ── Don't report formatting that the block already implies ──
+  // A heading renders bold, so queryCommandState('bold') is true for any caret
+  // inside one. Lighting Bold up there is noise: the user picked "Heading", not
+  // "bold", nothing they typed made it bold, and pressing Bold to "turn it off"
+  // does nothing visible. The same reasoning applies to a code block and its
+  // monospace, or a quote and its italics — if the BLOCK supplies the look,
+  // the inline button for that look stays dark. Worth copying into any other
+  // rich-text toolbar built on queryCommandState.
   const state = {
-    bold: q('bold'), italic: q('italic'), strikeThrough: q('strikeThrough'),
+    bold: !inHeading && q('bold'), italic: q('italic'), strikeThrough: q('strikeThrough'),
     code: !!_infoListAtCaret('CODE'),
     insertUnorderedList: q('insertUnorderedList'), insertOrderedList: q('insertOrderedList'),
     quote: !!_infoListAtCaret('BLOCKQUOTE'), pre: !!_infoListAtCaret('PRE')
@@ -16191,8 +17088,7 @@ function _refreshInfoFormatState(){
   bar.querySelectorAll('.ne-btn[data-info-cmd]').forEach(btn =>
     btn.classList.toggle('active', !!state[btn.dataset.infoCmd]));
   // Heading buttons reflect the block the caret sits in.
-  const block = _infoCurrentBlock();
-  const lvl = block && /^H[1-6]$/.test(block.tagName) ? +block.tagName[1] : 0;
+  const lvl = inHeading ? +block.tagName[1] : 0;
   bar.querySelectorAll('.ne-btn[data-info-h]').forEach(btn =>
     btn.classList.toggle('active', +btn.dataset.infoH === lvl));
 }
@@ -16259,7 +17155,7 @@ function openInfoEditorMenu(e){
   if(e) e.stopPropagation();
   const n = _findInfo(_currentEditingInfoId); if(!n) return;
   showCtxMenu(e, [
-    {label: infoMeta.sidebarOpen ? 'Hide subheadings' : 'Show subheadings', action: toggleInfoSidebar},
+    {label: _infoSidebarOn() ? 'Hide subheadings' : 'Show subheadings', action: toggleInfoSidebar},
     {label: _infoPreviewOn ? 'Back to editing' : 'Show markdown source', action: toggleInfoPreview},
     {sep:true},
     {label: 'Search knowledge…', action: openKnowledgeSearch},
@@ -16280,7 +17176,7 @@ document.addEventListener('keydown', (e) => {
   // top of it — popups and child modals — get to swallow the key first.
   if(document.querySelector('.popup-overlay.open')) return;
   if(document.querySelector('#knowledgeSearchModal.active, #ksScopeModal.active, #bgSelectModal.active')) return;
-  if(infoMeta.sidebarOpen && window.innerWidth <= 820){ closeInfoSidebar(); return; }
+  if(_infoSidebarOn() && _infoSideMobile()){ closeInfoSidebar(); return; }
   closeInfoEditor();
 });
 
@@ -16313,31 +17209,72 @@ function openKnowledgeSearch(){
 }
 // Back to defaults: no query, both match kinds, no date filter, whole base.
 function resetKnowledgeSearch(){
+  closeKsFilterMenu();
   _ksMatch = 'both';
   _ksScope = [];
   _ksScopeDraft = new Set();
   const q = document.getElementById('ksQuery'); if(q) q.value = '';
+  _clearKsFilterInputs();
+  const scopeSearch = document.getElementById('ksScopeSearch'); if(scopeSearch) scopeSearch.value = '';
+  _updateKsScopeLabel();
+  const host = document.getElementById('ksResults'); if(host) host.innerHTML = '';
+  _updateKsFilterBtn();
+}
+function _clearKsFilterInputs(){
   const from = document.getElementById('ksFrom'); if(from) from.value = '';
   const to = document.getElementById('ksTo'); if(to) to.value = '';
   const basis = document.getElementById('ksDateBasis'); if(basis) basis.value = 'any';
-  const scopeSearch = document.getElementById('ksScopeSearch'); if(scopeSearch) scopeSearch.value = '';
   document.querySelectorAll('#knowledgeSearchModal .nf-chip[data-match]')
     .forEach(b => b.classList.toggle('active', b.dataset.match === 'both'));
-  _updateKsScopeLabel();
-  const host = document.getElementById('ksResults'); if(host) host.innerHTML = '';
 }
 function _ksSetMatch(m){
   _ksMatch = m;
   document.querySelectorAll('#knowledgeSearchModal .nf-chip[data-match]').forEach(b => b.classList.toggle('active', b.dataset.match === m));
   runKnowledgeSearch();
 }
-function clearKsDates(){
-  document.getElementById('ksFrom').value=''; document.getElementById('ksTo').value='';
-  document.getElementById('ksDateBasis').value='any';
+// Everything the dropdown holds, back to its default — the query itself is the
+// one thing "Clear all" leaves alone, since that's what you're still searching.
+function clearKsFilters(){
+  _ksMatch = 'both';
+  _ksScope = []; _ksScopeDraft = new Set();
+  _clearKsFilterInputs();
+  _updateKsScopeLabel();
   runKnowledgeSearch();
+}
+// ── the filter dropdown ──
+function toggleKsFilterMenu(e){
+  if(e) e.stopPropagation();
+  const wrap = document.getElementById('ksFilterWrap'); if(!wrap) return;
+  const open = !wrap.classList.contains('open');
+  wrap.classList.toggle('open', open);
+  const b = document.getElementById('ksFilterBtn');
+  if(b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function closeKsFilterMenu(){
+  const wrap = document.getElementById('ksFilterWrap'); if(!wrap) return;
+  wrap.classList.remove('open');
+  const b = document.getElementById('ksFilterBtn');
+  if(b) b.setAttribute('aria-expanded','false');
+}
+// Clicking anywhere outside closes it — but not inside, or picking a date would
+// dismiss the panel you were still working in.
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('#ksFilterWrap')) closeKsFilterMenu();
+});
+// With the controls hidden behind a button, the button itself has to say that
+// something is narrowing the results.
+function _updateKsFilterBtn(){
+  const btn = document.getElementById('ksFilterBtn'); if(!btn) return;
+  const basis = (document.getElementById('ksDateBasis')||{}).value || 'any';
+  const from = (document.getElementById('ksFrom')||{}).value;
+  const to = (document.getElementById('ksTo')||{}).value;
+  const active = basis !== 'any' || !!from || !!to || _ksMatch !== 'both' || _ksScope.length > 0;
+  btn.classList.toggle('filtered', active);
+  btn.title = active ? 'Sorting & filters — active' : 'Sorting & filters';
 }
 function runKnowledgeSearch(){
   const host = document.getElementById('ksResults'); if(!host) return;
+  _updateKsFilterBtn();
   const q = ((document.getElementById('ksQuery')||{}).value||'').trim().toLowerCase();
   const basis = (document.getElementById('ksDateBasis')||{}).value || 'any';
   const from = (document.getElementById('ksFrom')||{}).value;
@@ -16372,7 +17309,7 @@ function runKnowledgeSearch(){
   host.innerHTML = '';
   if(!rows.length){
     const d = document.createElement('div'); d.className='ks-empty';
-    d.textContent = q ? 'Nothing found for “'+q+'”.' : 'Type to search your info base.';
+    d.textContent = q ? 'Nothing found for “'+q+'”.' : 'Type to search your InfoBase.';
     host.appendChild(d); return;
   }
   const shown = rows.slice(0, 300);
@@ -17232,7 +18169,7 @@ const TOP_NAV_BTN_CATALOG = {
   rss:       {label:'RSS Feeds', handler:'openRSSModal'},
   notes:     {label:'Notes',     handler:'openNotesModal'},
   tasks:     {label:'Tasks',     handler:'openTasksModal'},
-  info:      {label:'Info Base', handler:'openInfoModal'},
+  info:      {label:'InfoBase', handler:'openInfoModal'},
   clock:     {label:'Clock',     handler:'openClockModal'}
 };
 // Handler map — direct-modal openers
