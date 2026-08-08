@@ -3821,7 +3821,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
            the fact parser, knowledge search and written-stamps are unchanged —
            but the user sees real headings, lists and images, never the syntax. -->
       <div id="infoSource" class="info-source rich-content" contenteditable="true" spellcheck="true"
-           data-placeholder="Write freely.  A line like “cat name: bird” becomes a searchable fact — use the : button to add the marker. Use the heading buttons for subheadings."></div>
+           data-placeholder="Start writing..."></div>
       <div id="infoPreview" class="info-preview rich-content" style="display:none"></div>
     </div>
   </div>
@@ -3880,7 +3880,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
           <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.5 6.5 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
           <svg class="sd-star" viewBox="0 0 24 24"><path d="M12 2l1.6 4.6L18 8l-4.4 1.4L12 14l-1.6-4.6L6 8l4.4-1.4z"/></svg>
         </span>
-        <span><strong>Search knowledge</strong><em>Ask for a fact, e.g. “cat name”</em></span>
+        <span><strong>Search knowledge</strong><em></em></span>
       </button>
     </div>
     <div class="popup-btn-row"><button class="btn-ghost" onclick="closePopup('searchDockPopup')">Cancel</button></div>
@@ -3892,10 +3892,10 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
   <button class="close-btn" onclick="closeModal('knowledgeSearchModal')">&times;</button>
   <div class="modal-content-area">
     <div class="modal-header"><h2>Knowledge Search</h2></div>
-    <input type="text" id="ksQuery" class="search-input" placeholder="What do you want to know? e.g. cat name" oninput="runKnowledgeSearch()" autocomplete="off">
+    <input type="text" id="ksQuery" class="search-input" placeholder="Search your info base..." oninput="runKnowledgeSearch()" autocomplete="off">
     <div class="ks-filters">
       <div class="ks-row">
-        <label>Look in</label>
+        <label>Scope</label>
         <span><span id="ksScopeLabel" class="ks-scope-label">Everything</span><button class="btn-ghost" onclick="openKsScopePicker()" style="padding:7px 14px;font-size:.84em">Choose…</button></span>
       </div>
       <div class="ks-row">
@@ -3911,8 +3911,8 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
         <span class="ks-dates">
           <select id="ksDateBasis" class="styled-select" onchange="runKnowledgeSearch()" aria-label="Which date to filter on">
             <option value="any">Any date</option>
-            <option value="specified">Date specified in the text</option>
-            <option value="written">Date it was written</option>
+            <option value="specified">Specified date</option>
+            <option value="written">Date written</option>
           </select>
           <input type="date" id="ksFrom" class="ks-date" onchange="runKnowledgeSearch()" title="From" aria-label="From date">
           <input type="date" id="ksTo" class="ks-date" onchange="runKnowledgeSearch()" title="To" aria-label="To date">
@@ -3970,7 +3970,8 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
       <button class="btn-ghost" onclick="copyRecoveryKey()">Copy</button>
       <button class="btn-ghost" onclick="downloadRecoveryKey()">Download</button>
     </div>
-    <label class="rk-confirm"><input type="checkbox" id="recoveryConfirmChk" onchange="_onRecoveryConfirmToggle()"> I have saved this code somewhere safe</label>
+    <input type="checkbox" id="recoveryConfirmChk" onchange="_onRecoveryConfirmToggle()">
+    <label for="recoveryConfirmChk">I understand the risks.</label>
     <div class="popup-btn-row" style="justify-content:center">
       <button class="btn-primary" id="recoveryDoneBtn" disabled onclick="closePopup('recoveryKeyPopup')">Done</button>
     </div>
@@ -18082,8 +18083,6 @@ function _normalizeFeedUrl(raw){
 // ─── "New File" popup: make .md a first-class quick pick ──────
 // (The existing New File popup already accepts any name; nothing to do here —
 // this comment is intentional documentation for the next maintainer.)
-
-   // also make sure every app, data must be encrypted, and off from memory the moment its closed.
 
 // ─── Auto-lock + return-to-home kickoff on first idle after load ───────────────
 setTimeout(()=>{ try { _setupInactivityAutoLock(); } catch{} try { _setupInactivityHome(); } catch{} }, 500);
