@@ -1,19 +1,22 @@
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Googoke</title>
-<style>
-  /* ═══════════════════════════════════════════════
+
+
+</head>
+<body>
+  <style>
+    /* ═══════════════════════════════════════════════
    GOOGOKE — Enhanced Edition
    ═══════════════════════════════════════════════ */
 .btn-ghost{padding:10px 18px}
 :root {
-  --accent: #2e8b3d;
+  --accent: #26873e;
   --accent-2: #2e8b3d;
   --accent-bg: #2e8b3d;
   --accent-bg-hover: #256d30;
@@ -2219,6 +2222,14 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
    icon buttons on a roomy screen and folded into a ⋮ menu on phones. */
 .files-more-wrap{position:relative;display:none;flex:0 0 auto}
 .files-more-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e2a38;border-radius:11px;padding:6px 5px;min-width:198px;z-index:220;box-shadow:0 12px 32px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.07)}
+/* Two pages, one menu. The sort page carries a Back… row and reuses the same
+   row styling, so swapping pages does not look like a different control. */
+.files-more-menu .fm-page{display:flex;flex-direction:column}
+.files-more-menu .fm-sep{height:1px;background:rgba(255,255,255,.09);margin:5px 6px}
+.files-more-menu .fm-back{opacity:.8}
+.files-more-menu .fm-tail{margin-left:auto;padding-left:12px;opacity:.55;font-size:.86em;white-space:nowrap}
+.files-more-menu .fm-on{background:rgba(46,139,61,.2)}
+.files-more-menu .fm-on .fm-tail{opacity:.8}
 .files-more-wrap.open .files-more-menu{display:block}
 .files-more-menu button{display:flex;align-items:center;gap:10px;width:calc(100% - 6px);text-align:left;padding:9px 11px;margin:1px 3px;background:none;border:none;font-family:var(--font);font-size:.9em;line-height:1.3;border-radius:7px;color:#fff;cursor:pointer;transition:background .15s;white-space:nowrap}
 .files-more-menu button:hover{background:rgba(255,255,255,.1);color:var(--accent)}
@@ -2391,15 +2402,38 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 .up-dock.on{display:flex}
 .up-dock.hidden{display:none}
 
+/* Finished cleanly: the whole strip fades to the accent colour, says so, and
+   drops out of view. Only ever shown when nothing failed or was cancelled. */
+.up-done{display:none;align-items:center;justify-content:center;gap:9px;
+  min-height:44px;padding:7px 12px;font-weight:700;color:#fff;letter-spacing:.2px}
+.up-done svg{width:19px;height:19px;fill:currentColor;flex:0 0 auto}
+.up-dock.done{background:var(--accent);border-top-color:transparent;transition:background .35s ease}
+.up-dock.done .up-bar,.up-dock.done .up-panel{display:none}
+.up-dock.done .up-done{display:flex;animation:upDoneIn .3s ease}
+@keyframes upDoneIn{from{opacity:0}to{opacity:1}}
+.up-dock.sink{transform:translateY(100%);opacity:0;transition:transform .4s cubic-bezier(.4,0,1,1),opacity .4s ease}
+@media (prefers-reduced-motion: reduce){
+  .up-dock.done,.up-dock.sink{transition:none}
+  .up-dock.done .up-done{animation:none}
+}
+
 /* -- the thin strip -- */
 .up-bar{display:flex;align-items:center;gap:10px;padding:7px 12px;min-height:44px}
 .up-bar button{background:none;padding:0;border-radius:8px;color:#fff;cursor:pointer;flex:0 0 auto;
   display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
 .up-bar button svg{width:18px;height:18px;fill:currentColor;pointer-events:none}
+/* The glyph says which direction the bytes are going, because "uploading" and
+   "saving to this device" are not the same thing and the strip is often the
+   only thing on screen saying which one is happening. One is shown at a time,
+   chosen by the mode class on the dock; the cross replaces whichever it is
+   under the pointer, so the button only claims to be destructive when you are
+   about to press it. */
 .up-stop{width:32px;height:32px;position:relative}
-.up-stop .ic-x{display:none}
+.up-stop .ic-x,.up-stop .ic-save{display:none}
+.up-dock.mode-save .up-stop .ic-up{display:none}
+.up-dock.mode-save .up-stop .ic-save{display:block}
 .up-stop:hover{background:rgba(244,67,54,.18);color:#ff9d96}
-.up-stop:hover .ic-up{display:none}
+.up-stop:hover .ic-up,.up-dock.mode-save .up-stop:hover .ic-save{display:none}
 .up-stop:hover .ic-x{display:block}
 .up-min{width:30px;height:30px;opacity:.7}
 .up-min:hover{background:rgba(255,255,255,.12);opacity:1}
@@ -2437,9 +2471,8 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
   .up-row .up-line{width:64px}
   .up-row .up-s{min-width:88px}
 }
-</style>
-</head>
-<body>
+
+  </style>
 
 <!-- ═══ TOP NAV ═══ -->
 <div class="main-container">
@@ -2605,7 +2638,9 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
             <button onclick="closeFilesUploadMenu();showNewFileDialog()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z"/></svg>New File</button>
             <button onclick="closeFilesUploadMenu();showNewMarkdownDialog()" title="Create an empty .md and start writing"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.5 5h-17A1.5 1.5 0 0 0 2 6.5v11A1.5 1.5 0 0 0 3.5 19h17a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 20.5 5zM11 15H9v-3.5l-1.5 2-1.5-2V15H4V9h2l1.5 2L9 9h2v6zm5.5.5L14 12h1.75V9h1.5v3H19l-2.5 3.5z"/></svg>New Markdown…</button>
             <div class="fu-sep"></div>
-            <button onclick="closeFilesUploadMenu();document.getElementById('filesUploadInput').click()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>Upload files…</button>
+            <!-- Label and glyph follow the mounted drive: "Upload" only when
+                 the bytes are actually going somewhere else. See syncFilesWriteUI. -->
+            <button id="filesAddFilesBtn" onclick="closeFilesUploadMenu();document.getElementById('filesUploadInput').click()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path class="ic-up-d" d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/><path class="ic-save-d" style="display:none" d="M13 3h-2v6H8l4 4 4-4h-3V3zM5 17h14v2H5v-2z"/></svg><span id="filesAddFilesLabel">Upload files…</span></button>
             <button onclick="closeFilesUploadMenu();showNewWebLinkDialog()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>New Web Link…</button>
           </div>
         </div>
@@ -2613,12 +2648,24 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
              storage, or a drive served by a self-hosted P2P host over WebRTC. -->
         <div class="files-drive-wrap" id="filesDriveWrap">
           <button id="filesDriveBtn" class="files-icon-btn" onclick="toggleFilesDriveMenu(event)" title="Drive options" aria-label="Drive options"><svg xmlns="http://www.w3.org/2000/svg" viewBox="5 3 14 18" fill="currentColor"><circle cx="12" cy="5.6" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="18.4" r="1.75"/></svg></button>
+          <!-- Two pages in one menu: the drive actions, and the sort options
+               behind them. `Sort by…` swaps pages, `Back…` returns. -->
           <div class="files-more-menu">
-            <button onclick="closeFilesDriveMenu();openDrivesModal()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 9h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zm2.5-6.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm0 9a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5z"/></svg>Switch drive…</button>
-            <button onclick="closeFilesDriveMenu();openDriveProperties()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2V7zm0 4h2v6h-2v-6z"/></svg>Drive properties…</button>
-            <button id="filesDriveReconnect" onclick="closeFilesDriveMenu();P2PDrives.reconnect()" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>Reconnect drive</button>
-            <!-- Where a minimised upload dock comes back from. -->
-            <button onclick="closeFilesDriveMenu();Uploads.show()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>Show uploads</button>
+            <div class="fm-page" id="filesDriveMenuMain">
+              <button onclick="closeFilesDriveMenu();openDrivesModal()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 9h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zm2.5-6.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm0 9a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5z"/></svg>Switch drive…</button>
+              <button onclick="closeFilesDriveMenu();openDriveProperties()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2V7zm0 4h2v6h-2v-6z"/></svg>Drive properties…</button>
+              <button id="filesDriveReconnect" onclick="closeFilesDriveMenu();P2PDrives.reconnect()" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>Reconnect drive</button>
+              <button onclick="event.stopPropagation();showFilesSortMenu()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>Sort by<span class="fm-tail" id="filesSortSummary"></span></button>
+              <!-- Where a minimised upload dock comes back from. -->
+              <!-- Two arrows, because the dock carries both directions: files
+                   going out to a drive and files coming back onto this device. -->
+              <button onclick="closeFilesDriveMenu();Transfers.show()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.5 3 3 7.5h3.2V16h2.6V7.5H12L7.5 3zM16.5 21 21 16.5h-3.2V8h-2.6v8.5H12l4.5 4.5z"/></svg>Show transfers</button>
+            </div>
+            <div class="fm-page" id="filesDriveMenuSort" style="display:none">
+              <button class="fm-back" onclick="event.stopPropagation();showFilesDriveMenuMain()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2z"/></svg>Back…</button>
+              <div class="fm-sep"></div>
+              <div id="filesSortOptions"></div>
+            </div>
           </div>
         </div>
         <!-- Reset the input after handing over a copy, or picking the same file
@@ -2649,6 +2696,9 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
         <button id="filesCopyBtn" class="files-icon-btn" onclick="showFilesCopyDialog('copy')" title="Copy" aria-label="Copy" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
         <button id="filesDlBtn" class="files-icon-btn" onclick="downloadSelectedFiles()" title="Download" aria-label="Download" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></button>
         <button id="filesDelBtn" class="files-icon-btn btn-danger" onclick="deleteSelectedFiles()" title="Delete" aria-label="Delete" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+        <!-- Only ever shown on a P2P drive, and only where the bar has the room
+             for it; otherwise it lives in the ⋮ overflow beside it. -->
+        <button id="filesSaveLocalBtn" class="files-icon-btn" onclick="saveNodesToDevice([...selectedFileIds])" title="Save to this device" aria-label="Save to this device" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg></button>
         <button id="filesColorBtn" class="files-icon-btn" onclick="showFolderColorDialog()" title="Change folder colour" aria-label="Change folder colour" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg></button>
         <button id="filesPropsBtn" class="files-icon-btn" onclick="showBulkProperties()" title="Properties" aria-label="Properties" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 7h2v2h-2V7zm0 4h2v6h-2v-6zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg></button>
         <div class="files-more-wrap" id="filesMoreWrap">
@@ -2657,6 +2707,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
             <button onclick="closeFilesMoreMenu();showBulkProperties()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v2h-2V7zm0 4h2v6h-2v-6z"/></svg>Properties</button>
             <button id="filesMoreSendMedia" onclick="closeFilesMoreMenu();sendFilesTo(null,'media')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/></svg>Send to Media</button>
             <button id="filesMoreSendApps" onclick="closeFilesMoreMenu();sendFilesTo(null,'webapps')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Send to Web Apps</button>
+            <button id="filesMoreSaveLocal" onclick="closeFilesMoreMenu();saveNodesToDevice([...selectedFileIds])"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg>Save to this device</button>
             <div class="fm-sep"></div>
             <button id="filesMoreColorItem" onclick="closeFilesMoreMenu();showFolderColorDialog()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22a1 1 0 0 1-1-1v-1.5a1.5 1.5 0 0 1 1.5-1.5H16a5 5 0 0 0 5-5c0-4.42-4.03-8-9-8s-9 3.58-9 8 4.03 9 9 9zM6.5 12.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>Folder colour…</button>
           </div>
@@ -3946,7 +3997,10 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
     <div class="drives-list" id="drivesList"></div>
     <div class="cd-actions">
       <div class="cd-left">
+        <!-- Add steps aside while selecting: the row is narrow on a phone and
+             Back up is the action that belongs to a selection. -->
         <button class="btn-ghost" id="drivesAddBtn" onclick="showAddDriveMenu(event)">+ Add</button>
+        <button class="btn-ghost" id="drivesBackupBtn" onclick="P2PDrives.backupSelected()" style="display:none">Back up 0</button>
         <button class="btn-ghost" id="drivesSelectBtn" onclick="P2PDrives.toggleSelectMode()">Select</button>
         <!-- Icon only, with the count as a badge — same treatment the file
              manager's action dock uses. -->
@@ -4025,34 +4079,45 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 <!-- Context Menu -->
 <div class="ctx-menu" id="ctxMenu" style="display:none"></div>
 
-<!-- ═══ UPLOAD DOCK ═══
-     A thin strip pinned to the bottom while files are going up. The bar in the
+<!-- ═══ TRANSFER DOCK ═══
+     A thin strip pinned to the bottom while files are moving. The bar in the
      middle opens the per-file list; the icon on the left cancels; the button on
-     the right puts the whole thing away (Files → ⋮ → Show uploads brings it
-     back). Uploads keep running either way — hiding is not stopping. -->
+     the right puts the whole thing away (Files → ⋮ → Show transfers brings it
+     back). Transfers keep running either way — hiding is not stopping.
+
+     Three jobs share it, and it says which one it is doing: uploading to the
+     mounted drive, saving onto this device, or backing this device up. Every
+     visible string below is a placeholder that Transfers.draw() overwrites from
+     the mode — see DOCK_WORDS. -->
 <div class="up-dock" id="uploadDock">
   <div class="up-panel" id="upPanel">
     <div class="up-panel-head">
-      <span id="upPanelTitle">Uploading</span>
-      <button class="up-collapse" onclick="Uploads.collapse()" title="Collapse" aria-label="Collapse">
+      <span id="upPanelTitle">Transferring</span>
+      <button class="up-collapse" onclick="Transfers.collapse()" title="Collapse" aria-label="Collapse">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></svg>
       </button>
     </div>
     <div class="up-rows" id="upRows"></div>
-    <div class="up-foot"><button class="up-cancel-all" onclick="Uploads.cancelAll()">Cancel</button></div>
+    <div class="up-foot"><button class="up-cancel-all" onclick="Transfers.cancelAll()">Cancel</button></div>
+  </div>
+  <!-- Replaces the bar for the moment after a clean sweep, then sinks away. -->
+  <div class="up-done" aria-live="polite">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span id="upDoneText">Complete</span>
   </div>
   <div class="up-bar">
-    <!-- Upload glyph at rest, a cross under the pointer: the same button, saying
-         what it will do only when you are about to do it. -->
-    <button class="up-stop" id="upStop" onclick="Uploads.cancelAll()" title="Cancel uploads" aria-label="Cancel uploads">
+    <!-- Direction glyph at rest, a cross under the pointer: the same button,
+         saying what it will do only when you are about to do it. -->
+    <button class="up-stop" id="upStop" onclick="Transfers.cancelAll()" title="Cancel" aria-label="Cancel">
       <svg class="ic-up" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+      <!-- Saving onto this device: a drive with an arrow coming down into it. -->
+      <svg class="ic-save" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 3h-2v6H8l4 4 4-4h-3V3zM5 17h14v2H5v-2z"/></svg>
       <svg class="ic-x" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
-    <div class="up-meter" onclick="Uploads.expand()" title="Show each file">
+    <div class="up-meter" onclick="Transfers.expand()" title="Show each file">
       <div class="up-line"><i id="upFill"></i></div>
       <div class="up-text" id="upText"></div>
     </div>
-    <button class="up-min" onclick="Uploads.hide()" title="Hide" aria-label="Hide uploads">
+    <button class="up-min" id="upMin" onclick="Transfers.hide()" title="Hide" aria-label="Hide">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
     </button>
   </div>
@@ -5962,9 +6027,32 @@ function openModal(id) {
 // close. Anything missing from this set is treated as a new app, which tears
 // down the whole suspended stack instead of restoring it.
 const CHILD_MODALS = new Set(['zonePickerModal','bgSelectModal','knowledgeSearchModal','ksScopeModal']);
+/* Anything transient an app put on screen: popups, context menus, dropdowns,
+   the upload dock. None of it belongs to the home screen, and none of it should
+   survive the app closing or the section auto-locking — a context menu left
+   floating over the homepage is both untidy and a small information leak.
+   Called from closeModal, closeAllModals and the auto-lock path. */
+function dismissTransientUI(){
+  // A confirmation that is torn off the screen must still answer its caller.
+  // Without this, `await askDelete(...)` never settles and whatever was waiting
+  // on it — a delete, a backup, a cancel — is stuck for the rest of the session.
+  try{ if(_confirmResolver && document.getElementById('confirmActionPopup')?.classList.contains('open')) _resolveConfirm(false); }catch{}
+  try{ document.querySelectorAll('.popup-overlay.open').forEach(p => p.classList.remove('open')); }catch{}
+  try{ const c = document.getElementById('ctxMenu'); if(c) c.style.display = 'none'; }catch{}
+  try{ document.querySelectorAll('.files-more-menu,.files-upload-menu,.files-select-menu,.manage-menu,.events-menu,.ne-dropdown-menu,.notes-mini-menu,.md-menu,.ks-filter-menu,.ne-actions-dropdown,.viewer-nav-menu')
+        .forEach(el => { el.style.display = ''; }); }catch{}
+  try{ document.querySelectorAll('.files-drive-wrap.open,.files-select-wrap.open,.files-more-wrap.open,.files-upload-wrap.open,.cs-dropdown.open')
+        .forEach(el => el.classList.remove('open')); }catch{}
+  try{ closeViewerNavMenu(); }catch{}
+  try{ _syncScrollLock(); }catch{}
+}
+
 function closeModal(id) {
   const m = document.getElementById(id);
   if (m) { m.classList.remove('active','modal-suspended'); m.style.display = 'none'; }
+  // The upload dock belongs to Files; it must not float over the home screen.
+  if (id === 'filesModal') { try{ Transfers.hide(); }catch{} }
+  if (!CHILD_MODALS.has(id)) dismissTransientUI();
   // Knowledge search is a query surface, not a setting — leaving it discards
   // the query, the match mode, the dates and the scope, so reopening always
   // starts from a clean slate rather than silently filtered results.
@@ -6012,8 +6100,11 @@ function closeAllModals() {
   try{ if(document.getElementById('taskEditor')?.classList.contains('open')) closeTaskEditor(); }catch{}
   try{ if(document.getElementById('infoEditor')?.classList.contains('open')) closeInfoEditor(); }catch{}
   document.querySelectorAll('.modal-overlay').forEach(m => { m.classList.remove('active','modal-suspended'); m.style.display = 'none'; });
-  // Nothing is open any more, so the floating search bar has no target.
+  // Nothing is open any more, so the floating search bar has no target, and
+  // nothing transient any app put up has anywhere to belong.
   try{ closeFloatingSearch(); }catch{}
+  try{ Transfers.hide(); }catch{}
+  dismissTransientUI();
   try{ _relockVaultIfIdle(); }catch{}
   _syncScrollLock();
 }
@@ -6213,7 +6304,8 @@ const SECTION_RAM = {
   webAppModal:    ['webappsMetadata'],
   urlModal:       ['viewerHistory'],
   tasksModal:     ['tasksData','tasksMeta'],
-  infoModal:      ['infoData','infoMeta']
+  infoModal:      ['infoData','infoMeta'],
+  clockModal:     ['alarms']
 };
 function _reloadSectionData(modalId){
   const load = {
@@ -6261,6 +6353,7 @@ function _purgeSectionData(modalId){
     infoData:        () => { infoData = []; },
     infoMeta:        () => { infoMeta = { sort:'updated', view:'grid', sidebarOpen:false }; },
     tasksMeta:       () => { tasksMeta = { view:'grid', sort:'manual', activeWidgetListId:null }; },
+    alarms:          () => { try{ alarms = []; }catch{} },
     filesTree:       () => { try{ filesTree = { root:{ id:'root', name:'Files', type:'folder', parentId:null, children:[], dateCreated:new Date().toISOString() } }; }catch{} }
   };
   (SECTION_RAM[modalId]||[]).forEach(name => { const fn = CLEAR[name]; if(fn) try{ fn(); }catch(e){ console.warn('[purge]', name, e); } });
@@ -6269,12 +6362,118 @@ function _purgeSectionData(modalId){
   if(modalId === 'bookmarksModal'){
     try{ _unlockedBookmarkIds.clear(); _bmFolderId = null; _bmSelectMode = false; _bmSelectedIds.clear(); }catch{}
   }
-  // Clear whatever the section rendered, so nothing survives on screen either.
-  const contentEl = document.getElementById(MODAL_CONTENTS[modalId]);
-  if(contentEl){
-    contentEl.querySelectorAll('#historyContainer,#bookmarkContainer,#rssArticlesList,#mediaContainer,#appContainer').forEach(c => { c.innerHTML=''; });
+  _scrubSectionDom(modalId);
+  // Anything a section put somewhere other than its own subtree — an open
+  // viewer, a live connection, a URL that can still be fetched.
+  (SECTION_PURGE_HOOKS[modalId] || []).forEach(fn => { try{ fn(); }catch(e){ console.warn('[purge hook]', modalId, e); } });
+  SECTION_PURGE_ANY.forEach(fn => { try{ fn(modalId); }catch(e){ console.warn('[purge hook]', e); } });
+}
+
+/* Take the section's contents out of the DOM as well as out of the variables.
+
+   Hiding the content element is not enough for either half of what a lock is
+   supposed to do. It is still visible to anything that reads the page, and —
+   the part that actually matters — every filename, thumbnail, note body and
+   decrypted preview is still sitting in live DOM nodes, which is memory in
+   exactly the sense the lock is meant to clear.
+
+   Everything a section renders into is blanked, every element that can hold
+   bytes has its source torn out and its object URL revoked, and every field the
+   user typed into is emptied. What is left is the static markup the section was
+   built from, which carries nothing.
+
+   ── Future apps ──
+   A section is covered without touching this function if its containers are
+   marked `data-lock-clear`. The named list below is the set that predates the
+   attribute; new work should use the attribute and stay out of here. */
+const LOCK_CLEAR_SELECTOR = [
+  '[data-lock-clear]',
+  '#historyContainer', '#mostVisitedContainer',
+  '#bookmarkContainer',
+  '#rssArticlesList', '#rssArticleBody',
+  '#mediaContainer', '#appContainer',
+  '#filesGrid', '#filesCopyList',
+  '#notesListContainer', '#notesSwitcherList', '#notesCopyList',
+  '#tasksGrid', '#tasksWidgetBody', '#notesWidgetBody',
+  '#infoGrid', '#infoEditorBody', '#infoHeadingList',
+  '#urlSavedList', '#urlRecentList',
+  '#calGrid', '#eventsRightContent', '#eventsViewerList',
+  '#worldClockList', '#alarmList'
+].join(',');
+function _scrubSectionDom(modalId){
+  // The content element, not the whole modal: the password screen is its
+  // sibling and must keep working, and the modal's own chrome is static.
+  const root = document.getElementById(MODAL_CONTENTS[modalId]) || document.getElementById(modalId);
+  if(root){
+    try{
+      /* Media first, containers second. The order is the whole point.
+
+         Blanking a container detaches everything inside it, and a detached
+         <video> still holding a blob: URL is the worst of both worlds: it is
+         off the screen, so it looks dealt with, and the object URL is still
+         registered, so the browser keeps the entire file alive with no way left
+         to reach the element and revoke it. Clearing the sources while the
+         elements are still findable is what actually frees the bytes. */
+      root.querySelectorAll('img,video,audio,iframe,embed,object,source,track').forEach(el => {
+        const src = el.currentSrc || el.src || el.data || '';
+        try{ if(typeof el.pause === 'function') el.pause(); }catch{}
+        try{ el.removeAttribute('src'); el.removeAttribute('data'); }catch{}
+        try{ if(typeof el.load === 'function' && (el.tagName === 'VIDEO' || el.tagName === 'AUDIO')) el.load(); }catch{}
+        if(typeof src === 'string' && src.startsWith('blob:')) try{ URL.revokeObjectURL(src); }catch{}
+      });
+      root.querySelectorAll(LOCK_CLEAR_SELECTOR).forEach(c => { c.innerHTML = ''; });
+      // Search boxes, editors, anything half-typed.
+      root.querySelectorAll('input,textarea').forEach(el => {
+        if(el.type === 'checkbox' || el.type === 'radio') return;
+        try{ el.value = ''; }catch{}
+      });
+      root.querySelectorAll('[contenteditable]').forEach(el => { try{ el.textContent = ''; }catch{} });
+    }catch(e){ console.warn('[scrub]', modalId, e); }
   }
 }
+
+/* Per-section teardown that reaches outside the section's own markup, and the
+   registry a future app hangs its own on. Keyed by modal id; anything in
+   SECTION_PURGE_ANY runs for every locked section. */
+const SECTION_PURGE_HOOKS = {
+  // Each of these opens a full-screen surface that is a sibling of the modal,
+  // not a child of it — so hiding the section leaves them on screen with its
+  // contents still in them.
+  notesModal:    [() => { try{ closeNoteEditor(); }catch{} }],
+  rssModal:      [() => { try{ closeRSSReader(); }catch{} }],
+  reminderModal: [() => { try{ closeEventsViewer(); closePopup('addEventModal'); }catch{} }],
+  filesModal: [
+    () => {
+      // The upload dock belongs to Files and shows filenames.
+      try{ Transfers.hide(); }catch{}
+      try{ selectedFileIds.clear(); }catch{}
+      try{ currentFolderId = 'root'; }catch{}
+      /* Drop the drive. The connection is an open door to every file on it, the
+         cached tree is a full listing of a locked section, and the session key
+         behind it was derived from a code the lock is meant to make unreadable
+         again. Reopening Files replays the code and rebuilds all three. */
+      try{ P2PDrives.disconnect(); }catch{}
+      try{ P2PDrives.dropCaches(); }catch{}
+    }
+  ]
+};
+const SECTION_PURGE_ANY = [
+  // A stream token is the right to read a file over a URL that survives the
+  // lock. None of them outlive the section that minted them.
+  () => { try{ P2PStream.releaseAll(); }catch{} },
+  /* The viewer floats above every section and is where a file's contents
+     actually end up on screen. If it is showing something, it came from a
+     section — and there is no cheap way to prove it was not this one, so it
+     closes. An unsaved edit is the one thing worth interrupting for. */
+  () => {
+    try{
+      if(_viewerDirty) return;
+      const v = document.getElementById('viewerModal');
+      if(v && (v.classList.contains('open') || v.style.display === 'flex')) closeViewer();
+      _viewerCurrentNode = null; _viewerTextArea = null; _viewerCurrentMode = null;
+    }catch{}
+  }
+];
 
 // ═══════════════════════════════════════════════════════
 //  PASSKEY
@@ -7704,8 +7903,19 @@ function renderNotesWidget(){
     return;
   }
   // Pick active — must be in the visible list (locked notes filtered out when menu locked)
+  //
+  // The fallback has to be written back, not just used for this paint. The
+  // editing handlers work from `notesMeta.activeWidgetNoteId`, so leaving it
+  // pointing at a note that is not on screen meant typing in the preview was
+  // saved into a different note — or, when it was null, silently dropped.
   let activeId = notesMeta.activeWidgetNoteId;
-  if (!activeId || !visible.some(n => n.id === activeId)) activeId = visible[0].id;
+  if (!activeId || !visible.some(n => n.id === activeId)){
+    activeId = visible[0].id;
+    if (notesMeta.activeWidgetNoteId !== activeId){
+      notesMeta.activeWidgetNoteId = activeId;
+      _saveNotesMeta();
+    }
+  }
   const active = _findNote(activeId);
   if (title) title.textContent = active ? (active.title || 'Untitled note') : 'Notes';
   const canEdit = _canEditNoteInWidget(active);
@@ -9991,10 +10201,32 @@ function _updateWidgetBgMediaRow(){
   if(nm){ const m=(mediaMetadata||[]).find(x=>x.id===settings.widgetBgMediaId); nm.textContent = m ? m.name : 'None'; }
 }
 
+/* Controls inside a widget that a press is meant to operate, not drag by.
+
+   A widget is `draggable`, and native drag outranks everything: press on a
+   child and the browser starts watching for a drag rather than delivering the
+   interaction. Move a pixel or two — which people do on a 26 px icon — and no
+   click is ever fired, so the notes/tasks switcher button simply does nothing
+   most of the time. A `contenteditable` preview is worse: it cannot be focused
+   by clicking at all while an ancestor is draggable, so widget note editing was
+   unreachable rather than merely unreliable.
+
+   So dragging is switched off for as long as the pointer is down on something
+   interactive, and switched back on afterwards. Dragging the widget by its body
+   or heading still works exactly as before. */
+const WIDGET_CONTROLS = 'button,input,select,textarea,a,label,[contenteditable="true"],[role="button"]';
 function setupWidgetDragAndDrop() {
   const c = document.getElementById('widgetsContainer'); let drag = null;
+  // pointerdown fires before the browser decides a drag has begun.
+  c.addEventListener('pointerdown', e => {
+    const w = e.target.closest('.widget');
+    if(w) w.draggable = !e.target.closest(WIDGET_CONTROLS);
+  });
+  const restore = () => c.querySelectorAll('.widget').forEach(w => { w.draggable = true; });
+  c.addEventListener('pointerup', restore);
+  c.addEventListener('pointercancel', restore);
   c.addEventListener('dragstart', e => { const w=e.target.closest('.widget'); if(w){drag=w; setTimeout(()=>drag.style.opacity='.4',0); } });
-  c.addEventListener('dragend', () => { if(drag){drag.style.opacity='1'; updateWidgetOrder(); drag=null; } });
+  c.addEventListener('dragend', () => { restore(); if(drag){drag.style.opacity='1'; updateWidgetOrder(); drag=null; } });
   c.addEventListener('dragover', e => { e.preventDefault(); const after=getClosestWidget(c,e.clientX,e.clientY); if(after&&drag&&after!==drag) { const b=after.getBoundingClientRect(); e.clientY>b.top+b.height/2?after.after(drag):after.before(drag); } });
 }
 function getClosestWidget(c,x,y) {
@@ -12873,7 +13105,7 @@ function showWebAppInViewer(item){
   const tx=db.transaction(['webapps'],'readonly');
   tx.objectStore('webapps').get(item.id).onsuccess=e=>{
     if(!_viewerTokenValid(_tok)) return;
-    if(e.target.result?.data){ const u=URL.createObjectURL(e.target.result.data),fr=document.createElement('iframe'); fr.src=u; fr.style.cssText='width:100%;height:100%;border-radius:10px'; vc.appendChild(fr); v.classList.add('open'); v.style.display='flex'; }
+    if(e.target.result?.data){ const u=_viewerSetSource(URL.createObjectURL(e.target.result.data)),fr=document.createElement('iframe'); fr.src=u; fr.style.cssText='width:100%;height:100%;border-radius:10px'; vc.appendChild(fr); v.classList.add('open'); v.style.display='flex'; }
   };
 }
 
@@ -12892,12 +13124,40 @@ function showInViewer(item){
   tx.objectStore('media').get(item.id).onsuccess=e=>{
     if(!_viewerTokenValid(_tok)) return;
     const mf=e.target.result; if(!mf?.data){showToast('File not found','error');return;}
-    const url=URL.createObjectURL(mf.data);
+    const url=_viewerSetSource(URL.createObjectURL(mf.data));
     if(item.type.startsWith('image')){ const img=document.createElement('img'); img.src=url; img.style.cssText='max-width:90vw;max-height:85vh;object-fit:contain;border-radius:10px'; vc.appendChild(img); }
     else if(item.type.startsWith('video')){ const vid=document.createElement('video'); vid.controls=true;vid.autoplay=true;vid.loop=false;vid.playsInline=true;vid.src=url; vid.style.cssText='max-width:90vw;max-height:85vh;border-radius:10px'; vc.appendChild(vid); showToast('Loading video...'); }
     else if(item.type==='application/pdf'){ const em=document.createElement('embed'); em.src=url+'#toolbar=1';em.type='application/pdf';em.style.cssText='width:90vw;height:85vh;border-radius:10px'; vc.appendChild(em); }
     v.classList.add('open'); v.style.display='flex';
   };
+}
+/* ── the viewer owns exactly one source URL at a time ──────────────────────
+
+   Every path that puts a file on screen minted a `blob:` URL and none of them
+   ever gave it back. An object URL is a hard reference: the browser keeps the
+   entire blob alive until it is revoked or the document goes away. So opening
+   twenty photos, or two films, pinned all of them in memory for the rest of the
+   session — the one place in the app where looking at something cost as much as
+   keeping it.
+
+   There is only ever one viewer, so there is only ever one URL to own. Minting
+   through here releases whatever the viewer was showing before, and closing it
+   releases the last one. A stream URL is not an object URL, but its token is
+   the same kind of handle — the right to read a file — so it is dropped in the
+   same breath. */
+let _viewerObjectUrl = null, _viewerStreamToken = null;
+function _viewerSetSource(url){
+  _viewerReleaseSource();
+  const s = typeof url === 'string' ? url : '';
+  if(s.startsWith('blob:')) _viewerObjectUrl = s;
+  else if(s.includes('__p2pstream')){
+    try{ _viewerStreamToken = new URL(s, location.href).searchParams.get('t'); }catch{}
+  }
+  return url;
+}
+function _viewerReleaseSource(){
+  if(_viewerObjectUrl){ try{ URL.revokeObjectURL(_viewerObjectUrl); }catch{} _viewerObjectUrl = null; }
+  if(_viewerStreamToken){ try{ P2PStream.release(_viewerStreamToken); }catch{} _viewerStreamToken = null; }
 }
 // Deliberately NOT async: this is called synchronously from the ESC handler,
 // closeAllModals() and the inactivity timer, none of which await it. Only the
@@ -12916,6 +13176,11 @@ function closeViewer(force){
   closeViewerNavMenu();
   document.querySelectorAll('#viewerContent video').forEach(vid=>vid.pause());
   document.querySelectorAll('#viewerContent audio').forEach(a=>a.pause());
+  // Unhook the bytes before the nodes go, or a detached <video> keeps its
+  // source loading with nothing left on screen to stop it.
+  document.querySelectorAll('#viewerContent video,#viewerContent audio,#viewerContent img,#viewerContent embed,#viewerContent iframe')
+    .forEach(el => { try{ el.removeAttribute('src'); if(el.load) el.load(); }catch{} });
+  _viewerReleaseSource();
   document.getElementById('viewerContent').innerHTML='';
   setViewerExtraToolbar('');
   // Hide the reload icon in the top-left group (only shown for web URLs)
@@ -13561,6 +13826,22 @@ function syncFilesWriteUI(){
   if(up) up.style.display = '';
   const bar = document.getElementById('filesGrid');
   if(bar) bar.classList.remove('drive-readonly');
+  /* "Upload" only when the bytes are going somewhere else.
+
+     Adding files to this device's own drive is not an upload, and calling it
+     one — with an upload arrow next to it — was the same mislabelling the
+     transfer dock had. The two now agree with each other and with what is
+     actually happening. */
+  let remote = false;
+  try{ remote = P2PDrives.isRemote(); }catch{}
+  const label = document.getElementById('filesAddFilesLabel');
+  if(label) label.textContent = remote ? 'Upload files…' : 'Add files…';
+  const btn = document.getElementById('filesAddFilesBtn');
+  if(btn){
+    const u = btn.querySelector('.ic-up-d'), s = btn.querySelector('.ic-save-d');
+    if(u) u.style.display = remote ? '' : 'none';
+    if(s) s.style.display = remote ? 'none' : '';
+  }
 }
 
 // Where the tree goes depends on which drive is mounted. On local storage that
@@ -13574,6 +13855,82 @@ function saveFilesTree(){
 }
 
 let filesSelectMode = false;
+
+// ═══════════════════════════════════════════════════════
+//  FILES: sort order
+// ═══════════════════════════════════════════════════════
+// Folders always lead regardless of the key — a file manager that scatters
+// folders through the list by size is not one anybody wants.
+const FILES_SORTS = [
+  { key:'name', label:'Name',          cmp:(a,b)=> String(a.name).localeCompare(String(b.name), undefined, {numeric:true, sensitivity:'base'}) },
+  { key:'type', label:'Type',          cmp:(a,b)=> _fileSortType(a).localeCompare(_fileSortType(b)) || String(a.name).localeCompare(String(b.name)) },
+  { key:'size', label:'Size',          cmp:(a,b)=> (a.size||0) - (b.size||0) || String(a.name).localeCompare(String(b.name)) },
+  { key:'date', label:'Date added',    cmp:(a,b)=> (Date.parse(a.dateCreated)||0) - (Date.parse(b.dateCreated)||0) || String(a.name).localeCompare(String(b.name)) }
+];
+let filesSort = { key:'name', dir:1 };
+function _fileSortType(n){
+  if(n.type === 'folder') return '';
+  const ext = String(n.name||'').split('.').pop().toLowerCase();
+  return ext === n.name ? '~' : ext;      // no extension sorts last among files
+}
+function loadFilesSort(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('googokeFilesSort') || 'null');
+    if(raw && FILES_SORTS.some(s => s.key === raw.key)) filesSort = { key:raw.key, dir: raw.dir === -1 ? -1 : 1 };
+  }catch{}
+}
+function setFilesSort(key, dir){
+  filesSort = { key, dir };
+  try{ safeSetItem('googokeFilesSort', JSON.stringify(filesSort)); }catch{}
+  renderFilesSortOptions();
+  const s = document.getElementById('filesSortSummary');
+  if(s) s.textContent = _filesSortLabel();
+  renderFilesGrid();
+  closeFilesDriveMenu();
+  showFilesDriveMenuMain();
+}
+function _filesSortLabel(){
+  const s = FILES_SORTS.find(x => x.key === filesSort.key) || FILES_SORTS[0];
+  return s.label + (filesSort.dir === 1 ? ' ↑' : ' ↓');
+}
+function sortFileNodes(list){
+  const s = FILES_SORTS.find(x => x.key === filesSort.key) || FILES_SORTS[0];
+  return list.sort((a,b) =>
+    (a.type==='folder'?-1:1) - (b.type==='folder'?-1:1) || s.cmp(a,b) * filesSort.dir);
+}
+// Both directions of every key, so one tap gets you anywhere rather than a
+// key tap followed by a separate direction toggle.
+function renderFilesSortOptions(){
+  const host = document.getElementById('filesSortOptions');
+  if(!host) return;
+  host.innerHTML = '';
+  const tick = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+  const blank = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>';
+  for(const s of FILES_SORTS){
+    for(const dir of [1, -1]){
+      const on = filesSort.key === s.key && filesSort.dir === dir;
+      const b = document.createElement('button');
+      if(on) b.className = 'fm-on';
+      const arrow = dir === 1
+        ? (s.key === 'name' || s.key === 'type' ? 'A → Z' : s.key === 'size' ? 'smallest first' : 'oldest first')
+        : (s.key === 'name' || s.key === 'type' ? 'Z → A' : s.key === 'size' ? 'largest first' : 'newest first');
+      b.innerHTML = (on ? tick : blank) + _escapeText(s.label) + '<span class="fm-tail">' + _escapeText(arrow) + '</span>';
+      b.onclick = e => { e.stopPropagation(); setFilesSort(s.key, dir); };
+      host.appendChild(b);
+    }
+  }
+}
+function showFilesSortMenu(){
+  renderFilesSortOptions();
+  const m = document.getElementById('filesDriveMenuMain'), s = document.getElementById('filesDriveMenuSort');
+  if(m) m.style.display = 'none';
+  if(s) s.style.display = '';
+}
+function showFilesDriveMenuMain(){
+  const m = document.getElementById('filesDriveMenuMain'), s = document.getElementById('filesDriveMenuSort');
+  if(m) m.style.display = '';
+  if(s) s.style.display = 'none';
+}
 
 // Adds .is-stuck to the action dock once it pins to the top of the scroller,
 // so it only grows its shadow while it's actually overlapping the grid.
@@ -13594,7 +13951,10 @@ function _initFilesStickySentinel(){
   }catch{ /* no IO support: the dock just keeps its default shadow */ }
 }
 
+let _filesSortReady = false;
 function renderFilesGrid(){
+  if(!_filesSortReady){ _filesSortReady = true; try{ loadFilesSort(); renderFilesSortOptions();
+    const s=document.getElementById('filesSortSummary'); if(s) s.textContent=_filesSortLabel(); }catch{} }
   try{ _initFilesStickySentinel(); }catch{}
   try{ P2PDrives.paintBar(); }catch{}
   const grid=document.getElementById('filesGrid'); if(!grid) return;
@@ -13615,8 +13975,8 @@ function renderFilesGrid(){
     updateFilesActionButtons();
     return;
   }
-  // Folders first
-  shown.sort((a,b)=>(a.type==='folder'?-1:1)-(b.type==='folder'?-1:1)||a.name.localeCompare(b.name));
+  // Folders first, then whichever key the ⋮ → Sort by menu is set to.
+  sortFileNodes(shown);
   shown.forEach(node=>{
     const div=document.createElement('div');
     div.className='file-node'+(selectedFileIds.has(node.id)?' selected':'')+(filesSelectMode?' selectable':'');
@@ -14053,20 +14413,91 @@ function confirmNewFolder(){
   document.getElementById('newFolderInput').value=''; showToast('Folder created');
 }
 // ═══════════════════════════════════════════════════════
-//  UPLOADS — the dock, and the queue behind it
+//  TRANSFERS — the dock, and the queue behind it
 // ═══════════════════════════════════════════════════════
-// One queue, whichever drive is mounted. Everything the dock shows comes from
-// `jobs`; everything the dock does goes through this object.
-const Uploads = (function(){
+/* One queue for three jobs: uploading to whichever drive is mounted, saving
+   files off a P2P drive onto this device, and backing this device up to a
+   drive. Everything the dock shows comes from `jobs`; everything the dock does
+   goes through this object.
+
+   ── Why the mode exists ──
+   All three used to call themselves uploads, with an upload arrow, because they
+   share the strip. Saving onto this device is not an upload — nothing leaves
+   the machine — and the strip is usually the only thing on screen saying what
+   is happening, so it was the one place the answer had to be right and was not.
+   The mode picks the vocabulary and the glyph; nothing else about the dock
+   changes. */
+const DOCK_WORDS = {
+  upload: {
+    active:'Uploading', idle:'Uploads', complete:'Uploads complete',
+    // Bytes are gone but the far end has not confirmed the file yet.
+    tailOne:n => `Finishing ${n} on the drive…`,
+    tailMany:n => `Finishing ${n} files on the drive…`,
+    doneCount:n => `Uploaded ${n} file${n === 1 ? '' : 's'}`,
+    cancelTitle:'Cancel uploads', hideTitle:'Hide uploads',
+    confirmOne:'Cancel the upload in progress? The part already sent is discarded; files that finished stay on the drive.',
+    confirmMany:n => `Cancel ${n} uploads? Anything half-sent is discarded; files that already finished stay on the drive.`,
+    confirmTitle:'Cancel uploads'
+  },
+  save: {
+    active:'Saving', idle:'Saved files', complete:'Saved to this device',
+    tailOne:n => `Finishing ${n} on this device…`,
+    tailMany:n => `Finishing ${n} files on this device…`,
+    doneCount:n => `Saved ${n} file${n === 1 ? '' : 's'} to this device`,
+    cancelTitle:'Cancel saving', hideTitle:'Hide',
+    confirmOne:'Cancel the file being saved? The part already copied is discarded; files that finished stay on this device.',
+    confirmMany:n => `Cancel ${n} files? Anything half-copied is discarded; files that already finished stay on this device.`,
+    confirmTitle:'Cancel saving'
+  },
+  backup: {
+    active:'Backing up', idle:'Backup', complete:'Backup complete',
+    tailOne:n => `Finishing ${n} on the drive…`,
+    tailMany:n => `Finishing ${n} files on the drive…`,
+    doneCount:n => `Backed up ${n} file${n === 1 ? '' : 's'}`,
+    cancelTitle:'Cancel backup', hideTitle:'Hide',
+    confirmOne:'Cancel the backup? The file part-way across is discarded; files that finished stay on the drive.',
+    confirmMany:n => `Cancel the backup of ${n} files? Anything half-sent is discarded; files that already finished stay on the drive.`,
+    confirmTitle:'Cancel backup'
+  }
+};
+const Transfers = (function(){
   let jobs = [];              // {id, name, size, sent, state:'wait'|'run'|'done'|'fail'|'cancel', err}
   let running = false;
   let cancelled = false;      // set by Cancel; the queue drains and stops
-  let hidden = false;         // minimised out of the way, uploads still running
+  let hidden = false;         // minimised out of the way, transfers still running
   let paintTimer = null;
   let clearTimer = null;
+  let celebrated = false;     // the "all done" flourish has already played
+  let rowsStale = false;      // the per-file list was skipped while collapsed
+  let mode = 'upload';
+  /* How to stop a given job, supplied by whoever started it.
+
+     Cancel used to call P2PDrives.abortUpload(job.id) and nothing else, which
+     only ever matched an upload — and only because that path happens to use the
+     job id as the node id. A save is a *download* in flight and a backup
+     registers its upload under a different id, so for both of them Cancel
+     reached nothing at all: the file being transferred ran to completion and
+     only the ones still queued were dropped. Each caller now says how to stop
+     its own work. */
+  const stoppers = new Map();   // jobId -> () => void
 
   const $$ = id => document.getElementById(id);
   const active = () => jobs.filter(j => j.state === 'wait' || j.state === 'run');
+  const words = () => DOCK_WORDS[mode] || DOCK_WORDS.upload;
+
+  // Called by whoever is about to fill the queue. Resetting is separate, so a
+  // batch can join one already on screen without changing what it claims to be.
+  function setMode(m){
+    if(!DOCK_WORDS[m]) m = 'upload';
+    mode = m;
+    const d = $$('uploadDock');
+    if(d) d.classList.toggle('mode-save', m === 'save');
+    const stop = $$('upStop'), min = $$('upMin');
+    if(stop){ stop.title = words().cancelTitle; stop.setAttribute('aria-label', words().cancelTitle); }
+    if(min){ min.title = words().hideTitle; min.setAttribute('aria-label', words().hideTitle); }
+    paint();
+  }
+  function onCancel(id, fn){ if(fn) stoppers.set(id, fn); }
 
   function add(files){
     return files.map(f => {
@@ -14080,7 +14511,14 @@ const Uploads = (function(){
     const j = jobs.find(x => x.id === id);
     if(!j || j.state !== 'run') return;
     j.sent = Math.min(sent, j.size);
+    // Every byte is out; what remains is the host closing the file. Saying
+    // "100%" and sitting there is what made this look stuck.
+    if(j.sent >= j.size && j.size) j.tail = true;
     paint();
+  }
+  function rate(id, bps){
+    const j = jobs.find(x => x.id === id);
+    if(j) j.rate = bps;
   }
   function finish(id, state, err){
     const j = jobs.find(x => x.id === id);
@@ -14089,6 +14527,10 @@ const Uploads = (function(){
     if(state === 'done') j.sent = j.size;
     j.err = err || '';
     j.file = null;                 // let the File handle go as soon as it is done
+    // The work is over; holding its canceller would keep whatever it closed
+    // over — a controller, a connection, a whole batch's worth of them — alive
+    // for as long as the dock keeps its rows.
+    stoppers.delete(id);
     paint();
   }
   function begin(id){
@@ -14104,9 +14546,15 @@ const Uploads = (function(){
     if(paintTimer) return;
     paintTimer = setTimeout(() => { paintTimer = null; draw(); }, 80);
   }
+  // The dock belongs to the Files app. It rides above the Files modal so it is
+  // visible over the grid, which also means it would float over the home screen
+  // if it were ever left on — so its visibility is tied to Files being open.
+  function filesOpen(){
+    try{ return !!document.getElementById('filesModal')?.classList.contains('active'); }catch{ return false; }
+  }
   function draw(){
     const dock = $$('uploadDock'); if(!dock) return;
-    if(!jobs.length){ dock.classList.remove('on','open','err'); return; }
+    if(!jobs.length || !filesOpen()){ dock.classList.remove('on','open','err'); return; }
     dock.classList.toggle('on', !hidden);
     let total = 0, sent = 0, done = 0, failed = 0;
     for(const j of jobs){
@@ -14117,40 +14565,74 @@ const Uploads = (function(){
     }
     const pct = total ? Math.min(100, sent / total * 100) : 100;
     const left = active().length;
+    // Several files can be in flight at once, so the rate is their sum and
+    // "finishing" only claims the screen when nothing is still transferring.
+    const runners = jobs.filter(j => j.state === 'run');
+    const bps = runners.reduce((n, j) => n + (j.rate || 0), 0);
+    const tailing = runners.length && runners.every(j => j.tail);
     $$('upFill').style.width = pct.toFixed(1) + '%';
     dock.classList.toggle('err', !left && failed > 0);
+    const speed = bps ? ' · ' + formatFileSize(bps) + '/s' : '';
+    const W = words();
     $$('upText').textContent = left
-      ? `Uploading ${done + 1} of ${jobs.length} · ${formatFileSize(sent)} of ${formatFileSize(total)} · ${Math.round(pct)}%`
+      ? (tailing
+          ? (runners.length === 1 ? W.tailOne(_escapeText(runners[0].name))
+                                  : W.tailMany(runners.length))
+          : `${W.active} ${done + 1} of ${jobs.length} · ${formatFileSize(sent)} of ${formatFileSize(total)} · ${Math.round(pct)}%${speed}`)
       : failed
-        ? `${done} uploaded, ${failed} ${failed === 1 ? 'was' : 'were'} cancelled or failed`
-        : `Uploaded ${done} file${done === 1 ? '' : 's'}`;
-    $$('upPanelTitle').textContent = left ? `Uploading ${jobs.length - done - failed} of ${jobs.length}` : 'Uploads';
-    $$('upRows').innerHTML = jobs.map(j => {
-      const p = j.state === 'done' ? 100 : j.size ? Math.min(100, j.sent / j.size * 100) : 0;
-      const tag = j.state === 'done'   ? formatFileSize(j.size)
-                : j.state === 'cancel' ? 'Cancelled'
-                : j.state === 'fail'   ? (j.err || 'Failed')
-                : j.state === 'wait'   ? 'Waiting'
-                : `${formatFileSize(j.sent)} / ${formatFileSize(j.size)}`;
-      const cls = j.state === 'done' ? 'done' : (j.state === 'fail' || j.state === 'cancel') ? 'fail' : '';
-      return `<div class="up-row ${cls}">
-        <span class="up-n" title="${_escapeAttr(j.name)}">${_escapeText(j.name)}</span>
-        <div class="up-line"><i style="width:${p.toFixed(1)}%"></i></div>
-        <span class="up-s">${_escapeText(tag)}</span>
-      </div>`;
-    }).join('');
-    // Once nothing is moving the dock is history, not status — clear it.
+        ? `${done} ${done === 1 ? 'finished' : 'finished'}, ${failed} ${failed === 1 ? 'was' : 'were'} cancelled or failed`
+        : W.doneCount(done);
+    $$('upPanelTitle').textContent = left ? `${W.active} ${jobs.length - done - failed} of ${jobs.length}` : W.idle;
+    const dt = $$('upDoneText'); if(dt) dt.textContent = W.complete;
+    /* The per-file rows are only built when the panel is actually expanded.
+
+       Collapsed — which is how it sits for almost every upload — this was
+       rebuilding one row of markup per file, twelve times a second, for the
+       whole of a transfer nobody was looking at. On a batch of a few hundred
+       files that is the single largest source of garbage in the tab while an
+       upload runs in the background, and none of it was ever on screen. */
+    if(!dock.classList.contains('open')) rowsStale = true;
+    else {
+      rowsStale = false;
+      $$('upRows').innerHTML = jobs.map(j => {
+        const p = j.state === 'done' ? 100 : j.size ? Math.min(100, j.sent / j.size * 100) : 0;
+        const tag = j.state === 'done'   ? formatFileSize(j.size)
+                  : j.state === 'cancel' ? 'Cancelled'
+                  : j.state === 'fail'   ? (j.err || 'Failed')
+                  : j.state === 'wait'   ? 'Waiting'
+                  : j.tail               ? 'Finishing…'
+                  : `${formatFileSize(j.sent)} / ${formatFileSize(j.size)}`;
+        const cls = j.state === 'done' ? 'done' : (j.state === 'fail' || j.state === 'cancel') ? 'fail' : '';
+        return `<div class="up-row ${cls}">
+          <span class="up-n" title="${_escapeAttr(j.name)}">${_escapeText(j.name)}</span>
+          <div class="up-line"><i style="width:${p.toFixed(1)}%"></i></div>
+          <span class="up-s">${_escapeText(tag)}</span>
+        </div>`;
+      }).join('');
+    }
+    // Everything landed and nothing went wrong: say so once, in full, and get
+    // out of the way. Anything less than a clean sweep keeps the plain readout,
+    // because a green tick over a cancelled file would be a lie.
     if(!left){
       clearTimeout(clearTimer);
-      clearTimer = setTimeout(() => { if(!active().length){ jobs = []; cancelled = false; draw(); } }, 6000);
+      if(done && !failed && !celebrated){
+        celebrated = true;
+        dock.classList.remove('open');
+        dock.classList.add('done');
+        clearTimer = setTimeout(() => {
+          dock.classList.add('sink');
+          setTimeout(() => { jobs = []; cancelled = false; celebrated = false;
+                             dock.classList.remove('done','sink'); draw(); }, 420);
+        }, 1100);
+      } else {
+        clearTimer = setTimeout(() => { if(!active().length){ jobs = []; cancelled = false; celebrated = false; draw(); } }, 6000);
+      }
     }
   }
 
   async function confirmStop(n){
-    return askDelete(
-      n === 1 ? 'Cancel the upload in progress? The part already sent is discarded; files that finished stay on the drive.'
-              : `Cancel ${n} uploads? Anything half-sent is discarded; files that already finished stay on the drive.`,
-      'Cancel uploads');
+    const W = words();
+    return askDelete(n === 1 ? W.confirmOne : W.confirmMany(n), W.confirmTitle);
   }
   async function cancelAll(){
     const n = active().length;
@@ -14158,28 +14640,170 @@ const Uploads = (function(){
     if(!await confirmStop(n)) return;
     cancelled = true;
     for(const j of jobs){
-      if(j.state === 'wait') { j.state = 'cancel'; j.file = null; }
-      else if(j.state === 'run') try{ P2PDrives.abortUpload(j.id); }catch{}
+      if(j.state === 'wait'){ j.state = 'cancel'; j.file = null; stoppers.delete(j.id); continue; }
+      if(j.state !== 'run') continue;
+      /* Stop the work itself. The registered stopper is the only thing that
+         knows what "this job" actually is — an upload to abort, a download to
+         signal, a backup filed under a different id. The old fallback is kept
+         for a caller that registered nothing, but every caller now does. */
+      const stop = stoppers.get(j.id);
+      if(stop) try{ stop(); }catch(e){ console.warn('[cancel]', e); }
+      else try{ P2PDrives.abortUpload(j.id); }catch{}
     }
     paint();
   }
 
   return {
-    add, begin, progress, finish, cancelAll,
+    add, begin, progress, rate, finish, cancelAll, setMode, onCancel,
+    mode: () => mode,
     isCancelled: () => cancelled,
-    reset(){ jobs = []; cancelled = false; hidden = false; clearTimeout(clearTimer); draw(); },
+    reset(m){ jobs = []; cancelled = false; hidden = false; celebrated = false;
+             stoppers.clear();
+             clearTimeout(clearTimer);
+             const d = $$('uploadDock'); if(d) d.classList.remove('done','sink','err');
+             if(m) setMode(m);
+             draw(); },
     busy: () => active().length > 0,
-    expand(){ const d = $$('uploadDock'); if(d) d.classList.add('open'); },
+    // Expanding is the moment the skipped rows have to exist, so build them
+    // here rather than waiting for the next tick to notice.
+    expand(){ const d = $$('uploadDock'); if(d) d.classList.add('open'); if(rowsStale) draw(); },
     collapse(){ const d = $$('uploadDock'); if(d) d.classList.remove('open'); },
     hide(){ hidden = true; const d = $$('uploadDock'); if(d) d.classList.remove('on','open'); },
     show(){
       hidden = false;
-      if(!jobs.length){ showToast('No uploads to show'); return; }
+      if(!jobs.length){ showToast('Nothing is transferring'); return; }
       draw();
     },
     hasAny: () => jobs.length > 0
   };
 })();
+/* The dock was called `Uploads` when uploading was all it did. Everything that
+   still says so keeps working, and there is no live call site left using it —
+   it is here so a stale handler in a saved page, or anything added while this
+   change was in flight, does not throw. */
+const Uploads = Transfers;
+
+// ═══════════════════════════════════════════════════════
+//  COPYING BETWEEN DRIVES
+// ═══════════════════════════════════════════════════════
+// "Save to this device" pulls a selection off the mounted P2P drive into local
+// storage; "Back up" pushes the whole local drive out to one or more P2P
+// drives. Both walk the same shape, so both live here.
+
+// Every file id under a selection, folders expanded, with the path each one
+// should end up at relative to the destination root.
+function _flattenForCopy(tree, ids){
+  const out = [];
+  const walk = (id, prefix) => {
+    const n = tree[id];
+    if(!n) return;
+    if(n.type === 'folder'){
+      const dir = prefix.concat(n.name);
+      for(const c of (n.children || [])) walk(c, dir);
+    } else {
+      out.push({ id, name:n.name, size:n.size || 0, mime:n.mimeType, dir:prefix });
+    }
+  };
+  for(const id of ids) walk(id, []);
+  return out;
+}
+// Makes (or finds) the folder chain under `rootId` in `tree`, returning the id
+// of the deepest one. Matching by name means a second backup lands beside the
+// first instead of building a parallel tree.
+function _ensurePath(tree, rootId, dirs, stamp){
+  let at = rootId;
+  for(const name of dirs){
+    const kids = (tree[at].children || []).map(i => tree[i]).filter(Boolean);
+    let hit = kids.find(k => k.type === 'folder' && k.name === name);
+    if(!hit){
+      const id = 'folder_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+      hit = { id, name, type:'folder', parentId:at, children:[], dateCreated:new Date(stamp).toISOString() };
+      tree[id] = hit;
+      (tree[at].children = tree[at].children || []).push(id);
+    }
+    at = hit.id;
+  }
+  return at;
+}
+
+/* Pull the given nodes off the mounted P2P drive and write them into this
+   device's local storage. Folders keep their shape. */
+async function saveNodesToDevice(ids){
+  ids = (ids || []).filter(id => filesTree[id]);
+  if(!ids.length){ showToast('Nothing selected', 'warn'); return; }
+  if(!P2PDrives.isRemote()){ showToast('These files are already on this device'); return; }
+  if(!P2PDrives.isOnline()){ showToast(`Not connected to "${P2PDrives.activeLabel()}"`, 'error'); return; }
+
+  /* One batch owns the dock at a time.
+
+     Starting a save while an upload is running used to reset the dock out from
+     under it: the upload carried on, but its rows were gone and — because the
+     dock is also where cancellation lives — there was no longer any way to stop
+     it. Better to say so and let the first one finish. */
+  if(Transfers.busy()){ showToast('Something is still transferring — wait for it to finish', 'warn'); return; }
+
+  const items = _flattenForCopy(filesTree, ids);
+  if(!items.length){ showToast('Nothing to copy — that selection has no files', 'warn'); return; }
+  const total = items.reduce((n, f) => n + f.size, 0);
+  const lim = P2PDrives.localLimit();
+  if(lim && P2PDrives.localUsed() + total > lim){
+    showToast(`Not enough room on this device — ${formatFileSize(Math.max(0, lim - P2PDrives.localUsed()))} free, ${formatFileSize(total)} needed`, 'error');
+    return;
+  }
+  if(!await askConfirm(
+      `Copy ${items.length} file${items.length === 1 ? '' : 's'} (${formatFileSize(total)}) from "${P2PDrives.activeLabel()}" into this device's storage?`,
+      'Save to this device', 'Save')) return;
+
+  const stamp = Date.now();
+  const label = 'Saved from ' + P2PDrives.activeLabel();
+  // Nothing is being uploaded here: bytes are coming *off* the drive onto this
+  // machine. The dock says so, and shows the matching glyph.
+  Transfers.reset('save');
+  const jobs = Transfers.add(items.map(f => ({ name:f.name, size:f.size })));
+  let done = 0, failed = 0, cancelled = 0, lastError = '';
+
+  // Read from the drive first, then write locally — the local database is not
+  // the mounted one, so this cannot go through `db`.
+  const localTree = P2PDrives.localTree();
+  const rootFolder = _ensurePath(localTree, 'root', [label], stamp);
+
+  for(let i = 0; i < items.length; i++){
+    const f = items[i], job = jobs[i];
+    if(Transfers.isCancelled()){ Transfers.finish(job.id, 'cancel'); cancelled++; continue; }
+    Transfers.begin(job.id);
+    /* Cancel has to reach the file being read *now*, not just the ones still
+       queued. The controller is what the dock pulls; aborting it tells the host
+       to stop reading as well, so a cancelled save does not leave the drive
+       pushing the rest of a file into a promise nobody is waiting on. */
+    const ac = new AbortController();
+    Transfers.onCancel(job.id, () => ac.abort());
+    try{
+      const rec = await P2PDrives.getBlob(f.id, { signal: ac.signal,
+                                                  onProgress: got => Transfers.progress(job.id, got) });
+      if(Transfers.isCancelled()){ Transfers.finish(job.id, 'cancel'); cancelled++; continue; }
+      const parentId = _ensurePath(localTree, rootFolder, f.dir, stamp);
+      const newId = 'file_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+      await P2PDrives.localPut({ id:newId, name:f.name, type:f.mime || rec.type, size:rec.data.size, data:rec.data });
+      localTree[newId] = { id:newId, name:f.name, type:'file', mimeType:f.mime || rec.type,
+                           size:rec.data.size, parentId, dateCreated:new Date().toISOString() };
+      (localTree[parentId].children = localTree[parentId].children || []).push(newId);
+      Transfers.finish(job.id, 'done');
+      done++;
+    }catch(e){
+      const msg = (e && e.message) || 'Copy failed';
+      // A cancellation is not a failure, and reporting it as one over the top of
+      // the thing the user just asked for reads as if something went wrong.
+      if(ac.signal.aborted || /cancel/i.test(msg)){ cancelled++; Transfers.finish(job.id, 'cancel'); }
+      else { failed++; lastError = msg; Transfers.finish(job.id, 'fail', msg); }
+    }
+  }
+  // Whatever landed is on the device and must be recorded, cancelled or not.
+  P2PDrives.saveLocalTree(localTree);
+  if(!failed && !cancelled) showToast(`Saved ${done} file${done === 1 ? '' : 's'} to this device`);
+  else if(!done) showToast(cancelled && !failed ? 'Saving cancelled' : (lastError || 'Nothing was copied'),
+                           cancelled && !failed ? 'warn' : 'error');
+  else showToast(`Saved ${done} of ${items.length}${lastError ? ' — ' + lastError : ''}`, 'warn');
+}
 
 async function uploadFiles(files){
   files = [...files];
@@ -14194,21 +14818,69 @@ async function uploadFiles(files){
     showToast(`Not enough space on ${filesDriveName()} — ${formatFileSize(free)} free, ${formatFileSize(need)} needed`, 'error');
     return;
   }
+  /* Adding files to this device's own drive is not an upload — nothing leaves
+     the machine — so the dock says "Saving" and shows the save glyph. It is
+     only an upload when the mounted drive is somebody else's. */
+  let toRemote = false; try{ toRemote = P2PDrives.isRemote(); }catch{}
+  const dockMode = toRemote ? 'upload' : 'save';
   // A batch started while an earlier one is still finishing joins the same dock
   // rather than resetting it out from under the rows already on screen.
-  if(!Uploads.busy()) Uploads.reset();
-  const jobs = Uploads.add(files);
+  if(!Transfers.busy()) Transfers.reset(dockMode);
+  else Transfers.setMode(dockMode);
+  const jobs = Transfers.add(files);
   const parentId = currentFolderId;      // where this batch lands, even if the user navigates away
   let failed=0, done=0; let lastError='';
 
-  for(const job of jobs){
-    if(Uploads.isCancelled()){ Uploads.finish(job.id, 'cancel'); failed++; continue; }
+  /* Make sure the host knows the destination folder before any bytes move.
+     Tree pushes are debounced, so a folder created moments ago may not have
+     reached the host yet — and a host that has never heard of the parent has
+     nowhere to put the file but the drive root, which on a folder-backed drive
+     costs a full copy of every uploaded file at the end. Cheap insurance: one
+     round trip for the whole batch. */
+  try{
+    if(P2PDrives.isRemote() && P2PDrives.isOnline() && filesTree[parentId] && parentId !== 'root'){
+      await P2PDrives.pushTreeNow(filesTree);
+    }
+  }catch(e){ console.warn('[upload tree presync]', e); }
+
+  /* Small files run several at a time.
+
+     Each one costs three round trips regardless of its size — reserve, send,
+     confirm — so a hundred 20 KB files spent almost all of their time waiting
+     rather than transferring. Big files stay one at a time: they are already
+     saturating the link, and running them together would only make each finish
+     later while costing more memory on both ends. */
+  const BIG = 8 * 1024 * 1024;
+  const lanes = files.every(f => f.size < BIG) ? Math.min(4, jobs.length) : 1;
+
+  /* Repainting the whole grid after every file was most of the cost of a large
+     batch of small ones. Coalesce it — and coalesce the save with it.
+
+     Saving is a full JSON stringify of the tree (or, on a P2P drive, a push of
+     it), so doing it per file is quadratic in the size of the batch: a hundred
+     files into a tree of a few thousand nodes spends more time serialising the
+     tree than moving the bytes, and every one of those strings is garbage. It
+     still happens *during* the batch rather than only at the end, because a
+     batch that is cancelled half way through must still have its finished files
+     recorded — a third of a second of granularity is enough for that. */
+  let repaint = null;
+  const touch = () => {
+    if(repaint) return;
+    repaint = setTimeout(() => { repaint = null; saveFilesTree(); renderFilesGrid(); }, 300);
+  };
+
+  const runOne = async job => {
+    if(Transfers.isCancelled()){ Transfers.finish(job.id, 'cancel'); failed++; return; }
     const file = job.file, id = job.id;
     const meta={id,name:file.name,type:'file',mimeType:file.type||getFileMimeGuess(file.name),size:file.size,parentId,dateCreated:new Date().toISOString()};
     filesTree[id]=meta;
     const parent = filesTree[parentId] || filesTree.root;
     (parent.children=parent.children||[]).push(id);
-    Uploads.begin(id);
+    Transfers.begin(id);
+    // How to stop this one. On a P2P drive that is the upload in flight; on this
+    // device the write is a single IndexedDB transaction that cannot be
+    // interrupted, so there is nothing to pull and it is undone below instead.
+    if(toRemote) Transfers.onCancel(id, () => { try{ P2PDrives.abortUpload(id); }catch{} });
     // Store the bytes on whichever drive is mounted — local IndexedDB, or the
     // P2P host across the data channel.
     const tx=db.transaction(['files'],'readwrite');
@@ -14217,14 +14889,14 @@ async function uploadFiles(files){
     if(tx.error){
       // The bytes never landed, so the tree must not claim otherwise. A file the
       // user cancelled is reported as cancelled, not as a failure.
-      const msg = tx.error.message || 'Upload failed';
+      const msg = tx.error.message || (toRemote ? 'Upload failed' : 'Could not be saved');
       const wasCancel = /cancel/i.test(msg);
       failed++;
       if(!wasCancel) lastError = msg;
-      Uploads.finish(id, wasCancel ? 'cancel' : 'fail', wasCancel ? '' : msg);
+      Transfers.finish(id, wasCancel ? 'cancel' : 'fail', wasCancel ? '' : msg);
       delete filesTree[id];
       parent.children=(parent.children||[]).filter(c=>c!==id);
-    } else if(Uploads.isCancelled()){
+    } else if(Transfers.isCancelled()){
       // A local write cannot be stopped part-way — IndexedDB either stores the
       // record or it does not. So the cancelled one is undone after the fact,
       // which lands in the same place: it is not on the drive.
@@ -14232,20 +14904,32 @@ async function uploadFiles(files){
       delete filesTree[id];
       parent.children=(parent.children||[]).filter(c=>c!==id);
       failed++;
-      Uploads.finish(id, 'cancel');
+      Transfers.finish(id, 'cancel');
     } else {
       done++;
       // Progress on a local drive is per file: IndexedDB gives nothing finer.
-      Uploads.progress(id, file.size);
-      Uploads.finish(id, 'done');
+      Transfers.progress(id, file.size);
+      Transfers.finish(id, 'done');
     }
     // Save as we go. Half a batch that then gets cancelled should still leave
     // the finished files recorded — they are on the drive either way.
-    saveFilesTree(); renderFilesGrid();
-  }
-  if(!failed) showToast(jobs.length > 1 ? `Uploaded ${done} files` : 'Upload complete!');
-  else if(!done) showToast(lastError || 'Uploads cancelled', lastError ? 'error' : 'warn');
-  else showToast(`${done} of ${jobs.length} uploaded${lastError ? ' — ' + lastError : ''}`, lastError ? 'error' : 'warn');
+    touch();
+  };
+
+  let next = 0;
+  await Promise.all(Array.from({ length: lanes }, async () => {
+    while(next < jobs.length) await runOne(jobs[next++]);
+  }));
+  clearTimeout(repaint);
+  saveFilesTree(); renderFilesGrid();
+
+  // The same three outcomes, said in whichever direction this batch was going.
+  const past = toRemote ? 'uploaded' : 'saved to this device';
+  const oneDone = toRemote ? 'Upload complete!' : 'Saved to this device';
+  const manyDone = toRemote ? `Uploaded ${done} files` : `Saved ${done} files to this device`;
+  if(!failed) showToast(jobs.length > 1 ? manyDone : oneDone);
+  else if(!done) showToast(lastError || 'Cancelled', lastError ? 'error' : 'warn');
+  else showToast(`${done} of ${jobs.length} ${past}${lastError ? ' — ' + lastError : ''}`, lastError ? 'error' : 'warn');
 }
 // ═══════════════════════════════════════════════════════
 //  FOLDER COLOURS
@@ -14344,6 +15028,11 @@ function showFileCtxMenu(e,node){
     targetIds.length===1?{label:'Rename',action:()=>renameFileNode(node)}:null,
     targetIds.length===1 && node.type!=='folder'?{label:'Download',action:()=>downloadFileNode(node)}:null,
     targetIds.length>1?{label:`Download ${targetIds.length} items`,action:()=>downloadSelectedFiles()}:null,
+    // Copying to local storage only means anything when the files are not
+    // already there. Folders are included — they are walked on the way.
+    (()=>{ try{ if(!P2PDrives.isRemote()) return null; }catch{ return null; }
+           return {label: targetIds.length>1 ? `Save ${targetIds.length} items to this device` : (node.type==='folder' ? 'Save this folder to this device' : 'Save to this device'),
+                   action:()=>saveNodesToDevice(targetIds)}; })(),
     {sep:true},
     {label:targetIds.length>1?`Move ${targetIds.length} items…`:'Move to…',action:()=>{ selectedFileIds=new Set(targetIds); showFilesCopyDialog('move'); }},
     {label:targetIds.length>1?`Copy ${targetIds.length} items…`:'Copy to…',action:()=>{ selectedFileIds=new Set(targetIds); showFilesCopyDialog('copy'); }},
@@ -14419,6 +15108,13 @@ function updateFilesActionButtons(){
   show('filesDelBtn', anySel);
   show('filesColorBtn', anyFolderSel);
   show('filesPropsBtn', anySel);
+  // "Save a copy on this device" only means anything on a P2P drive. It takes a
+  // place on the bar where there is room for one, and lives in the ⋮ overflow
+  // where there is not — which on a phone is most of the time.
+  let onRemote = false;
+  try{ onRemote = P2PDrives.isRemote(); }catch{}
+  const barHasRoom = window.innerWidth >= 620;
+  show('filesSaveLocalBtn', anySel && onRemote && barHasRoom);
   // A single click-selected item counts too — there was previously no way to
   // clear one selected file without entering and leaving select mode.
   show('filesCancelBtn', inSelect || anySel);
@@ -14429,6 +15125,8 @@ function updateFilesActionButtons(){
     moreWrap.classList.toggle('has-sel', anySel);
     const colorItem = document.getElementById('filesMoreColorItem');
     if(colorItem) colorItem.classList.toggle('hidden', !anyFolderSel);
+    const sl=document.getElementById('filesMoreSaveLocal');
+    if(sl) sl.classList.toggle('hidden', !(anySel && onRemote && !barHasRoom));
     const ids=[...selectedFileIds];
     const sm=document.getElementById('filesMoreSendMedia');
     if(sm) sm.classList.toggle('hidden', !filesCanSendTo(ids,'media'));
@@ -14486,13 +15184,22 @@ async function deleteSelectedFiles(){
   filesSelectMode = false;
   saveFilesTree(); renderFilesGrid(); showToast('Deleted');
 }
-function downloadSelectedFiles(){
+async function downloadSelectedFiles(){
   if(!selectedFileIds.size) return;
-  [...selectedFileIds].forEach(id=>{
-    const n=filesTree[id]; if(!n||n.type==='folder') return;
-    const tx=db.transaction(['files'],'readonly');
-    tx.objectStore('files').get(id).onsuccess=e=>{ if(e.target.result?.data){ const u=URL.createObjectURL(e.target.result.data); const a=document.createElement('a'); a.href=u; a.download=n.name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),5000); } };
-  });
+  const picked = [...selectedFileIds].map(id => filesTree[id]).filter(Boolean);
+  const files = picked.filter(n => n.type !== 'folder');
+  const folders = picked.length - files.length;
+  if(!files.length){
+    showToast(folders ? 'Folders cannot be downloaded one by one — use “Save to this device”' : 'Nothing to download', 'warn');
+    return;
+  }
+  // One at a time. Firing every download at once against a P2P drive opened a
+  // separate whole-file transfer for each, all competing on the same channel.
+  for(const n of files){
+    await downloadFileNode(n);
+    await new Promise(r => setTimeout(r, 250));
+  }
+  if(folders) showToast(`${files.length} downloaded — ${folders} folder${folders>1?'s were':' was'} skipped`, 'warn');
 }
 
 function moveNodesTo(ids, targetFolderId){
@@ -14645,7 +15352,22 @@ async function deleteFileNode(node){
   _dropNodeAndBlobs(node.id);
   saveFilesTree(); selectedFileIds.delete(node.id); renderFilesGrid(); showToast('Deleted');
 }
-function downloadFileNode(node){
+// Saving a file to disk. On a P2P drive this goes through the stream worker, so
+// the browser writes it out as it arrives — downloading a 4 GB file no longer
+// means holding 4 GB in memory first just to make a blob: URL out of it.
+async function downloadFileNode(node){
+  if(node.type === 'folder'){ showToast('Use “Save to this device” for folders','warn'); return; }
+  try{
+    if(P2PDrives.isRemote() && P2PDrives.isOnline()){
+      // `whole`: a save must carry every byte in one response. See urlFor.
+      const url = await P2PStream.urlFor(node, { whole:true });
+      if(url){
+        const a=document.createElement('a'); a.href=url; a.download=node.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        return;
+      }
+    }
+  }catch(e){ console.warn('[download stream]', e); }
   const tx=db.transaction(['files'],'readonly');
   tx.objectStore('files').get(node.id).onsuccess=e=>{ if(e.target.result?.data){const u=URL.createObjectURL(e.target.result.data);const a=document.createElement('a');a.href=u;a.download=node.name;a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);}else showToast('File not found in DB','error'); };
 }
@@ -14666,25 +15388,119 @@ let _viewerTextArea = null;
 let _viewerDirty = false;
 
 // ═══════════════════════════════════════════════════════
-//  P2P STREAM URLS — the page half of sw.js
+//  STREAM URLS — the page half of sw.js
 // ═══════════════════════════════════════════════════════
-// A file on a P2P drive gets a same-origin URL that the stream worker answers
-// with a proper ranged HTTP response. That is what lets <video> seek, and what
-// keeps a two-hour film off the heap: the bytes go data channel → port →
-// response body, and nothing holds more than one chunk at a time.
+/* A file gets a same-origin URL that the stream worker answers with a proper
+   ranged HTTP response. That is what lets <video> seek, and what keeps a
+   two-hour film off the heap: the bytes go source → port → response body, and
+   nothing holds more than one chunk at a time.
+
+   Both kinds of drive are served here. A P2P drive reads over the data channel;
+   this device's own drive reads slices off the stored Blob. The player cannot
+   tell the difference, and neither path ever materialises the file — which is
+   the whole reason local media goes through here too rather than through a
+   blob: URL that some engines back with resident memory.
+
+   ── The span, and why a request gets less than it asked for ────────────────
+
+   A media element opens with `Range: bytes=0-`. Answering that literally hands
+   the browser the entire file as one response, and its media loader reads ahead
+   of the player as fast as the source delivers — so a 900 MB film became 900 MB
+   of resident memory, playback stuttered, and seeking made the picture jump as
+   the browser evicted and re-fetched ranges out of a stream that was still busy
+   with the rest of the file.
+
+   So a ranged request is answered with at most STREAM_SPAN bytes, as an honest
+   206 that says which bytes they are. The player asks again when it wants more.
+   The cost of watching a file is then fixed regardless of its length, which is
+   what makes this work on a set-top box. */
+const STREAM_SPAN = 6 * 1024 * 1024;
 const P2PStream = (function(){
   const ROUTE = '__p2pstream';
-  const tokens = new Map();     // token -> { id, name, mime, size }
+  // token -> { id, name, mime, size, remote, total }
+  //   size  — what the tree claims, used only until the source says otherwise
+  //   total — what the source actually reported, once it has
+  const tokens = new Map();
   let ready = null;             // registration promise, or null when unavailable
 
   function supported(){
     return !!(navigator.serviceWorker && window.isSecureContext && location.protocol !== 'file:');
   }
+
+  /* ── where the worker script lives ────────────────────────────────────────
+
+     It used to be exactly one path — `sw.js` beside this page — and if the file
+     was not there, streaming silently stopped working with nothing anywhere
+     saying why. It is now looked for in several places, and what went wrong is
+     reported once, in words.
+
+     Every candidate is resolved against this page, so every one of them is
+     same-origin by construction. That is not a convention, it is the rule: a
+     service worker script MUST be same-origin with the document registering it,
+     and no header, `blob:` URL or `data:` URL changes that. Which is also why
+     `googoke-player-swd` on npm cannot be a CDN link — npm distributes the
+     file, your own origin still serves it (`npx googoke-player-swd .`).
+
+     A worker's scope is also the directory it is served from, so the
+     node_modules candidate only controls this page if the server sends
+     `Service-Worker-Allowed: /` with it. Where it cannot, the copy in the web
+     root is the one that works — which is why that is tried first. */
+  const SW_PACKAGE = 'googoke-player-swd';
+  const SW_CANDIDATES = [
+    'sw.js',
+    'node_modules/' + SW_PACKAGE + '/sw.js',
+    'vendor/' + SW_PACKAGE + '/sw.js'
+  ];
+  let swUrl = '', swProblem = '';
+  function swSearchList(){
+    const raw = [];
+    // An explicit override wins: a global, or a meta tag for a page that cannot
+    // run script before this one.
+    try{ if(window.GOOGOKE_SW_URL) raw.push(String(window.GOOGOKE_SW_URL)); }catch{}
+    try{
+      const m = document.querySelector('meta[name="googoke-sw"]');
+      if(m && m.getAttribute('content')) raw.push(m.getAttribute('content'));
+    }catch{}
+    raw.push(...SW_CANDIDATES);
+    const seen = new Set(), out = [], foreign = [];
+    for(const c of raw){
+      let u; try{ u = new URL(c, location.href); }catch{ continue; }
+      if(u.origin !== location.origin){ foreign.push(u.href); continue; }
+      if(seen.has(u.href)) continue;
+      seen.add(u.href); out.push(u.href);
+    }
+    return { urls: out, foreign };
+  }
+  /* Is this really a worker, or is it the app's own HTML?
+
+     A dev server or SPA host that answers every unknown path with index.html
+     would otherwise hand this page's own markup to register(), which fails in a
+     way that reads like the worker is broken rather than simply absent. One
+     request per candidate, and only a JavaScript content type counts. */
+  async function servesScript(url){
+    try{
+      const r = await fetch(url, { cache:'no-store', credentials:'same-origin' });
+      if(!r.ok) return false;
+      return /javascript|ecmascript/i.test(r.headers.get('content-type') || '');
+    }catch{ return false; }
+  }
   function register(){
     if(ready) return ready;
-    if(!supported()) return (ready = Promise.resolve(false));
-    ready = navigator.serviceWorker.register(new URL('sw.js', location.href), { scope: './' })
-      .then(async reg => {
+    if(!supported()){
+      swProblem = 'Streaming needs the page served over HTTPS (or localhost); it is unavailable from a file:// copy.';
+      return (ready = Promise.resolve(false));
+    }
+    ready = (async () => {
+      const { urls, foreign } = swSearchList();
+      const tried = [];
+      let lastErr = null;
+      for(const url of urls){
+        tried.push(url);
+        if(!await servesScript(url)) continue;
+        try{
+          await navigator.serviceWorker.register(url, { scope: './' });
+          swUrl = url;
+        }catch(e){ lastErr = e; continue; }
         // A page loaded before the worker existed is not controlled by it yet,
         // and an uncontrolled page's fetches never reach it.
         if(!navigator.serviceWorker.controller){
@@ -14694,37 +15510,81 @@ const P2PStream = (function(){
             setTimeout(done, 4000);
           });
         }
-        void reg;
-        return !!navigator.serviceWorker.controller;
-      })
-      .catch(e => { console.warn('[stream worker]', e); return false; });
+        if(navigator.serviceWorker.controller) return true;
+        swProblem = 'The stream worker registered but has not taken control of this page yet — reload to finish enabling it.';
+        return false;
+      }
+      swProblem = lastErr && /scope/i.test(String(lastErr.message || ''))
+        ? `The stream worker was found but its scope does not cover this page. Serve it from the site root, or send "Service-Worker-Allowed: /" with it.`
+        : `The stream worker (sw.js) was not found. Looked in: ${tried.map(u => new URL(u).pathname).join(', ')}. Install it with "npm i ${SW_PACKAGE} && npx ${SW_PACKAGE} ." in the folder this page is served from.`;
+      if(foreign.length) swProblem += ` (${foreign[0]} was skipped: a service worker must come from this page's own origin.)`;
+      console.warn('[stream worker]', swProblem, lastErr || '');
+      return false;
+    })().catch(e => {
+      swProblem = 'The stream worker could not start: ' + ((e && e.message) || e);
+      console.warn('[stream worker]', e);
+      return false;
+    });
     return ready;
   }
+  // What to tell the user when a video will not stream. Empty until something
+  // has actually gone wrong.
+  function problem(){ return swProblem; }
+  function scriptUrl(){ return swUrl; }
   // Null when streaming is not available here — callers fall back to fetching
   // the whole file, which is what used to happen every time.
-  async function urlFor(node){
+  /* `opts.whole` marks a token the span cap must not apply to.
+
+     Capping is right for a player, which comes back for the next span. It is
+     wrong for a download: the browser writes whatever one response carries and
+     calls the file saved, so a capped span would produce a truncated file that
+     looks complete. Saving asks for the lot and gets the lot. */
+  async function urlFor(node, opts){
     if(!supported()) return null;
     if(!await register()) return null;
+    let remote = false;
+    try{ remote = P2PDrives.isRemote(); }catch{}
     const token = 'st_' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
     tokens.set(token, { id:node.id, name:node.name,
                         mime:node.mimeType || getFileMimeGuess(node.name),
-                        size:Number(node.size) || 0 });
+                        size:Number(node.size) || 0, remote, total:0,
+                        whole: !!(opts && opts.whole) });
     // Tokens are cheap but not free; a viewer session only ever needs a few.
     if(tokens.size > 24) for(const k of [...tokens.keys()].slice(0, tokens.size - 24)) tokens.delete(k);
     return new URL(ROUTE + '?t=' + encodeURIComponent(token), location.href).toString();
   }
   function release(token){ tokens.delete(token); }
+  // A lock, or a drive switch, must leave nothing behind that could still be
+  // fetched: every live token is the right to read a file.
+  function releaseAll(){ tokens.clear(); }
 
-  // Range: bytes=start-end   (either side may be absent)
+  /* Range: bytes=start-end   (either side may be absent).
+
+     `total` may be 0 when nothing has told us the length yet; an open-ended
+     range is still meaningful then, a suffix range is not.
+
+     Three outcomes, and the third one matters. `null` means "there was no
+     usable range here, serve from the beginning". `{bad:true}` means the range
+     was perfectly well-formed and asks for bytes this file does not have, which
+     is a 416 and emphatically not a silent rewind to zero — a player that gets
+     the start of the file where it asked for the end has no way to know, and
+     plays the wrong thing. */
   function parseRange(h, total){
     const m = /^bytes=(\d*)-(\d*)$/.exec(String(h || '').trim());
     if(!m) return null;
     let start = m[1] === '' ? null : parseInt(m[1], 10);
     let end   = m[2] === '' ? null : parseInt(m[2], 10);
     if(start === null && end === null) return null;
-    if(start === null){ start = Math.max(0, total - end); end = total - 1; }      // suffix range
-    else if(end === null || end >= total) end = total - 1;
-    if(!(start >= 0) || start > end || start >= total) return null;
+    if(start === null){                                        // suffix range
+      if(!total) return null;
+      start = Math.max(0, total - end); end = total - 1;
+    } else {
+      // Only a length we actually know can prove a start is out of range.
+      if(total && start >= total) return { bad:true };
+      if(end === null || (total && end >= total)) end = total ? total - 1 : null;
+    }
+    if(!(start >= 0)) return null;
+    if(end !== null && start > end) return { bad:true };
     return { start, end };
   }
 
@@ -14732,45 +15592,88 @@ const P2PStream = (function(){
     const port = ev.ports && ev.ports[0];
     if(!port) return;
     const rec = tokens.get(ev.data.token);
-    const fail = (status, msg) => { try{ port.postMessage({ type:'head', ok:false, status, msg }); }catch{} };
+    const fail = (status, msg, total) => { try{ port.postMessage({ type:'head', ok:false, status, msg, total }); }catch{} };
     if(!rec) return fail(404, 'That stream is no longer available.');
-    let conn;
-    try{
-      if(!P2PDrives.isRemote() || !P2PDrives.isOnline()) return fail(503, 'The drive is not connected.');
-      conn = true;
-    }catch{ return fail(503, 'The drive is not connected.'); }
-    void conn;
 
-    const total = rec.size;
-    const r = parseRange(ev.data.range, total);
-    const start = r ? r.start : 0;
-    const end   = r ? r.end   : Math.max(0, total - 1);
-    const length = total ? (end - start + 1) : 0;
-
-    let stream = null, closed = false;
+    let stream = null, closed = false, headSent = false;
     const stop = () => { closed = true; if(stream) try{ stream.cancel(); }catch{} stream = null; };
-    port.onmessage = e => { if(e.data && e.data.type === 'cancel') stop(); };
+    // The worker's queue is full / has room again — pass it straight through to
+    // the source so it stops pushing rather than filling a queue nobody is
+    // draining. Registered before anything can arrive on it.
+    port.onmessage = e => {
+      const d = e.data || {};
+      if(d.type === 'cancel') return stop();
+      if(d.type === 'hold' && stream) try{ stream.hold(); }catch{}
+      if(d.type === 'go'   && stream) try{ stream.resume(); }catch{}
+    };
 
-    port.postMessage({ type:'head', ok:true, mime:rec.mime, name:rec.name,
-                       partial: !!r, start, end, total, length });
-    if(!length){ try{ port.postMessage({ type:'end' }); }catch{} return; }
+    const hadRange = !!ev.data.range;
+    // Best guess at the length, only to work out where to start reading. Every
+    // number that reaches the response headers comes from the source itself.
+    const guess = rec.total || rec.size || 0;
+    const r = parseRange(ev.data.range, guess);
+    // Asked for bytes past the end of a file whose length we already know.
+    // Answering it needs no round trip, and answering it with byte zero would
+    // be a lie the player cannot detect.
+    if(r && r.bad) return fail(416, 'Range not satisfiable', guess);
+    const start = r ? r.start : 0;
+    let span = 0;                                     // 0 = to the end of the file
+    if(r && r.end !== null) span = r.end - start + 1;
+    else if(guess) span = Math.max(0, guess - start);
+    if(hadRange && !rec.whole && (!span || span > STREAM_SPAN)) span = STREAM_SPAN;
+
+    /* The head is written from what the source reports, never from the tree.
+
+       A tree that disagrees with the drive by even one byte — a stale size
+       after an upload, a file replaced elsewhere — produces a Content-Length
+       the body cannot satisfy, and the only symptom the user sees is a video
+       that jumps. One extra message removes the whole class of it. */
+    const onMeta = meta => {
+      if(closed || headSent) return;
+      const total  = Number(meta && meta.total) || 0;
+      const off    = Number(meta && meta.off) || 0;
+      const length = Number(meta && meta.size) || 0;
+      rec.total = total; rec.size = total;
+      if(hadRange && total && off >= total){
+        headSent = true; stop();
+        return fail(416, 'Range not satisfiable', total);
+      }
+      headSent = true;
+      const partial = hadRange && total > 0 && length > 0;
+      port.postMessage({ type:'head', ok:true, mime:(meta && meta.mime) || rec.mime, name:rec.name,
+                         partial, start:off, end:off + length - 1, total, length });
+      if(!length){ try{ port.postMessage({ type:'end' }); }catch{} stop(); }
+    };
+    const opts = {
+      off: start,
+      len: span,
+      onMeta,
+      onChunk: buf => {
+        if(closed) return;
+        // Transferred, not copied: the ArrayBuffer moves to the worker and this
+        // side stops owning it, which is the whole point.
+        try{ port.postMessage({ type:'chunk', buf }, [buf]); }
+        catch(err){ console.warn('[stream post]', err); stop(); }
+      },
+      onEnd: () => { if(!closed && headSent) try{ port.postMessage({ type:'end' }); }catch{} },
+      onError: err => {
+        const msg = (err && err.message) || 'stream failed';
+        if(closed) return;
+        if(!headSent){ headSent = true; return fail(502, msg); }
+        try{ port.postMessage({ type:'error', msg }); }catch{}
+      }
+    };
 
     try{
-      stream = P2PDrives.getStream(rec.id, {
-        off: start,
-        len: length,
-        onChunk: buf => {
-          if(closed) return;
-          // Transferred, not copied: the ArrayBuffer moves to the worker and
-          // this side stops owning it, which is the whole point.
-          try{ port.postMessage({ type:'chunk', buf }, [buf]); }
-          catch(err){ console.warn('[stream post]', err); stop(); }
-        },
-        onEnd: () => { if(!closed) try{ port.postMessage({ type:'end' }); }catch{} },
-        onError: err => { if(!closed) try{ port.postMessage({ type:'error', msg:(err && err.message) || 'stream failed' }); }catch{} }
-      });
+      if(rec.remote){
+        if(!P2PDrives.isOnline()) return fail(503, 'The drive is not connected.');
+        stream = P2PDrives.getStream(rec.id, opts);
+      } else {
+        stream = P2PDrives.localStream(rec.id, opts);
+      }
+      if(closed) stop();          // cancelled while we were setting up
     }catch(err){
-      try{ port.postMessage({ type:'error', msg:(err && err.message) || 'The drive is not connected.' }); }catch{}
+      if(!headSent){ headSent = true; fail(502, (err && err.message) || 'The drive could not read that file.'); }
     }
   }
 
@@ -14783,7 +15686,7 @@ const P2PStream = (function(){
     addEventListener('load', () => { register(); }, { once:true });
   }
 
-  return { urlFor, release, register, supported };
+  return { urlFor, release, releaseAll, register, supported, problem, scriptUrl };
 })();
 
 // How much of a text file the viewer will actually put on screen. Past a few
@@ -14796,6 +15699,27 @@ function _viewerNoteTruncation(text, fullSize){
   return text + `\n\n… showing the first ${formatFileSize(VIEWER_TEXT_MAX)} of ${formatFileSize(fullSize)}. Download the file to read all of it.`;
 }
 
+/* Which types are worth streaming rather than handing over as one blob.
+
+   Video and audio are the whole point: the player wants ranges, and a film is
+   the one thing whose size can exceed what the machine has. PDF viewers range-
+   read too. Images are left alone on this device — a decoder wants the file in
+   one piece anyway, so routing a JPEG through a service worker buys nothing —
+   but on a P2P drive it still beats pulling the bytes twice. */
+function _streamableMime(mime, remote){
+  if(!mime) return false;
+  if(/^(video|audio)\//.test(mime)) return true;
+  if(mime === 'application/pdf') return true;
+  return !!remote && mime.startsWith('image/');
+}
+// Is the file worth a stream URL right now? Both the setting and the worker
+// have to agree, and a file with no length has nothing to range over.
+function _shouldStream(node, remote){
+  try{ if(!P2PDrives.streaming()) return false; }catch{ return false; }
+  if(!P2PStream.supported()) return false;
+  return _streamableMime(node.mimeType || getFileMimeGuess(node.name), remote);
+}
+
 function openFileViewer(node){
   const _tok=_newViewerToken();
   // On a P2P drive, ask the host for only what this file type actually needs:
@@ -14805,6 +15729,30 @@ function openFileViewer(node){
   try{
     if(P2PDrives.isRemote() && P2PDrives.isOnline()){ _openRemoteFileViewer(node, _tok); return; }
   }catch{}
+  /* This device's own drive streams too.
+
+     A blob: URL over a stored file looks free, and on a desktop browser it very
+     nearly is — but the engines that back one with resident memory are exactly
+     the small ones (a TV box, a phone under pressure), and that is where a film
+     has to work. Going through the worker makes the cost the same everywhere:
+     one span in flight, whatever the file. */
+  // Only genuinely local files take this path. A P2P drive that is mounted but
+  // not connected falls through to the ordinary read, which fails with the
+  // host's own reason — a stream URL would fail as a broken player instead,
+  // saying nothing about why.
+  let _remote = false; try{ _remote = P2PDrives.isRemote(); }catch{}
+  if(!_remote && _shouldStream(node, false)){
+    P2PStream.urlFor(node).then(url => {
+      if(!_viewerTokenValid(_tok)) return;
+      if(url){ _renderViewerForBlob(node, new Blob([], { type:node.mimeType || getFileMimeGuess(node.name) }), _tok, node.size || 0, url); return; }
+      _openLocalFileViewerWhole(node, _tok);
+    }).catch(e => { console.warn('[local stream url]', e); _openLocalFileViewerWhole(node, _tok); });
+    return;
+  }
+  _openLocalFileViewerWhole(node, _tok);
+}
+// The original path: pull the record and hand the viewer the Blob.
+function _openLocalFileViewerWhole(node, _tok){
   const tx=db.transaction(['files'],'readonly');
   tx.objectStore('files').get(node.id).onsuccess=e=>{
     if(!_viewerTokenValid(_tok)) return;
@@ -14830,8 +15778,10 @@ function _renderViewerForBlob(node, blob, _tok, fullSize, srcUrl){
       fr.readAsText(blob);
       return;
     }
-    // A stream URL when the worker is serving this file, a blob: URL otherwise.
-    const url = srcUrl || URL.createObjectURL(blob);
+    /* A stream URL when the worker is serving this file, a blob: URL otherwise.
+       Either way the viewer takes ownership: the blob one gets revoked when the
+       viewer moves on, and the stream one carries no blob to hold. */
+    const url = _viewerSetSource(srcUrl || URL.createObjectURL(blob));
     const v=document.getElementById('viewerModal'),vc=document.getElementById('viewerContent');
     vc.innerHTML='';
     _viewerCurrentNode=node; _viewerCurrentMode=null; _viewerTextArea=null; _viewerDirty=false;
@@ -14844,11 +15794,14 @@ function _renderViewerForBlob(node, blob, _tok, fullSize, srcUrl){
     _viewerTypeActions = [];
     const mime=node.mimeType||getFileMimeGuess(node.name);
     if(mime.startsWith('image')){
-      const img=document.createElement('img');img.id='viewerImageEl';img.src=url;img.style.cssText='max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;transition:transform .18s';vc.appendChild(img);
+      const img=document.createElement('img');img.id='viewerImageEl';img.src=url;img.style.cssText='max-width:100%;max-height:100%;object-fit:contain;border-radius:10px';vc.appendChild(img);
       _viewerImageState={rot:0,zoom:1};
+      attachViewerZoom(img);
       _viewerTypeActions = _imageTypeActions();
     } else if(mime.startsWith('video')){
       const vid=document.createElement('video');vid.id='viewerVideoEl';vid.controls=true;vid.autoplay=true;vid.playsInline=true;vid.src=url;vid.style.cssText='max-width:100%;max-height:100%;border-radius:10px';vc.appendChild(vid);
+      _viewerImageState={rot:0,zoom:1};
+      attachViewerZoom(vid);
       _viewerTypeActions = _mediaTypeActions('viewerVideoEl', true);
     } else if(mime.startsWith('audio')){
       const au=document.createElement('audio');au.id='viewerAudioEl';au.controls=true;au.autoplay=true;au.src=url;au.style.cssText='width:80vw;max-width:600px;border-radius:10px';vc.appendChild(au);
@@ -14916,7 +15869,7 @@ async function _openRemoteFileViewer(node, tok){
   // Types the browser renders straight from a URL get one that streams: the
   // player fetches the ranges it wants, seeking works, and no copy of the file
   // is ever assembled on this side.
-  if(/^(image|video|audio)\//.test(mime) || mime === 'application/pdf'){
+  if(_shouldStream(node, true)){
     try{
       const url = await P2PStream.urlFor(node);
       if(url && _viewerTokenValid(tok)){
@@ -14924,19 +15877,53 @@ async function _openRemoteFileViewer(node, tok){
         return;
       }
     }catch(e){ console.warn('[stream url]', e); }
-    // No worker (opened from file://, or registration refused) — fall through
-    // to fetching the whole thing, which is what always used to happen.
+    /* Falling through here means pulling the whole file across before anything
+       plays, which for a film is both the slow answer and the one that can take
+       the tab down. Say so rather than doing it silently, because the two
+       reasons it happens — streaming turned off, or no service worker — are
+       both things the user can act on. */
+    if(/^(video|audio)\//.test(mime)){
+      // Say which of the reasons it is. "Streaming is off" when the worker is
+      // simply missing sends the user to a setting that is already correct.
+      const why = P2PStream.problem();
+      try{ showToast(why || 'Streaming is off for this drive — loading the whole file first', 'warn'); }catch{}
+    }
   }
   const headOnly = isTextMime(mime) && !['url','webloc','desktop'].includes(ext);
   const want = headOnly ? Math.min(VIEWER_TEXT_MAX, node.size || VIEWER_TEXT_MAX) : (node.size || 0);
   const big = want > 2 * 1024 * 1024;
-  let cancelled = false;
-  if(big) _viewerLoading(node.name, () => { cancelled = true; }, want);
+  let cancelled = false, handle = null;
+  // Cancelling has to reach the host, or it keeps sending a file nobody is
+  // waiting for any more.
+  if(big) _viewerLoading(node.name, () => { cancelled = true; try{ handle && handle.cancel(); }catch{} }, want);
   try{
-    const rec = await P2PDrives.getBlob(node.id, {
-      off: 0,
-      len: headOnly ? want : 0,
-      onProgress: got => { if(big) _viewerLoadingProgress(got, want); }
+    const rec = await new Promise((resolve, reject) => {
+      /* Two things had to go here.
+
+         The progress line re-added the length of every chunk received so far on
+         each new chunk — quadratic, so a large file spent more time counting its
+         own bytes than moving them, and the tab froze near the end.
+
+         And the parts were held as typed arrays until the last one arrived,
+         which put the whole file on the JS heap. Blobs are backed by the
+         browser's own store rather than the heap, so they are folded up as we
+         go and only joined at the end. */
+      let parts = [], raw = 0, got = 0;
+      const blobs = [];
+      const fold = () => { if(parts.length){ blobs.push(new Blob(parts)); parts = []; raw = 0; } };
+      handle = P2PDrives.getStream(node.id, {
+        off: 0,
+        len: headOnly ? want : 0,
+        onMeta: meta => { if(big && meta && meta.size) _viewerLoadingProgress(0, meta.size); },
+        onChunk: buf => {
+          const u8 = new Uint8Array(buf);
+          parts.push(u8); raw += u8.length; got += u8.length;
+          if(raw >= 2 * 1024 * 1024) fold();
+          if(big) _viewerLoadingProgress(got, want);
+        },
+        onEnd: () => { fold(); resolve({ data: new Blob(blobs, { type: mime }) }); },
+        onError: reject
+      });
     });
     if(!_viewerTokenValid(tok) || cancelled) return;
     _viewerLoadingDone();
@@ -15063,7 +16050,12 @@ function _mediaTypeActions(elId, isVideo){
     {label:'Faster',      icon:'fast', fn:()=>viewerMediaSpeed(elId, 0.25), stay:true},
     {label:'Toggle loop', icon:'loop', fn:()=>viewerMediaLoop(elId),        stay:true}
   ];
-  if(isVideo) a.push({label:'Pop-out player', icon:'pip', fn:()=>viewerMediaPip()});
+  if(isVideo){
+    a.push({label:'Zoom in',       icon:'zin',  fn:()=>viewerImageZoom(0.5),  stay:true});
+    a.push({label:'Zoom out',      icon:'zout', fn:()=>viewerImageZoom(-0.5), stay:true});
+    a.push({label:'Fit to screen', icon:'fit',  fn:()=>viewerImageReset(),    stay:true});
+    a.push({label:'Pop-out player', icon:'pip', fn:()=>viewerMediaPip()});
+  }
   a.push({label:'Send to Media', icon:'send', fn:()=>viewerSendCurrentTo('media')});
   a.push({label:'Download',      icon:'dl',   fn:()=>viewerDownloadCurrent()});
   return a;
@@ -15086,16 +16078,183 @@ function renderViewerTypeActions(){
     host.appendChild(b);
   });
 }
+/* ═══════════════════════════════════════════════════════
+   VIEWER ZOOM — images and video
+   ═══════════════════════════════════════════════════════
+   The zoom happens on the media element, never on the viewer: scaling the
+   whole modal drags the toolbars and the backdrop along with it, which is what
+   made pinching feel like the page had broken.
+
+   `ox/oy` is the transform origin as a fraction of the element, so zooming
+   toward a point is just "put the origin there" — the point under the pointer
+   stays under the pointer, at any scale, with no pan maths to drift out of
+   sync. Panning is a translate applied after the scale. */
+const ZOOM_MIN = 0.25, ZOOM_MAX = 12;
+let _viewerZoomEl = null;
+
+function _zoomState(el){
+  if(!el._zoom) el._zoom = { scale:1, ox:0.5, oy:0.5, tx:0, ty:0, rot:0 };
+  return el._zoom;
+}
+function _applyZoom(el){
+  const z = _zoomState(el);
+  el.style.transformOrigin = (z.ox * 100).toFixed(2) + '% ' + (z.oy * 100).toFixed(2) + '%';
+  el.style.transform = `translate(${z.tx}px, ${z.ty}px) rotate(${z.rot}deg) scale(${z.scale})`;
+  el.style.cursor = z.scale > 1 ? 'grab' : '';
+  // A scaled-up element must not be clipped by its own layout box.
+  el.style.willChange = z.scale === 1 ? '' : 'transform';
+}
+// Where the pointer is within the element, 0..1 — measured against the
+// *unscaled* box so the origin does not chase itself as the scale changes.
+function _pointIn(el, clientX, clientY){
+  const r = el.getBoundingClientRect();
+  const z = _zoomState(el);
+  // Undo the current transform to recover the layout box.
+  const w = r.width / z.scale, h = r.height / z.scale;
+  const left = r.left + (r.width - w) * z.ox;
+  const top  = r.top  + (r.height - h) * z.oy;
+  return {
+    x: Math.max(0, Math.min(1, (clientX - left) / (w || 1))),
+    y: Math.max(0, Math.min(1, (clientY - top)  / (h || 1)))
+  };
+}
+function _zoomAt(el, scale, clientX, clientY){
+  const z = _zoomState(el);
+  const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, scale));
+  if(clientX != null && next > 1){
+    const p = _pointIn(el, clientX, clientY);
+    z.ox = p.x; z.oy = p.y;
+  }
+  z.scale = next;
+  if(next <= 1){ z.tx = 0; z.ty = 0; z.ox = 0.5; z.oy = 0.5; }
+  _applyZoom(el);
+}
+
+/* Wired once per element, for <img> and <video> alike. */
+function attachViewerZoom(el){
+  if(!el || el._zoomWired) return;
+  el._zoomWired = true;
+  _viewerZoomEl = el;
+  _zoomState(el);
+  el.style.transition = 'transform .16s ease';
+  el.style.touchAction = 'none';       // we handle pinch ourselves
+
+  // Wheel, and trackpad pinch — which browsers report as a wheel event with
+  // ctrlKey set. Both zoom the media; neither scrolls the viewer.
+  el.addEventListener('wheel', e => {
+    e.preventDefault(); e.stopPropagation();
+    const z = _zoomState(el);
+    const step = e.ctrlKey ? 0.01 : 0.0022;      // pinch deltas are much smaller
+    _zoomAt(el, z.scale * Math.exp(-e.deltaY * step), e.clientX, e.clientY);
+  }, { passive:false });
+
+  // Double-click / double-tap: in on the spot you pointed at, out again if
+  // already zoomed. On a video this must also not toggle play or fullscreen.
+  el.addEventListener('dblclick', e => {
+    e.preventDefault(); e.stopPropagation();
+    const z = _zoomState(el);
+    _zoomAt(el, z.scale > 1.05 ? 1 : 2.5, e.clientX, e.clientY);
+  });
+
+  // Drag to pan once zoomed in. Pointer events cover mouse, pen and a single
+  // finger; two fingers are handled below as a pinch instead.
+  let dragging = false, sx = 0, sy = 0, stx = 0, sty = 0;
+  el.addEventListener('pointerdown', e => {
+    if(e.pointerType === 'touch') return;          // touch drag is the pinch path
+    const z = _zoomState(el);
+    if(z.scale <= 1) return;
+    dragging = true; sx = e.clientX; sy = e.clientY; stx = z.tx; sty = z.ty;
+    el.style.transition = 'none'; el.style.cursor = 'grabbing';
+    try{ el.setPointerCapture(e.pointerId); }catch{}
+  });
+  el.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    const z = _zoomState(el);
+    z.tx = stx + (e.clientX - sx); z.ty = sty + (e.clientY - sy);
+    _applyZoom(el);
+  });
+  const endDrag = e => {
+    if(!dragging) return;
+    dragging = false;
+    el.style.transition = 'transform .16s ease';
+    _applyZoom(el);
+    try{ el.releasePointerCapture(e.pointerId); }catch{}
+  };
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+
+  // Touch pinch, and one-finger pan while zoomed.
+  let pinchFrom = 0, pinchScale = 1, panFrom = null;
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid  = t => ({ x:(t[0].clientX + t[1].clientX)/2, y:(t[0].clientY + t[1].clientY)/2 });
+  el.addEventListener('touchstart', e => {
+    const t = e.touches;
+    if(t.length === 2){
+      e.preventDefault();
+      pinchFrom = dist(t); pinchScale = _zoomState(el).scale;
+      const m = mid(t);
+      const p = _pointIn(el, m.x, m.y);
+      const z = _zoomState(el); z.ox = p.x; z.oy = p.y;
+      el.style.transition = 'none';
+      panFrom = null;
+    } else if(t.length === 1 && _zoomState(el).scale > 1){
+      const z = _zoomState(el);
+      panFrom = { x:t[0].clientX, y:t[0].clientY, tx:z.tx, ty:z.ty };
+      el.style.transition = 'none';
+    }
+  }, { passive:false });
+  el.addEventListener('touchmove', e => {
+    const t = e.touches;
+    if(t.length === 2 && pinchFrom){
+      e.preventDefault();
+      const m = mid(t);
+      _zoomAt(el, pinchScale * (dist(t) / pinchFrom), m.x, m.y);
+    } else if(t.length === 1 && panFrom){
+      e.preventDefault();
+      const z = _zoomState(el);
+      z.tx = panFrom.tx + (t[0].clientX - panFrom.x);
+      z.ty = panFrom.ty + (t[0].clientY - panFrom.y);
+      _applyZoom(el);
+    }
+  }, { passive:false });
+  const endTouch = () => { pinchFrom = 0; panFrom = null; el.style.transition = 'transform .16s ease'; };
+  el.addEventListener('touchend', endTouch);
+  el.addEventListener('touchcancel', endTouch);
+
+  _applyZoom(el);
+}
+// The element the zoom menu entries and keyboard shortcuts act on.
+function _currentZoomEl(){
+  return document.getElementById('viewerImageEl') || document.getElementById('viewerVideoEl') || null;
+}
 function _viewerApplyImageTransform(){
-  const img=document.getElementById('viewerImageEl'); if(!img) return;
-  img.style.transform=`rotate(${_viewerImageState.rot}deg) scale(${_viewerImageState.zoom})`;
+  const el=_currentZoomEl(); if(!el) return;
+  const z=_zoomState(el);
+  z.rot=_viewerImageState.rot; z.scale=_viewerImageState.zoom;
+  _applyZoom(el);
 }
-function viewerImageRotate(){ _viewerImageState.rot=(_viewerImageState.rot+90)%360; _viewerApplyImageTransform(); }
+function viewerImageRotate(){
+  const el=_currentZoomEl(); if(!el) return;
+  const z=_zoomState(el);
+  z.rot=(z.rot+90)%360;
+  _viewerImageState.rot=z.rot;
+  _applyZoom(el);
+}
 function viewerImageZoom(d){
-  _viewerImageState.zoom=Math.max(0.25, Math.min(6, +(_viewerImageState.zoom+d).toFixed(2)));
-  _viewerApplyImageTransform();
+  const el=_currentZoomEl(); if(!el) return;
+  const z=_zoomState(el);
+  // Stepping from the menu has no pointer to aim at, so it zooms about the
+  // middle of whatever is currently framed.
+  _zoomAt(el, +(z.scale+d).toFixed(2), null, null);
+  _viewerImageState.zoom=z.scale;
 }
-function viewerImageReset(){ _viewerImageState={rot:0,zoom:1}; _viewerApplyImageTransform(); }
+function viewerImageReset(){
+  const el=_currentZoomEl();
+  _viewerImageState={rot:0,zoom:1};
+  if(!el) return;
+  el._zoom={ scale:1, ox:0.5, oy:0.5, tx:0, ty:0, rot:0 };
+  _applyZoom(el);
+}
 function viewerMediaSpeed(id, d){
   const el=document.getElementById(id); if(!el) return;
   el.playbackRate=Math.max(0.25, Math.min(4, +(el.playbackRate+d).toFixed(2)));
@@ -20551,7 +21710,36 @@ const P2PDrives = (function(){
   // on something larger when the connection says it can take it. Per-message
   // overhead is what caps a data channel, so this is the main lever on speed.
   const CHUNK_MIN = 16 * 1024, CHUNK_MAX = 256 * 1024;
-  const HIGH_WATER = 8 * 1024 * 1024, LOW_WATER = 2 * 1024 * 1024;
+  /* Send-buffer window. The loop pushes until `high` bytes are queued on the
+     data channel, then waits for it to drain to half that.
+
+     These are a floor and a ceiling for the tuner below, not fixed values: a
+     bigger window keeps SCTP's congestion window open across the gaps where we
+     are reading from disk, which is most of what separates 6 MB/s from 30. */
+  const WIN_MIN = 2 * 1024 * 1024;
+  /* Chrome refuses send() outright once its internal queue would pass 16 MiB
+     ("send queue is full"), so the window has to stay clear of that with room
+     for a frame in hand. Opening it wider is not a throughput win, it is a
+     failed upload.
+
+     6 MB rather than 12: the window only has to cover the gaps where we are
+     reading from the source file, and those are milliseconds. Past that it is
+     memory held on both ends — ours queued, the host's waiting to be written —
+     bought for no extra bandwidth, because a window the link cannot drain does
+     not make the link faster. */
+  const WIN_MAX = 6 * 1024 * 1024;
+  const RATE_MAX = 70 * 1024 * 1024;      // never push harder than this
+
+  /* What a transfer of a given size is expected to sustain. Bigger files get
+     less tolerance, because on a big file there is time to reach a steady rate
+     and no excuse not to. Nothing here can conjure bandwidth that is not there
+     — these are the targets the tuner opens the throttle for, and it reports
+     honestly when the link cannot reach them. */
+  function targetRate(size){
+    if(size >= 1024 * 1024 * 1024) return 12 * 1024 * 1024;   // ≥ 1 GB
+    if(size >= 500 * 1024 * 1024)  return  9 * 1024 * 1024;   // ≥ 500 MB
+    return 6 * 1024 * 1024;                                   // everything else
+  }
   // Bytes pulled off the source file per read before being cut into frames. One
   // Blob read per frame was most of the cost of sending a large file.
   const READ_BLOCK = 4 * 1024 * 1024;
@@ -20716,6 +21904,10 @@ const P2PDrives = (function(){
     if(!Array.isArray(store.list)) store.list = [];
     if(!store.active) store.active = 'local';
     if(store.showDock === undefined) store.showDock = true;
+    // Streaming is the default for every drive, local or hosted: it is the only
+    // mode whose memory cost does not grow with the size of the file, so it is
+    // also the only one that works on a small machine. Off is the exception.
+    if(store.streamMedia === undefined) store.streamMedia = true;
     if(typeof store.localLimit !== 'number') store.localLimit = 0;   // 0 = no limit
     return store;
   }
@@ -20929,6 +22121,13 @@ const P2PDrives = (function(){
     if(state === 'error') lastError.set(c.drive.id, message || 'Disconnected');
     else if(state === 'online') lastError.delete(c.drive.id);
     paintBar(); renderDrivesList();
+    // While the grid is showing the loading/offline panel, that panel is the
+    // status readout — keep it in step rather than freezing on the first thing
+    // it said.
+    try{
+      if(document.querySelector('#filesGrid .files-empty') &&
+         document.getElementById('filesModal')?.classList.contains('active')) renderFilesGrid();
+    }catch{}
   }
 
   // `material` lets the add-a-drive flow reuse the derivation it already did
@@ -21033,11 +22232,18 @@ const P2PDrives = (function(){
     };
     const dc = pc.createDataChannel('fs', { ordered:true });
     dc.binaryType = 'arraybuffer';
-    dc.bufferedAmountLowThreshold = LOW_WATER;
+    dc.bufferedAmountLowThreshold = WIN_MIN / 2;
     c.dc = dc;
     dc.addEventListener('open', () => {
       let max = 0;
       try{ max = (pc.sctp && pc.sctp.maxMessageSize) || 0; }catch{}
+      // Firefox has no `pc.sctp`, so read what the host advertised out of its
+      // SDP instead of dropping to the 64 KB floor. An absent attribute means
+      // 64 KB, which is the fallback below.
+      if(!max) try{
+        const m = /a=max-message-size:\s*(\d+)/i.exec((pc.remoteDescription && pc.remoteDescription.sdp) || '');
+        if(m) max = parseInt(m[1], 10) || 0;
+      }catch{}
       if(!max || !isFinite(max)) max = 65536;
       c.chunk = Math.max(CHUNK_MIN, Math.min(CHUNK_MAX, max - 1024));
     });
@@ -21109,17 +22315,49 @@ const P2PDrives = (function(){
     if(err) p.reject(err); else p.resolve(val);
   }
 
+  /* Park a chunk for the buffering (non-streaming) download path.
+
+     Holding every chunk as a Uint8Array until the end means a 4 GB file costs
+     4 GB of JS heap — the tab is killed long before the download finishes. A
+     Blob does not live on the heap: the browser backs it with its own store and
+     spills it to disk, so the same file costs a bounded amount of memory and a
+     handful of Blob handles.
+
+     So chunks are collected only up to a small threshold and then handed to a
+     Blob, which is kept in a list and concatenated once at the end. Blob
+     construction is cheap and copies nothing that is already a Blob. */
+  const STASH_MAX = 2 * 1024 * 1024;
+  function stash(dl, u8){
+    // A streaming download carries no parts array. It should always have taken
+    // the onChunk branch to get here, but a caller that asked for a stream and
+    // supplied no reader would otherwise take the whole download down.
+    if(!dl.parts) return;
+    dl.parts.push(u8);
+    dl.raw = (dl.raw || 0) + u8.length;
+    if(dl.raw < STASH_MAX) return;
+    (dl.blobs = dl.blobs || []).push(new Blob(dl.parts));
+    dl.parts = []; dl.raw = 0;
+  }
+  // Everything stashed, as one Blob, without a heap-sized intermediate.
+  function stashed(dl, type){
+    const all = (dl.blobs || []).concat(dl.parts.length ? [new Blob(dl.parts)] : []);
+    dl.blobs = null; dl.parts = [];
+    return new Blob(all, { type: type || 'application/octet-stream' });
+  }
+
   async function onData(c, data, finish, opts){
     /* binary = a chunk of a download in flight */
     if(data instanceof ArrayBuffer){
       const rid = new DataView(data).getUint32(0, false);
       const dl = c.downloads.get(rid);
       if(!dl) return;
+      // Bytes are arriving, so the transfer is alive. See `arm`.
+      if(dl.keepAlive) dl.keepAlive();
       dl.got += data.byteLength - 4;
       // A streaming reader takes the chunk and lets it go; only the buffering
       // path keeps the parts around to make a Blob out of at the end.
       if(dl.onChunk) try{ dl.onChunk(data.slice(4)); }catch(e){ console.warn('[stream chunk]', e); }
-      else dl.parts.push(new Uint8Array(data, 4));
+      else stash(dl, new Uint8Array(data, 4));
       if(dl.onProgress) try{ dl.onProgress(dl.got, dl.size); }catch{}
       return;
     }
@@ -21129,6 +22367,8 @@ const P2PDrives = (function(){
       case 'authOk': {
         c.quota = m.drive.quota || 0;
         c.used  = m.drive.used || 0;
+        // The host's own bandwidth ceiling, if it set one. 0 means it has none.
+        c.cap = Number(m.cap) || 0;
         c.readOnly = !!m.drive.ro;
         if(m.drive.label && m.drive.label !== c.drive.label){
           // The host is the authority on its own name; keep the list honest.
@@ -21174,6 +22414,7 @@ const P2PDrives = (function(){
       case 'getMeta': {
         const dl = c.downloads.get(m.rid);
         if(dl){
+          if(dl.keepAlive) dl.keepAlive();
           dl.name = m.name; dl.mime = m.mime; dl.size = m.size;
           dl.total = typeof m.total === 'number' ? m.total : m.size;
           dl.off = m.off || 0;
@@ -21190,10 +22431,14 @@ const P2PDrives = (function(){
         // Blob to build and nothing left to hold.
         if(!dl.parts){ dl.resolve(); return; }
         dl.resolve({ id: dl.id, name: dl.name, type: dl.mime, size: dl.size,
-                     data: new Blob(dl.parts, { type: dl.mime || 'application/octet-stream' }) });
+                     data: stashed(dl, dl.mime) });
         return;
       }
       case 'putReady': settle(c, m.rid, null, m); return;
+      // The host's storage is behind its network. Hold off until it says go,
+      // rather than piling megabytes into its memory that it cannot write yet.
+      case 'putSlow': { const u = uploads.get(m.id) || byRid(m.rid); if(u) u.hold(); return; }
+      case 'putGo':   { const u = uploads.get(m.id) || byRid(m.rid); if(u) u.release(); return; }
       case 'putOk':
         if(typeof m.used === 'number') c.used = m.used;
         if(typeof m.quota === 'number') c.quota = m.quota;
@@ -21271,13 +22516,51 @@ const P2PDrives = (function(){
   // `opts.off` / `opts.len` ask the host for one slice instead of the whole
   // file — that is what lets the viewer show the head of a huge text file
   // without dragging all of it across the wire first.
+  /* How long a transfer may be *silent* before it is given up on.
+
+     Not how long it may take. The distinction is the whole bug: a single timer
+     armed when the request went out killed any transfer that legitimately ran
+     longer than it, however healthy — a 4 GB file at 10 MB/s takes nearly seven
+     minutes, so it was rejected mid-flight with "the host did not send the
+     file" while the host was busy sending it. Every arriving frame now pushes
+     the deadline out, so the timer only fires when nothing is coming. */
+  const XFER_IDLE_MS = 90 * 1000;
+  /* Attaches keepAlive() to a download record and starts its clock. `dl.to`
+     stays the live handle, so every existing settle path still clears it with
+     one clearTimeout. `pause` is for a reader that has deliberately told the
+     host to stop — a paused video holds its stream for as long as the viewer
+     likes, and silence it asked for must not be read as a stall. */
+  function armIdle(dl, onDead){
+    dl.keepAlive = () => {
+      clearTimeout(dl.to);
+      dl.to = setTimeout(() => { dl.keepAlive = null; onDead(); }, XFER_IDLE_MS);
+    };
+    dl.pauseIdle = () => { clearTimeout(dl.to); dl.to = null; };
+    dl.keepAlive();
+    return dl;
+  }
+
   async function getBlob(id, opts){
     const c = requireConn();
     const rid = nextRid(c);
     const o = opts || {};
     return new Promise((resolve, reject) => {
-      const to = setTimeout(() => { c.downloads.delete(rid); reject(new Error('The host did not send the file')); }, 300000);
-      c.downloads.set(rid, { id, parts:[], resolve, reject, to, name:'', mime:'', size:0, got:0, onProgress:o.onProgress || null });
+      const dl = { id, parts:[], resolve, reject, name:'', mime:'', size:0, got:0, onProgress:o.onProgress || null };
+      armIdle(dl, () => { c.downloads.delete(rid); reject(new Error('The drive stopped sending that file')); });
+      c.downloads.set(rid, dl);
+      /* Cancelling has to reach the host, or it keeps reading and pushing a
+         file nobody is waiting for — which is what made Cancel do nothing at
+         all on a save or a backup that was already mid-file. */
+      if(o.signal){
+        if(o.signal.aborted) { c.downloads.delete(rid); clearTimeout(dl.to); return reject(new Error('Cancelled')); }
+        o.signal.addEventListener('abort', () => {
+          if(!c.downloads.has(rid)) return;
+          c.downloads.delete(rid);
+          clearTimeout(dl.to);
+          try{ if(c.dc && c.dc.readyState === 'open') c.dc.send(JSON.stringify({ t:'getAbort', rid })); }catch{}
+          reject(new Error('Cancelled'));
+        }, { once:true });
+      }
       c.dc.send(JSON.stringify({ t:'get', rid, id, off:o.off || 0, len:o.len || 0 }));
     });
   }
@@ -21291,23 +22574,33 @@ const P2PDrives = (function(){
     const o = opts || {};
     const rid = nextRid(c);
     let done = false;
-    const finish = fn => (...a) => { if(done) return; done = true; c.downloads.delete(rid); clearTimeout(to); fn && fn(...a); };
-    const to = setTimeout(() => { const f = finish(o.onError); f(new Error('The host did not send the file')); }, 300000);
-    c.downloads.set(rid, {
-      id, parts:null, to, name:'', mime:'', size:0, got:0,
+    const finish = fn => (...a) => { if(done) return; done = true; c.downloads.delete(rid); clearTimeout(dl.to); fn && fn(...a); };
+    const dl = {
+      id, parts:null, name:'', mime:'', size:0, got:0,
       onChunk: o.onChunk || null,
-      onMeta:  o.onMeta  || null,
-      resolve: finish(o.onEnd),
-      reject:  finish(o.onError)
-    });
+      onMeta:  o.onMeta  || null
+    };
+    dl.resolve = finish(o.onEnd);
+    dl.reject  = finish(o.onError);
+    // Silence, not duration — see armIdle. A held stream (a paused player) is
+    // deliberately quiet, so the window has to be generous.
+    armIdle(dl, () => { const f = finish(o.onError); f(new Error('The drive stopped sending that file')); });
+    c.downloads.set(rid, dl);
     c.dc.send(JSON.stringify({ t:'get', rid, id, off:o.off || 0, len:o.len || 0 }));
+    const tell = t => { try{ if(!done && c.dc && c.dc.readyState === 'open') c.dc.send(JSON.stringify({ t, rid })); }catch{} };
     return {
       rid,
+      /* Flow control for a reader that cannot keep up.
+         Holding also stops the idle clock: we have just asked the host to go
+         quiet, so counting that silence against it would kill the stream of any
+         video left paused for a minute and a half. */
+      hold(){ tell('getPause'); if(!done && dl.pauseIdle) dl.pauseIdle(); },
+      resume(){ tell('getResume'); if(!done && dl.keepAlive) dl.keepAlive(); },
       cancel(){
         if(done) return;
         done = true;
         c.downloads.delete(rid);
-        clearTimeout(to);
+        clearTimeout(dl.to);
         // The host is mid-loop on this file; without this it keeps pushing
         // megabytes at a reader that has already walked away.
         try{ if(c.dc && c.dc.readyState === 'open') c.dc.send(JSON.stringify({ t:'getAbort', rid })); }catch{}
@@ -21315,9 +22608,42 @@ const P2PDrives = (function(){
     };
   }
 
+  /* Wait until the channel's send buffer is down to `mark`.
+
+     `bufferedamountlow` fires on the *transition* below the threshold and only
+     then, so checking the level and then attaching a listener leaves a gap: if
+     the buffer drains through the mark inside it, the event has already fired,
+     nothing is listening, and the wait never ends — the upload stops dead
+     part-way with no error. Setting the threshold at the same moment makes it
+     worse, because the level may already be under the new mark and no
+     transition will ever happen.
+
+     Attach first, set the threshold, re-check, and keep a slow poll as a
+     backstop. */
+  function drainTo(dc, mark){
+    return new Promise(res => {
+      let done = false;
+      const finish = () => {
+        if(done) return;
+        done = true;
+        clearInterval(poll);
+        dc.removeEventListener('bufferedamountlow', on);
+        res();
+      };
+      const on = () => finish();
+      dc.addEventListener('bufferedamountlow', on);
+      try{ if(dc.bufferedAmountLowThreshold !== mark) dc.bufferedAmountLowThreshold = mark; }catch{}
+      const poll = setInterval(() => {
+        if(dc.readyState !== 'open' || dc.bufferedAmount <= mark) finish();
+      }, 50);
+      if(dc.readyState !== 'open' || dc.bufferedAmount <= mark) finish();
+    });
+  }
+
   // Uploads in flight, so the dock's Cancel has something to reach. Keyed by the
   // node id, which is what the Files app knows a job by.
   const uploads = new Map();
+  const byRid = rid => { for(const u of uploads.values()) if(u.rid === rid) return u; return null; };
   function abortUpload(id){
     const u = uploads.get(id);
     if(!u) return false;
@@ -21333,53 +22659,216 @@ const P2PDrives = (function(){
     // No local permission check: the host decides, and refuses with a reason.
     const blob = rec.data instanceof Blob ? rec.data : new Blob([rec.data == null ? '' : rec.data], { type: rec.type || 'application/octet-stream' });
     const rid = nextRid(c);
-    const ctl = { aborted:false, rid, c };
+    // `hold` / `release` are the host's brake: it pulls them when its storage
+    // queue is deep, and the send loop waits on `gate` until it lets go.
+    let done = false;
+    const ctl = {
+      aborted:false, rid, c, gate:null,
+      hold(){ if(!ctl.gate) ctl.gate = new Promise(res => { ctl._open = res; }); },
+      release(){ const r = ctl._open; ctl.gate = null; ctl._open = null; if(r) r(); }
+    };
     uploads.set(rec.id, ctl);
-    const report = n => { try{ Uploads.progress(rec.id, n); }catch{} };
+    const report = n => { try{ Transfers.progress(rec.id, n); }catch{} };
     try{
       // The host reserves space before a single byte moves, so a drive that is
       // too full fails here rather than halfway through a large file.
       const ready = await new Promise((resolve, reject) => {
         const to = setTimeout(() => { c.pending.delete(rid); reject(new Error('The host did not respond')); }, 30000);
         c.pending.set(rid, { resolve, reject, to });
-        c.dc.send(JSON.stringify({ t:'put', rid, id:rec.id, name:rec.name, mime: rec.type || blob.type, size: blob.size }));
+        // The destination folder goes with the reservation, not just with the
+        // `putEnd`. A folder-backed host has to open the real file before the
+        // first byte; told late, it writes to the drive root and then copies
+        // the finished file into place, which is a second full pass over a file
+        // that may be gigabytes — all of it inside "Finishing…".
+        const dest = (filesTree[rec.id] && filesTree[rec.id].parentId) || currentFolderId || 'root';
+        c.dc.send(JSON.stringify({ t:'put', rid, id:rec.id, name:rec.name, mime: rec.type || blob.type, size: blob.size, parentId: dest }));
       });
-      // The host names the frame size it will accept; fall back to whatever this
-      // connection negotiated, and to the guaranteed floor below that.
-      const CH = Math.max(CHUNK_MIN, Math.min(CHUNK_MAX, (ready && ready.chunk) || c.chunk || CHUNK_MIN));
-      // One reusable frame buffer with the request id already written in: the
-      // old loop allocated a fresh Uint8Array per chunk and copied twice.
+      /* The frame size has to satisfy BOTH ends, so it is the smaller of the two.
+         The host's suggestion describes what *it* can put on the wire, which is
+         not the same as what this end may send — those limits are negotiated
+         per direction and the engines disagree about them.
+
+         Taking the host's number on its own is what broke transfers between two
+         different browsers. Firefox advertises a max message size of about a
+         gigabyte, so a Chrome host derives a 256 KB frame from it and says so; a
+         Firefox client then sends 256 KB + 4 to a Chrome peer that advertised
+         exactly 256 KB, and every frame is refused. The retry loop turns that
+         into a slow failure rather than an obvious one, so it reads as "cross-
+         browser just doesn't work". `c.chunk` already carries this end's real
+         limit — it simply was not being consulted whenever the host had spoken. */
+      const peerMax = (ready && Number(ready.chunk)) || CHUNK_MAX;
+      const ourMax  = c.chunk || CHUNK_MIN;
+      const CH = Math.max(CHUNK_MIN, Math.min(CHUNK_MAX, peerMax, ourMax));
+      // One reusable frame buffer with the request id already written in. The
+      // old loop allocated a fresh Uint8Array per chunk and copied twice; this
+      // copies once, into the same buffer, for the whole file.
       const frame = new Uint8Array(4 + CH);
       new DataView(frame.buffer).setUint32(0, rid >>> 0, false);
+      let fill = 0, sent = 0, queued = 0;
 
-      for(let base = 0; base < blob.size; base += READ_BLOCK){
+      /* ── the tuner ──────────────────────────────────────────────────────
+         Every half second, compare what this file is actually achieving with
+         what a file its size should achieve. Under target, open the send
+         window; comfortably over, ease it back. The window is the only lever
+         that matters once the frame size is already at the connection's
+         maximum — a bigger one keeps bytes queued while we are reading from
+         disk, so SCTP never sees the link go idle and never backs off.
+
+         It cannot create bandwidth. On a link that will not do the number, the
+         window opens to its ceiling, stays there, and the transfer runs at
+         whatever the link gives — which is the honest outcome, and is what the
+         dock reports. */
+      const hostCap = Number((ready && ready.cap) || c.cap) || 0;
+      const ceiling = hostCap ? Math.min(RATE_MAX, hostCap) : RATE_MAX;
+      // A host that caps below the size-based target is the authority: chasing a
+      // number it has refused to serve would just spin the tuner.
+      const target = Math.min(targetRate(blob.size), ceiling);
+
+      /* Progress and rate are measured on bytes the channel has actually
+         *delivered*, not on bytes handed to send().
+
+         Those are not the same thing, and the difference is everything the
+         upload UI was getting wrong. Handing 12 MB to a 3 MB/s link and calling
+         it progress makes the bar leap ahead, then sit perfectly still for four
+         seconds while the buffer drains — which reads as "it paused doing
+         nothing" — and makes the rate swing wildly between the two. Delivered
+         bytes are queued minus whatever is still sitting in the send buffer. */
+      const buffered = () => { try{ return c.dc.bufferedAmount || 0; }catch{ return 0; } };
+      const delivered = () => Math.max(0, queued - buffered());
+
+      /* The send window follows the measured rate: roughly a second of data in
+         flight, floored so a slow link still gets room to reach the target.
+
+         A fixed large window is what caused the multi-second pauses. Queue 12 MB
+         on a 3 MB/s link and the wait for it to drain to half is two seconds of
+         apparently nothing happening. Sized to the link, the pause is a fraction
+         of a second whatever the speed — and on a few-KB/s link it still keeps
+         the pipe busy rather than stalling on a window it can never fill. */
+      let win = WIN_MIN, started = 0, marked = 0, markedAt = 0, rate = 0;
+      const retune = now => {
+        if(!markedAt){ markedAt = now; marked = delivered(); return; }
+        const dt = (now - markedAt) / 1000;
+        if(dt < 0.5) return;
+        const got = delivered();
+        // Smoothed, so one slow half-second does not resize the window twice.
+        const sample = Math.max(0, (got - marked) / dt);
+        rate = rate ? rate * 0.6 + sample * 0.4 : sample;
+        marked = got; markedAt = now;
+        win = Math.max(1024 * 1024, Math.min(WIN_MAX, Math.max(rate, target * 0.25) * 1.0));
+        try{ Transfers.rate(rec.id, rate); }catch{}
+      };
+
+      const flush = async () => {
+        if(!fill) return;
         if(ctl.aborted) throw new Error('Upload cancelled');
         if(!c.dc || c.dc.readyState !== 'open') throw new Error('Disconnected mid-upload');
-        const block = new Uint8Array(await blob.slice(base, Math.min(base + READ_BLOCK, blob.size)).arrayBuffer());
-        for(let off = 0; off < block.length; off += CH){
-          if(ctl.aborted) throw new Error('Upload cancelled');
-          if(!c.dc || c.dc.readyState !== 'open') throw new Error('Disconnected mid-upload');
-          if(c.dc.bufferedAmount >= HIGH_WATER){
-            await new Promise(res => {
-              const on = () => { c.dc.removeEventListener('bufferedamountlow', on); res(); };
-              c.dc.addEventListener('bufferedamountlow', on);
-            });
+        // The host asked for a pause while it catches up on writing. Keep the
+        // readout live while we wait, or a storage-bound host looks like a hang.
+        if(ctl.gate){
+          const tick = setInterval(() => retune(performance.now()), 400);
+          try{ await Promise.race([ctl.gate, new Promise(r => setTimeout(r, 15000))]); }
+          finally{ clearInterval(tick); }
+        }
+        if(ctl.aborted) throw new Error('Upload cancelled');
+        const now = performance.now();
+        if(!started) started = now;
+        // Waiting for the buffer to drain is still progress — bytes are leaving
+        // the machine — so keep reporting while it happens rather than going
+        // silent for the length of the wait.
+        if(c.dc.bufferedAmount >= win){
+          const tick = setInterval(() => { report(delivered()); retune(performance.now()); }, 200);
+          try{ await drainTo(c.dc, Math.max(CH, win / 2)); }
+          finally{ clearInterval(tick); }
+        }
+        // Ceiling: our own, and the host's if it published a lower one.
+        const elapsed = (performance.now() - started) / 1000;
+        const allowed = ceiling * Math.max(elapsed, 0.001);
+        if(sent > allowed) await new Promise(r => setTimeout(r, Math.min(250, (sent - allowed) / ceiling * 1000)));
+        // A view, not a copy: send() takes the bytes synchronously, so the one
+        // buffer serves every frame.
+        //
+        // Engines differ on how much they will queue, and the one that says no
+        // does so by throwing rather than by reporting a bufferedAmount we could
+        // have checked. So back off, let it drain, and try the same frame again
+        // — losing the file over a full queue would be absurd.
+        /* A full frame is the whole buffer, so it can go as-is. A short one —
+           the tail of every file — must be an exactly-sized copy rather than a
+           view onto the big buffer: engines have differed on whether a view's
+           offset and length are honoured, and one that sends the backing buffer
+           instead appends whatever the previous frame left there. The receiver
+           then counts more bytes than the file has and rejects the upload as
+           over-declared. One small copy per file removes the ambiguity. */
+        const payload = fill === CH ? frame : frame.slice(0, 4 + fill);
+        for(let attempt = 0; ; attempt++){
+          try{ c.dc.send(payload); break; }
+          catch(err){
+            if(attempt >= 40) throw err;
+            win = Math.max(WIN_MIN, Math.min(win, c.dc.bufferedAmount) / 2);
+            await new Promise(r => setTimeout(r, 50));
+            if(ctl.aborted) throw new Error('Upload cancelled');
+            if(!c.dc || c.dc.readyState !== 'open') throw new Error('Disconnected mid-upload');
           }
-          const n = Math.min(CH, block.length - off);
-          frame.set(block.subarray(off, off + n), 4);
-          c.dc.send(frame.buffer.slice(0, 4 + n));
-          report(base + off + n);
+        }
+        sent += fill; queued += fill; fill = 0;
+        report(delivered());
+        retune(performance.now());
+      };
+      const feed = async src => {
+        let at = 0;
+        while(at < src.length){
+          const n = Math.min(CH - fill, src.length - at);
+          frame.set(src.subarray(at, at + n), 4 + fill);
+          fill += n; at += n;
+          if(fill === CH) await flush();
+        }
+      };
+
+      // Read the file as a stream where the browser has one: the bytes arrive
+      // in the reader's own small pieces and are gone as soon as they are on
+      // the wire, so a 4 GB upload never costs more than one frame of memory.
+      // (blob.stream() is Chrome 76 / Firefox 69 / Safari 14.1; older engines
+      // fall back to bounded slice reads.)
+      if(typeof blob.stream === 'function'){
+        const reader = blob.stream().getReader();
+        try{
+          for(;;){
+            if(ctl.aborted) throw new Error('Upload cancelled');
+            const { value, done } = await reader.read();
+            if(done) break;
+            await feed(value instanceof Uint8Array ? value : new Uint8Array(value));
+          }
+        }finally{ try{ reader.cancel(); }catch{} }
+      } else {
+        for(let base = 0; base < blob.size; base += READ_BLOCK){
+          if(ctl.aborted) throw new Error('Upload cancelled');
+          await feed(new Uint8Array(await blob.slice(base, Math.min(base + READ_BLOCK, blob.size)).arrayBuffer()));
         }
       }
+      await flush();
       if(ctl.aborted) throw new Error('Upload cancelled');
       const node = filesTree[rec.id];
-      await new Promise((resolve, reject) => {
-        const to = setTimeout(() => { c.pending.delete(rid); reject(new Error('The host did not confirm the upload')); }, 120000);
-        c.pending.set(rid, { resolve, reject, to });
-        c.dc.send(JSON.stringify({ t:'putEnd', rid, parentId: (node && node.parentId) || currentFolderId || 'root' }));
-      });
+      // The last frames may still be in the send buffer. Keep reporting what has
+      // actually left while they drain and the host closes the file, so the tail
+      // of a big upload shows real movement instead of a frozen bar.
+      const tail = setInterval(() => { report(delivered()); retune(performance.now()); }, 200);
+      try{
+        await new Promise((resolve, reject) => {
+          const to = setTimeout(() => { c.pending.delete(rid); reject(new Error('The host did not confirm the upload')); }, 120000);
+          c.pending.set(rid, { resolve, reject, to });
+          c.dc.send(JSON.stringify({ t:'putEnd', rid, parentId: (node && node.parentId) || currentFolderId || 'root' }));
+        });
+      }finally{ clearInterval(tail); }
+      report(blob.size);
+      done = true;
       return rec.id;
     }finally{
+      // Any exit that is not a completed upload leaves the host holding a
+      // reservation against the drive's quota. Cancelling already told it; a
+      // read failure, a disconnect or a thrown send did not, and the drive
+      // would carry that phantom until the session ended.
+      if(!done) try{
+        if(c.dc && c.dc.readyState === 'open') c.dc.send(JSON.stringify({ t:'putAbort', rid }));
+      }catch{}
       uploads.delete(rec.id);
     }
   }
@@ -21391,6 +22880,19 @@ const P2PDrives = (function(){
   /* Tree pushes are coalesced: the Files app calls saveFilesTree() after almost
      every action, and a rename should not put three round trips on the wire. */
   let pushTimer = null;
+  /* Send the tree and wait for the host to take it. The debounced pushTree() is
+     right for interactive edits, but a caller that is about to switch drives
+     cannot use it: disconnecting cancels the pending timer, and the change goes
+     nowhere. */
+  async function pushTreeNow(tree){
+    const c = conn;
+    if(!c || c.state !== 'online') throw new Error('Not connected to the drive');
+    clearTimeout(pushTimer); pushTimer = null;
+    treeCache.set(c.drive.id, tree);
+    c.treePushInFlight = true;
+    try{ await ask(c, { t:'tree', tree }); }
+    finally{ c.treePushInFlight = false; }
+  }
   function pushTree(tree){
     const c = conn;
     if(!c || c.state !== 'online'){
@@ -21494,6 +22996,92 @@ const P2PDrives = (function(){
   function label(d){ return (d && (d.label || d.hostLabel)) || 'P2P drive'; }
   function activeLabel(){ const d = driveById(store.active); return d ? label(d) : 'this device'; }
 
+  /* ── reaching the local drive while a remote one is mounted ─────────────
+     The Files app talks to whichever drive is mounted, so copying *between*
+     drives needs a way past that: these three go straight at local storage and
+     the real database, whatever the proxy is currently pretending. */
+  function localTree(){
+    try{ return JSON.parse(localStorage.getItem('googokeFiles')) || emptyTree(); }
+    catch{ return emptyTree(); }
+  }
+  function saveLocalTree(tree){
+    try{ safeSetItem('googokeFiles', JSON.stringify(tree)); }catch(e){ console.warn('[local tree]', e); }
+    if(store.active === 'local'){ filesTree = tree; try{ renderFilesGrid(); }catch{} }
+  }
+  function localPut(rec){
+    const target = realDb || db;
+    if(!target) return Promise.reject(new Error('Local storage is not ready'));
+    return new Promise((res, rej) => {
+      const tx = target.transaction(['files'], 'readwrite');
+      tx.objectStore('files').put(rec);
+      tx.oncomplete = () => res(rec.id);
+      tx.onerror = () => rej(tx.error || new Error('Could not write to this device'));
+    });
+  }
+  function localDel(id){
+    const target = realDb || db;
+    if(!target) return Promise.resolve();
+    return new Promise(res => {
+      try{
+        const tx = target.transaction(['files'], 'readwrite');
+        tx.objectStore('files').delete(id);
+        tx.oncomplete = () => res();
+        tx.onerror = () => res();
+      }catch{ res(); }
+    });
+  }
+  function localGet(id){
+    const target = realDb || db;
+    if(!target) return Promise.reject(new Error('Local storage is not ready'));
+    return new Promise((res, rej) => {
+      const tx = target.transaction(['files'], 'readonly');
+      const r = tx.objectStore('files').get(id);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error || new Error('Could not read from this device'));
+    });
+  }
+
+  /* A file on THIS device, read the way a P2P one is: a span at a time, with
+     the same handle shape, so the stream worker has one code path.
+
+     Slicing a stored Blob costs nothing — the browser hands back a view onto
+     its own store — and only the slice actually being sent is ever turned into
+     bytes. That is what lets a 4 GB film on this device play in a tab that
+     never grows: one LOCAL_CHUNK is in hand at any moment, and if the player
+     stops reading, the loop parks instead of racing ahead of it. */
+  const LOCAL_CHUNK = 256 * 1024;
+  function localStream(id, opts){
+    const o = opts || {};
+    let cancelled = false, gate = null, openGate = null;
+    const handle = {
+      hold(){ if(!gate) gate = new Promise(res => { openGate = res; }); },
+      resume(){ const r = openGate; gate = null; openGate = null; if(r) r(); },
+      cancel(){ cancelled = true; handle.resume(); }
+    };
+    (async () => {
+      const rec = await localGet(id);
+      if(cancelled) return;
+      const blob = rec && rec.data;
+      if(!blob) throw new Error('That file is not stored on this device.');
+      const total = blob.size;
+      const start = Math.max(0, Math.min(Number(o.off) || 0, total));
+      const end   = o.len ? Math.min(start + Number(o.len), total) : total;
+      if(o.onMeta) o.onMeta({ total, size: Math.max(0, end - start), off: start,
+                              mime: rec.type || blob.type || '', name: rec.name || '' });
+      for(let at = start; at < end; at += LOCAL_CHUNK){
+        if(cancelled) return;
+        // Parked because the reader is behind. Nothing is held while we wait.
+        while(gate && !cancelled) await gate;
+        if(cancelled) return;
+        const buf = await blob.slice(at, Math.min(at + LOCAL_CHUNK, end)).arrayBuffer();
+        if(cancelled) return;
+        if(o.onChunk) o.onChunk(buf);
+      }
+      if(!cancelled && o.onEnd) o.onEnd();
+    })().catch(err => { if(!cancelled && o.onError) o.onError(err); });
+    return handle;
+  }
+
   function mountLocal(){
     disconnect('switched to local');
     unmountProxy();
@@ -21555,6 +23143,12 @@ const P2PDrives = (function(){
       // there is nothing to unlock. Just refresh the numbers.
       mountProxy();
       filesTree = treeCache.get(d.id) || filesTree;
+      if(!filesTree[currentFolderId]) currentFolderId = 'root';
+      // Repaint. onFilesOpen is async and its caller renders the grid straight
+      // away, so that render happened before this line was ever reached — which
+      // is why reopening Files on an already-connected drive showed an empty
+      // folder until something else forced a redraw.
+      renderFilesGrid();
       ask(conn, { t:'stat' }).catch(()=>{});
       return;
     }
@@ -21662,11 +23256,9 @@ const P2PDrives = (function(){
 
     const rows = [];
     if(isRem){
-      const st = c ? c.state : 'idle';
       rows.push(['Type', 'P2P self-hosted']);
       if(d.hostLabel && d.hostLabel !== d.label) rows.push(['Name on host', d.hostLabel]);
-      rows.push(['Status', st === 'online' ? 'Connected' : st === 'connecting' ? (c.message || 'Connecting…')
-                          : (c && c.message) || lastError.get(d.id) || 'Not connected']);
+      rows.push(['Status', driveStatus(d).text]);
       // Which broker carried the handshake is not shown: it changes on its own,
       // means nothing once the peer connection is up, and is not actionable.
       rows.push(['Access', c && c.readOnly ? 'Read-only' : c ? 'Read and write' : 'Unknown']);
@@ -21687,6 +23279,9 @@ const P2PDrives = (function(){
       `<div class="dp-row"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
 
     const controls = [];
+    // Streaming applies to every drive this app can mount, so it sits above the
+    // per-kind controls rather than inside one of them.
+    controls.push(`<label class="dp-toggle"><input type="checkbox" id="dpStreamToggle" ${store.streamMedia === false ? '' : 'checked'} onchange="P2PDrives.setStreaming(this.checked)"><span>Stream video and audio${esc(streamHint())}</span></label>`);
     if(isRem){
       controls.push(`<label class="dp-toggle"><input type="checkbox" id="dpDockToggle" ${store.showDock === false ? '' : 'checked'} onchange="P2PDrives.setDock(this.checked)"><span>Show the connection dock above the files</span></label>`);
       controls.push(`<button class="btn-ghost" onclick="closePopup('drivePropsModal');P2PDrives.reconnect()">Reconnect</button>`);
@@ -21696,6 +23291,27 @@ const P2PDrives = (function(){
     }
     $('dpControls').innerHTML = controls.join('');
     openPopup('drivePropsModal');
+  }
+  /* Streaming needs a service worker, which needs a secure context and a
+     same-origin script. Opened from file://, or with the worker not installed,
+     there is none — and the toggle would otherwise look broken rather than
+     unavailable, with nothing saying which of the two it is.
+
+     Read at open time, not once at startup: whether the worker was found is
+     only known after the first attempt to register it. */
+  function streamHint(){
+    if(!P2PStream.supported())
+      return ' — unavailable here: this needs the page served over HTTPS (or localhost), not opened as a file';
+    const why = P2PStream.problem();
+    if(why) return ' — ' + why;
+    return ' — plays and seeks immediately, and never loads more than a few megabytes at a time';
+  }
+  function setStreaming(on){
+    load(); store.streamMedia = !!on; save();
+    // Anything already open was built the other way round; the tokens behind it
+    // are no longer the right answer.
+    try{ P2PStream.releaseAll(); }catch{}
+    try{ showToast(on ? 'Media will stream' : 'Media will be loaded in full before it plays'); }catch{}
   }
   function localUsed(){
     let n = 0;
@@ -21777,16 +23393,16 @@ const P2PDrives = (function(){
       const active = store.active === d.id;
       const picked = selMode && selected.has(d.id);
       const c = (conn && conn.drive.id === d.id) ? conn : null;
-      const st = c ? c.state : 'idle';
-      const remembered = lastError.get(d.id);
-      const dotCls = st === 'online' ? 'on' : st === 'connecting' ? 'try' : (st === 'error' || remembered) ? 'err' : '';
-      const sub = st === 'online'  ? (c.quota ? fmt(c.used) + ' of ' + fmt(c.quota) + ' used' : 'Connected')
-                : st === 'connecting' ? (c.message || 'Connecting…')
-                : st === 'error' ? (c.message || 'Disconnected')
-                : remembered ? remembered
-                : d.lastConnected ? 'Last used ' + new Date(d.lastConnected).toLocaleDateString() : 'P2P self-hosted';
+      const st = driveStatus(d);
+      // Only the drive Files is pointed at is being connected. The others are
+      // simply not in use, which is not a fault and not a wait either.
+      const idle = st.kind === 'loading' && store.active !== d.id;
+      const dotCls = st.kind === 'online' ? 'on' : idle ? '' : st.kind === 'loading' ? 'try' : 'err';
+      const sub = st.kind === 'online' ? (c && c.quota ? fmt(c.used) + ' of ' + fmt(c.quota) + ' used' : 'Connected')
+                : idle ? (d.lastConnected ? 'Last used ' + new Date(d.lastConnected).toLocaleDateString() : 'webhtm FileHost')
+                : st.text;
       rows.push(`
-        <div class="drive-row${active ? ' active' : ''}${picked ? ' picked' : ''}${selMode ? ' selecting' : ''}" onclick="P2PDrives.pick('${d.id}')">
+        <div class="drive-row${active ? ' active' : ''}${picked ? ' picked' : ''}${selMode ? ' selecting' : ''}" onclick="P2PDrives.pick('${d.id}')" oncontextmenu="return P2PDrives.rowMenu(event,'${d.id}')">
           <span class="dr-check"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
           <span class="dr-ico p2p"><i class="dr-dot ${dotCls}"></i><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 9h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zm2.5-6.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zm0 9a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5z"/></svg></span>
           <span class="dr-main">
@@ -21809,6 +23425,14 @@ const P2PDrives = (function(){
   function syncSelectUI(){
     const selBtn = $('drivesSelectBtn'), delBtn = $('drivesRemoveBtn');
     if(selBtn) selBtn.textContent = selMode ? 'Cancel' : 'Select';
+    const addBtn = $('drivesAddBtn'), bkBtn = $('drivesBackupBtn');
+    if(addBtn) addBtn.style.display = selMode ? 'none' : '';
+    if(bkBtn){
+      bkBtn.style.display = selMode ? '' : 'none';
+      bkBtn.textContent = 'Back up ' + selected.size;
+      bkBtn.disabled = selected.size === 0;
+      bkBtn.title = selected.size ? 'Copy this device’s files to the selected drive(s)' : 'Pick a drive first';
+    }
     if(delBtn){
       delBtn.style.display = selMode ? 'inline-flex' : 'none';
       const n = selected.size;
@@ -21841,6 +23465,107 @@ const P2PDrives = (function(){
     closePopup('drivesModal');
     await mountRemote(d, {});
   }
+  /* ── back up this device to one or more drives ──────────────────────────
+     One connection exists at a time, so the drives are done in turn: connect,
+     push everything, move on. Whatever was mounted before is restored at the
+     end, whether this succeeded or not. */
+  async function backupLocalTo(ids){
+    ids = (ids || []).filter(id => driveById(id));
+    if(!ids.length) return;
+    const tree = localTree();
+    const files = Object.values(tree).filter(n => n && n.type !== 'folder');
+    if(!files.length){ try{ showToast('This device has no files to back up', 'warn'); }catch{} return; }
+    /* A backup switches drives, which disconnects whatever is mounted. Doing
+       that under a running transfer kills it mid-file and takes its dock rows
+       with it, so there is nothing left to cancel or even to look at. */
+    if(Transfers.busy()){ try{ showToast('Something is still transferring — wait for it to finish', 'warn'); }catch{} return; }
+    const total = files.reduce((n, f) => n + (f.size || 0), 0);
+    const names = ids.map(id => label(driveById(id))).join(', ');
+    const ok = await askConfirm(
+      `Copy this device's ${files.length} file${files.length === 1 ? '' : 's'} (${fmt(total)}) to ${ids.length === 1 ? names : ids.length + ' drives: ' + names}?\n\nEach drive gets a dated folder. Nothing on this device is changed or removed.`,
+      'Back up to ' + (ids.length === 1 ? 'drive' : 'drives'), 'Back up');
+    if(!ok) return;
+
+    const wasActive = store.active;
+    const stamp = new Date();
+    const folder = 'Backup ' + stamp.toISOString().slice(0, 10) + ' ' +
+                   String(stamp.getHours()).padStart(2,'0') + String(stamp.getMinutes()).padStart(2,'0');
+    // Paths are computed once against the local tree, then replayed per drive.
+    const items = _flattenForCopy(tree, (tree.root.children || []));
+    let okDrives = 0, failedDrives = 0, lastErr = '';
+
+    closePopup('drivesModal');
+    for(const id of ids){
+      const d = driveById(id);
+      try{
+        try{ showToast('Connecting to "' + label(d) + '"…'); }catch{}
+        await mountRemote(d, { quiet:true });
+        if(!conn || conn.state !== 'online') throw new Error('Could not reach "' + label(d) + '"');
+        Transfers.reset('backup');
+        const jobs = Transfers.add(items.map(f => ({ name:f.name, size:f.size })));
+        let sentAny = false;
+        // Build the destination folders and hand them over first. The host files
+        // an upload under whatever parent it already knows about, so a folder it
+        // has not been told about yet means everything lands at the root.
+        const bkRoot = _ensurePath(filesTree, 'root', [folder], Date.now());
+        for(const f of items) _ensurePath(filesTree, bkRoot, f.dir, Date.now());
+        await pushTreeNow(filesTree);
+        for(let i = 0; i < items.length; i++){
+          const f = items[i], job = jobs[i];
+          if(Transfers.isCancelled()){ Transfers.finish(job.id, 'cancel'); continue; }
+          Transfers.begin(job.id);
+          // Declared out here so a failure can take the node back out of the
+          // tree. It used to be scoped to the try, so the catch could not reach
+          // it: a file that failed to upload was left in the tree as though it
+          // had arrived, and the next push told the host the same.
+          let newId = null, parentId = null;
+          try{
+            const rec = await localGet(f.id);
+            if(!rec || !rec.data) throw new Error('missing on this device');
+            parentId = _ensurePath(filesTree, bkRoot, f.dir, Date.now());
+            newId = 'file_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+            filesTree[newId] = { id:newId, name:f.name, type:'file', mimeType:f.mime || rec.type,
+                                 size:rec.data.size, parentId, dateCreated:new Date().toISOString() };
+            (filesTree[parentId].children = filesTree[parentId].children || []).push(newId);
+            /* The upload is filed under `newId`, which is not the dock's job id.
+               Cancel used to reach for the job id and find nothing, so a backup
+               could not be stopped once a file was actually moving. */
+            Transfers.onCancel(job.id, () => { try{ abortUpload(newId); }catch{} });
+            await putBlob({ id:newId, name:f.name, type:f.mime || rec.type, data:rec.data });
+            Transfers.finish(job.id, 'done');
+            sentAny = true;
+          }catch(e){
+            const msg = (e && e.message) || 'Failed';
+            // The bytes did not land, so the tree must not claim they did.
+            if(newId){
+              delete filesTree[newId];
+              const p = filesTree[parentId];
+              if(p) p.children = (p.children || []).filter(c => c !== newId);
+            }
+            if(Transfers.isCancelled() || /cancel/i.test(msg)) Transfers.finish(job.id, 'cancel');
+            else { Transfers.finish(job.id, 'fail', msg); lastErr = msg; }
+          }
+        }
+        // Awaited, not debounced: the next thing this loop does is switch
+        // drives, which cancels anything still pending.
+        if(sentAny) await pushTreeNow(filesTree).catch(e => console.warn('[backup tree]', e));
+        okDrives++;
+      }catch(e){
+        failedDrives++;
+        lastErr = (e && e.message) || 'Backup failed';
+        console.warn('[backup]', e);
+      }
+    }
+    // Put the user back where they were.
+    if(wasActive === 'local') mountLocal();
+    else { const back = driveById(wasActive); if(back) await mountRemote(back, { quiet:true }); }
+    try{
+      if(okDrives && !failedDrives) showToast(`Backed up to ${okDrives} drive${okDrives === 1 ? '' : 's'}`);
+      else if(okDrives) showToast(`Backed up to ${okDrives}, ${failedDrives} failed — ${lastErr}`, 'warn');
+      else showToast(lastErr || 'Backup failed', 'error');
+    }catch{}
+  }
+
   async function removeSelected(){
     const ids = [...selected].filter(id => driveById(id));
     if(!ids.length) return;
@@ -21888,6 +23613,40 @@ const P2PDrives = (function(){
     save();
     renderDrivesList();
     try{ showToast('Drive removed'); }catch{}
+  }
+
+  /* Right-click (or long-press) a drive in the switcher. */
+  function rowMenu(e, id){
+    e.preventDefault(); e.stopPropagation();
+    const d = driveById(id);
+    if(!d) return false;
+    const items = [
+      { label:'Open this drive', action:() => pick(id) },
+      { label:'Back up this device here…', action:() => backupLocalTo([id]) },
+      { sep:true },
+      { label:'Drive properties…', action:() => { if(store.active !== id) pick(id); setTimeout(openDriveProperties, 400); } },
+      { label:'Rename on this device…', action:() => renameDrive(id) },
+      { sep:true },
+      { label:'Remove from this device', action:() => remove(id) }
+    ];
+    try{ showCtxMenu(e, items); }catch{}
+    return false;
+  }
+  // Only the name on this device changes; the host keeps its own.
+  function renameDrive(id){
+    const d = driveById(id);
+    if(!d) return;
+    showRenamePopup(label(d), name => {
+      d.label = String(name).trim() || d.hostLabel || 'P2P drive';
+      save(); renderDrivesList(); paintBar();
+      try{ showToast('Renamed on this device'); }catch{}
+    }, { title:'Rename drive', confirmLabel:'Rename' });
+  }
+  async function backupSelected(){
+    const ids = [...selected].filter(x => driveById(x));
+    if(!ids.length){ try{ showToast('Pick at least one drive', 'warn'); }catch{} return; }
+    selMode = false; selected.clear();
+    await backupLocalTo(ids);
   }
 
   function showAddDriveMenu(e){
@@ -21986,7 +23745,13 @@ const P2PDrives = (function(){
       document.addEventListener('click', closeMenu, { once:true });
     }
   }
-  function closeMenu(){ const w = $('filesDriveWrap'); if(w) w.classList.remove('open'); }
+  // Always reopens on the first page: a menu that remembered it was showing
+  // sort options is a menu whose ⋮ does something different each time.
+  function closeMenu(){
+    const w = $('filesDriveWrap');
+    if(w) w.classList.remove('open');
+    try{ showFilesDriveMenuMain(); }catch{}
+  }
 
   /* ── boot ──────────────────────────────────────────────────────────── */
   load();
@@ -22001,13 +23766,29 @@ const P2PDrives = (function(){
     readOnly(){ return !!(conn && conn.readOnly); },
     localLimit(){ return store.localLimit || 0; },
     localUsed,
-    abortUpload, getBlob, getStream,
-    pushTree, paintBar, emptyStateHtml, onFilesOpen, reconnect, pick, remove,
+    abortUpload, getBlob, getStream, localStream,
+    // Streaming media rather than loading it whole. On unless it has been
+    // deliberately turned off, so an absent setting means "yes".
+    streaming(){ return store.streamMedia !== false; },
+    setStreaming,
+    localTree, saveLocalTree, localPut, localDel, localGet, backupLocalTo,
+    selectedIds: () => [...selected], isSelecting: () => selMode,
+    pushTree, pushTreeNow, paintBar, emptyStateHtml, onFilesOpen, reconnect, pick, remove,
     openDrivesModal, renderDrivesList, showAddDriveMenu, openAddDrivePopup, confirmAddDrive,
     onCodeInput, toggleMenu, closeMenu, mountLocal, rewrapCodes,
     openDriveProperties, setDock, openLocalLimit, saveLocalLimit, clearLocalLimit,
-    toggleSelectMode, removeSelected,
+    toggleSelectMode, removeSelected, backupSelected, rowMenu, renameDrive,
     disconnect: () => disconnect('manual'),
+    /* Everything this module is holding in memory about drives the user can no
+       longer see. The cached trees are complete listings of a locked section,
+       and the key store handle is a live path to the codes; both are rebuilt on
+       the next Files open, so dropping them costs a reconnect and nothing else. */
+    dropCaches(){
+      treeCache.clear();
+      try{ selected.clear(); }catch{}
+      try{ _keyDb && _keyDb.close(); }catch{}
+      _keyDb = null;
+    },
     closeKeyStore(){ try{ _keyDb && _keyDb.close(); }catch{} _keyDb = null; }
   };
 
@@ -22586,6 +24367,31 @@ function _setupInactivityAutoLock(){
   }
   bump();
 }
+/* Watching something is not being idle.
+
+   The idle timers listen for pointer, key and scroll events, and someone
+   sitting through a film produces none of them. Locking the section out from
+   under a playing video — or dropping to the home screen and closing the viewer
+   with it — is the timer misreading attention as absence. So playback counts as
+   activity: the timers re-arm instead of firing, and the moment the video is
+   paused, ended or closed the clock starts again from there.
+
+   Deliberately narrow. It is playback that holds the lock off, not an open
+   viewer: a video paused on screen is exactly the case the lock is for. */
+function _mediaIsPlaying(){
+  try{
+    // Playing out of the tab still counts — the picture is on screen somewhere.
+    if(document.pictureInPictureElement) return true;
+    const fs = document.fullscreenElement;
+    if(fs && (fs.tagName === 'VIDEO' || fs.querySelector?.('video,audio'))) return true;
+    for(const el of document.querySelectorAll('video,audio')){
+      // Not merely "has a src": actually running, with something decoded to
+      // run. A stalled or errored element must not hold the lock open forever.
+      if(!el.paused && !el.ended && el.readyState >= 2) return true;
+    }
+  }catch{}
+  return false;
+}
 // Is a section sitting on its password screen right now? Nothing there is
 // unlocked, so there is nothing for the auto-lock to do — but leaving a prompt
 // open on an abandoned screen isn't right either.
@@ -22599,6 +24405,9 @@ function _lockPromptIsOpen(){
 }
 function _lockAllUnlockedModals(){
   if (!settings.menuPassword) return; // no password → nothing to lock
+  // Something is playing: re-arm and come back to it rather than locking the
+  // screen someone is watching.
+  if (_mediaIsPlaying()) { _setupInactivityAutoLock(); return; }
   const anyLockedOpen = [...unlockedModals].some(id => {
     const el = document.getElementById(id);
     return el && el.classList.contains('active');
@@ -22634,7 +24443,11 @@ function _lockAllUnlockedModals(){
     // Auto-lock must clear the decrypted data too, not just cover it with the
     // password screen — otherwise it is still sitting in memory and in the DOM.
     try{ _purgeSectionData(id); }catch{}
+    // Anything the section left floating — a context menu, an open popup, the
+    // upload dock — is showing content the lock is meant to hide.
+    if(id === 'filesModal') try{ Transfers.hide(); }catch{}
   });
+  if(lockedCount) dismissTransientUI();
   try{ _relockVaultIfIdle(); if(KeyVault.isEnabled()) KeyVault.lock(); }catch{}
   // Only say it if it happened. An open modal with no lock config of its own
   // used to reach here and toast about a lock that never took place.
@@ -22666,6 +24479,9 @@ function _setupInactivityHome(){
   bump();
 }
 function _goHomeIdle(){
+  // Same reasoning as the auto-lock: a film playing is not an abandoned screen,
+  // and closing the viewer under it is the worst possible reading of "idle".
+  if (_mediaIsPlaying()) { _setupInactivityHome(); return; }
   try { closeNoteEditor(); } catch{}
   // Don't clobber unsaved viewer edits — only auto-close a clean viewer.
   try { if (!_viewerDirty) closeViewer(); } catch{}
