@@ -2373,6 +2373,10 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 .drive-props .dp-controls{display:flex;flex-direction:column;gap:9px;margin-bottom:6px}
 .drive-props .dp-controls button{padding:10px 16px;font-size:.88em;border-radius:8px}
 .drive-props .dp-toggle{display:flex;align-items:center;gap:10px;font-size:.86em;cursor:pointer;opacity:.9}
+.drive-props .dp-label{display:block;font-size:.82em;opacity:.75;margin-bottom:5px}
+.drive-props .dp-select{width:100%;padding:8px 10px;border-radius:9px;font-size:.88em;
+  background:var(--input-bg,rgba(255,255,255,.06));color:inherit;
+  border:1px solid var(--border,rgba(255,255,255,.14));cursor:pointer}
 .drive-props .dp-toggle input{width:auto;flex:0 0 auto;margin:0;accent-color:var(--accent)}
 
 /* Read-only drives are announced in the drive dock above the files and nowhere
@@ -4042,6 +4046,23 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
     <div class="popup-btn-row">
       <button class="btn-ghost" onclick="closePopup('localLimitPopup')">Cancel</button>
       <button class="btn-primary" onclick="P2PDrives.saveLocalLimit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- A file on the drive that was also saved to this device. Which copy did you
+     mean? Asked once per file unless the answer is remembered, and the memory
+     is undone in Drive properties. -->
+<div class="popup-overlay" id="whichCopyPopup">
+  <div class="popup-box has-close" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="_whichCopyPick(null)">&times;</button>
+    <h3>Open which copy?</h3>
+    <p class="ad-lead" id="whichCopyLead"></p>
+    <div class="ad-status" id="whichCopyDetail"></div>
+    <label class="dp-toggle" style="margin-top:12px"><input type="checkbox" id="whichCopyRemember"><span>Remember this choice for this drive</span></label>
+    <div class="popup-btn-row">
+      <button class="btn-ghost" onclick="_whichCopyPick('drive')" id="whichCopyDriveBtn">From the drive</button>
+      <button class="btn-primary" onclick="_whichCopyPick('local')">This device's copy</button>
     </div>
   </div>
 </div>
@@ -7945,6 +7966,7 @@ function renderNotesWidget(){
 // evaluated fresh on every render: a locked note (or a note inside a locked
 // folder) never appears, and locking one hides it immediately.
 function _notesVisibleInSwitcher(){
+  _ensureNotesLoaded();          // the widget paints before Notes is ever opened
   return notesData.filter(n =>
     n.type !== 'folder' &&
     !_noteIsLockedNow(n) &&
@@ -7957,7 +7979,30 @@ function _notesVisibleInSwitcher(){
 // inside a locked folder are still excluded (a folder can't be unlocked from
 // the widget). The "Hide locked notes from the widget switcher" setting drops
 // locked notes from this list entirely.
+/* Notes on the home screen, before the Notes app has ever been opened.
+
+   `notesData` starts empty and was only ever filled by opening the Notes app —
+   `_loadNotes()` had exactly one caller, the unlock path. So the home-screen
+   widget and its switcher were reading an empty array on every fresh page load
+   and honestly reporting "No notes": the notes were on disk the whole time,
+   nothing had read them.
+
+   Reading them here is safe *except* when Notes is a locked section that has
+   not been unlocked this session — that is precisely the data the lock exists
+   to keep out of memory, so in that case the widget stays empty and says why. */
+let _notesLoadedThisSession = false;
+function _ensureNotesLoaded(){
+  if(_notesLoadedThisSession || (notesData && notesData.length)) return true;
+  if(notesLockedOut()) return false;
+  try{ _loadNotes(); _notesLoadedThisSession = true; }catch(e){ console.warn('[notes load]', e); }
+  return true;
+}
+// Is Notes gated behind a password that has not been given this session?
+function notesLockedOut(){
+  return !!(settings.menuPassword && settings.lockNotes && !unlockedModals.has('notesModal'));
+}
 function _notesForSwitcherList(){
+  _ensureNotesLoaded();
   const hideLocked = settings.hideLockedNotesFromWidget === true;
   return notesData.filter(n => {
     if (n.type === 'folder') return false;
@@ -8061,7 +8106,13 @@ function renderNotesSwitcher(){
   }
   notes.sort((a,b) => (new Date(b.updatedAt||b.createdAt||0)) - (new Date(a.updatedAt||a.createdAt||0)));
   if (!notes.length){
-    listEl.innerHTML = `<div class="ns-empty">${q ? 'No matches' : (visible.length ? 'No notes' : 'No notes available')}</div>`;
+    // "No notes available" was said both when there genuinely were none and
+    // when Notes was locked, which are very different things to be told.
+    const empty = q ? 'No matches'
+                : notesLockedOut() ? 'Notes is locked — open it to unlock'
+                : visible.length ? 'No notes'
+                : 'No notes yet';
+    listEl.innerHTML = `<div class="ns-empty">${_escapeText(empty)}</div>`;
     return;
   }
   const activeId = notesMeta.activeWidgetNoteId;
@@ -14107,8 +14158,24 @@ function getFileMimeGuess(name){
   const m={
     pdf:'application/pdf',
     png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml',bmp:'image/bmp',ico:'image/x-icon',
-    mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime',mkv:'video/x-matroska',avi:'video/x-msvideo',
-    mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',flac:'audio/flac',m4a:'audio/mp4',
+    /* Video. `mov`, `m4v` and `3gp` are ISO base media — the same container as
+       mp4 — so they are labelled `video/mp4`, which is the type engines
+       actually match on. Calling a .mov `video/quicktime` is technically
+       truthful and practically useless: `canPlayType` answers "" for it and the
+       player refuses a file it could have decoded perfectly well. */
+    mp4:'video/mp4',m4v:'video/mp4',mov:'video/mp4','3gp':'video/mp4','3g2':'video/mp4',
+    webm:'video/webm',ogv:'video/ogg',
+    mkv:'video/x-matroska',avi:'video/x-msvideo',wmv:'video/x-ms-wmv',flv:'video/x-flv',
+    mpg:'video/mpeg',mpeg:'video/mpeg',ts:'video/mp2t',m2ts:'video/mp2t',mts:'video/mp2t',
+    // Audio. Same reasoning: m4a/m4b/aac sit in an mp4 container.
+    mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',oga:'audio/ogg',opus:'audio/ogg',
+    flac:'audio/flac',m4a:'audio/mp4',m4b:'audio/mp4',aac:'audio/mp4',weba:'audio/webm',
+    wma:'audio/x-ms-wma',aiff:'audio/aiff',aif:'audio/aiff',amr:'audio/amr',mka:'audio/x-matroska',
+    // Images the older table missed, which is why some of them refused to open.
+    avif:'image/avif',heic:'image/heic',heif:'image/heif',jfif:'image/jpeg',
+    tif:'image/tiff',tiff:'image/tiff',apng:'image/apng',
+    // Documents
+    epub:'application/epub+zip',
     // Text & programming languages
     txt:'text/plain',log:'text/plain',md:'text/markdown',markdown:'text/markdown',rst:'text/plain',csv:'text/csv',tsv:'text/tab-separated-values',
     html:'text/html',htm:'text/html',xhtml:'application/xhtml+xml',
@@ -14128,6 +14195,55 @@ function getFileMimeGuess(name){
     diff:'text/x-diff',patch:'text/x-diff'
   };
   return m[ext]||'application/octet-stream';
+}
+
+/* ── working out what a file actually is ───────────────────────────────────
+
+   A node carries whatever type it was stored with, and that is often nothing
+   useful: a `File` picked from disk reports `""` for plenty of media, a file
+   copied off a P2P drive inherits `application/octet-stream` when the host
+   never knew better, and some sources report a container name no engine
+   matches on. Handing any of those to a <video> produces "MIME type not
+   supported" for a file the browser could have played, or drops it into the
+   "no preview available" branch and never tries at all.
+
+   So the stored type is used only when it says something. Otherwise the name
+   decides, and a handful of types that are really the same container get
+   normalised onto the one engines answer to. */
+const _MIME_VAGUE = new Set(['', 'application/octet-stream', 'binary/octet-stream',
+                             'application/binary', 'application/unknown', 'unknown/unknown']);
+const _MIME_REMAP = {
+  'video/quicktime':'video/mp4', 'video/x-m4v':'video/mp4', 'video/3gpp':'video/mp4',
+  'video/3gpp2':'video/mp4', 'video/x-quicktime':'video/mp4',
+  'audio/x-m4a':'audio/mp4', 'audio/m4a':'audio/mp4', 'audio/aac':'audio/mp4',
+  'audio/mp3':'audio/mpeg', 'audio/x-mpeg':'audio/mpeg', 'audio/x-wav':'audio/wav',
+  'audio/wave':'audio/wav', 'audio/x-flac':'audio/flac', 'audio/opus':'audio/ogg',
+  'audio/x-ogg':'audio/ogg', 'image/jpg':'image/jpeg'
+};
+function resolveMime(node){
+  const raw = String((node && node.mimeType) || '').toLowerCase().split(';')[0].trim();
+  if(_MIME_VAGUE.has(raw)) return getFileMimeGuess((node && node.name) || '');
+  return _MIME_REMAP[raw] || raw;
+}
+
+/* Will this browser play it at all?
+
+   Asked before a player is built, because the alternative is a <video> that
+   sits there dead with "MIME type not supported" in the console and nothing on
+   screen explaining why. Formats the engine genuinely cannot decode — Matroska,
+   AVI, WMV, FLV on most builds — get the unsupported panel and a download
+   button, which is the honest answer.
+
+   `canPlayType` returns "", "maybe" or "probably"; anything but "" is worth a
+   try, because "maybe" is what it says for most real files. */
+let _mimeProbe = {};
+function canPlayHere(mime){
+  if(!/^(video|audio)\//.test(mime || '')) return true;
+  try{
+    const kind = mime.startsWith('video') ? 'video' : 'audio';
+    const el = _mimeProbe[kind] || (_mimeProbe[kind] = document.createElement(kind));
+    return el.canPlayType(mime) !== '';
+  }catch{ return true; }   // no probe available: let the player decide
 }
 // The child folder we most recently stepped UP out of. "Down" returns to it, so
 // up/down behave as a matched pair when you're walking a branch of the tree.
@@ -14784,8 +14900,15 @@ async function saveNodesToDevice(ids){
       const parentId = _ensurePath(localTree, rootFolder, f.dir, stamp);
       const newId = 'file_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
       await P2PDrives.localPut({ id:newId, name:f.name, type:f.mime || rec.type, size:rec.data.size, data:rec.data });
+      /* Remember where this came from.
+
+         Without it there is no way to tell later that a file open on the drive
+         also exists here — matching on name and size would be a guess, and a
+         wrong guess opens the wrong file. The pair (drive, id on that drive) is
+         exact and survives renaming either copy. */
       localTree[newId] = { id:newId, name:f.name, type:'file', mimeType:f.mime || rec.type,
-                           size:rec.data.size, parentId, dateCreated:new Date().toISOString() };
+                           size:rec.data.size, parentId, dateCreated:new Date().toISOString(),
+                           srcDrive: P2PDrives.activeId(), srcId: f.id };
       (localTree[parentId].children = localTree[parentId].children || []).push(newId);
       Transfers.finish(job.id, 'done');
       done++;
@@ -15542,11 +15665,14 @@ const P2PStream = (function(){
   async function urlFor(node, opts){
     if(!supported()) return null;
     if(!await register()) return null;
+    /* `opts.local` forces the this-device source even while a drive is mounted.
+       Needed for a file that was saved here off that very drive: the mount says
+       "remote", but the copy being opened is not. */
     let remote = false;
-    try{ remote = P2PDrives.isRemote(); }catch{}
+    try{ remote = !(opts && opts.local) && P2PDrives.isRemote(); }catch{}
     const token = 'st_' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
     tokens.set(token, { id:node.id, name:node.name,
-                        mime:node.mimeType || getFileMimeGuess(node.name),
+                        mime:resolveMime(node),
                         size:Number(node.size) || 0, remote, total:0,
                         whole: !!(opts && opts.whole) });
     // Tokens are cheap but not free; a viewer session only ever needs a few.
@@ -15608,6 +15734,44 @@ const P2PStream = (function(){
     };
 
     const hadRange = !!ev.data.range;
+
+    /* ── this device: hand over the bytes, do not pipe them ─────────────────
+
+       A file already in this browser needs no pipe at all. Chunking it through
+       the MessagePort cost a postMessage, a queue push and a backpressure
+       decision every few hundred kilobytes — an enormous amount of JavaScript
+       standing between the player and bytes the browser was already holding,
+       and the reason local playback felt slow and stuttered on seek.
+
+       A Blob slice is a lazy view, not a copy, so passing one costs nothing and
+       holds nothing: the worker answers with it directly and the browser
+       streams it out of its own store at native speed. No span cap either —
+       the cap exists to stop the *streamed* path filling the media buffer
+       faster than the player drains it, and there is no stream here. */
+    if(!rec.remote){
+      (async () => {
+        let blob;
+        try{ blob = await P2PDrives.localBlob(rec.id); }
+        catch(e){ return fail(502, (e && e.message) || 'That file is not on this device.'); }
+        if(closed) return;
+        if(!blob) return fail(404, 'That file is not on this device.');
+        const total = blob.size;
+        rec.total = total; rec.size = total;
+        const r2 = parseRange(ev.data.range, total);
+        if(r2 && r2.bad) return fail(416, 'Range not satisfiable', total);
+        const start = r2 ? r2.start : 0;
+        const end = (r2 && r2.end !== null) ? r2.end : Math.max(start, total - 1);
+        const length = total ? (end - start + 1) : 0;
+        headSent = true;
+        port.postMessage({
+          type:'head', ok:true, mime:(blob.type && !_MIME_VAGUE.has(blob.type)) ? blob.type : rec.mime,
+          name:rec.name, partial: hadRange && total > 0 && length > 0,
+          start, end, total, length,
+          blob: total ? blob.slice(start, start + length) : blob
+        });
+      })();
+      return;
+    }
     // Best guess at the length, only to work out where to start reading. Every
     // number that reaches the response headers comes from the source itself.
     const guess = rec.total || rec.size || 0;
@@ -15628,8 +15792,37 @@ const P2PStream = (function(){
        after an upload, a file replaced elsewhere — produces a Content-Length
        the body cannot satisfy, and the only symptom the user sees is a video
        that jumps. One extra message removes the whole class of it. */
+    /* Once the length is known, later requests do not wait to be told it again.
+
+       The head used to be held back until the drive answered with its own
+       figures — one full round trip before a single byte could be asked for,
+       paid again on every seek and every span boundary. It is only needed once:
+       after that the total is known, the range was validated against it, and
+       the head can go out immediately while the request is still in flight.
+       A drive that then disagrees is caught below and corrected. */
+    const headNow = () => {
+      if(closed || headSent || !rec.total || !span) return;
+      if(start + span > rec.total) return;      // last span: let the drive size it
+      headSent = true;
+      port.postMessage({ type:'head', ok:true, mime:rec.mime, name:rec.name,
+                         partial: hadRange, start, end:start + span - 1,
+                         total: rec.total, length: span });
+    };
+
     const onMeta = meta => {
-      if(closed || headSent) return;
+      if(closed) return;
+      // The head already went out on the strength of a known total. Check the
+      // drive agrees; if it does not, the body would not match the promise.
+      if(headSent){
+        const t = Number(meta && meta.total) || 0;
+        const n = Number(meta && meta.size) || 0;
+        if(t && (t !== rec.total || n !== span)){
+          rec.total = t; rec.size = t;
+          try{ port.postMessage({ type:'error', msg:'The drive re-sized that file mid-read' }); }catch{}
+          stop();
+        }
+        return;
+      }
       const total  = Number(meta && meta.total) || 0;
       const off    = Number(meta && meta.off) || 0;
       const length = Number(meta && meta.size) || 0;
@@ -15665,12 +15858,9 @@ const P2PStream = (function(){
     };
 
     try{
-      if(rec.remote){
-        if(!P2PDrives.isOnline()) return fail(503, 'The drive is not connected.');
-        stream = P2PDrives.getStream(rec.id, opts);
-      } else {
-        stream = P2PDrives.localStream(rec.id, opts);
-      }
+      if(!P2PDrives.isOnline()) return fail(503, 'The drive is not connected.');
+      stream = P2PDrives.getStream(rec.id, opts);
+      headNow();                  // no round trip when the length is already known
       if(closed) stop();          // cancelled while we were setting up
     }catch(err){
       if(!headSent){ headSent = true; fail(502, (err && err.message) || 'The drive could not read that file.'); }
@@ -15717,7 +15907,91 @@ function _streamableMime(mime, remote){
 function _shouldStream(node, remote){
   try{ if(!P2PDrives.streaming()) return false; }catch{ return false; }
   if(!P2PStream.supported()) return false;
-  return _streamableMime(node.mimeType || getFileMimeGuess(node.name), remote);
+  const mime = resolveMime(node);
+  if(!_streamableMime(mime, remote)) return false;
+  // Streaming something the engine cannot decode buys nothing — it fails at the
+  // player either way, and the whole-file path at least reaches the panel that
+  // says so and offers the download.
+  return canPlayHere(mime);
+}
+
+/* ── a file that exists in both places ────────────────────────────────────
+
+   "Save to this device" leaves a copy here, and the original stays on the
+   drive. Opening it afterwards while that drive is mounted is ambiguous: the
+   copy on this device opens instantly and works with the drive offline, while
+   the one on the drive is the authoritative version and may have moved on. Both
+   are reasonable answers, so it asks — once, and only when there is genuinely a
+   choice to make. */
+function _localCopyOf(node){
+  try{
+    if(!node || node.type === 'folder') return null;
+    if(!P2PDrives.isRemote()) return null;
+    const drive = P2PDrives.activeId();
+    const tree = P2PDrives.localTree();
+    for(const id in tree){
+      const n = tree[id];
+      if(n && n.srcDrive === drive && n.srcId === node.id) return n;
+    }
+  }catch(e){ console.warn('[local copy]', e); }
+  return null;
+}
+let _whichCopyResolve = null;
+function _whichCopyPick(choice){
+  const remember = document.getElementById('whichCopyRemember');
+  if(choice && remember && remember.checked){
+    try{ P2PDrives.setCopyPref(choice); }catch{}
+    try{ showToast(choice === 'local' ? 'This drive will open saved copies from this device'
+                                      : 'This drive will always open from the drive'); }catch{}
+  }
+  closePopup('whichCopyPopup');
+  const r = _whichCopyResolve; _whichCopyResolve = null;
+  if(r) r(choice);
+}
+function _askWhichCopy(node, local){
+  return new Promise(resolve => {
+    _whichCopyResolve = resolve;
+    const lead = document.getElementById('whichCopyLead');
+    const detail = document.getElementById('whichCopyDetail');
+    const rem = document.getElementById('whichCopyRemember');
+    if(rem) rem.checked = false;
+    if(lead) lead.textContent = `“${node.name}” is on this device as well as on “${P2PDrives.activeLabel()}”.`;
+    if(detail){
+      const same = (local.size || 0) === (node.size || 0);
+      detail.textContent = same
+        ? 'Both copies are the same size. This device is faster and works offline.'
+        : `They differ: ${formatFileSize(local.size || 0)} here, ${formatFileSize(node.size || 0)} on the drive.`;
+      detail.className = 'ad-status' + (same ? '' : ' bad');
+    }
+    openPopup('whichCopyPopup');
+  });
+}
+
+/* Open the copy stored here, while a drive is still mounted.
+
+   `db` is the drive's proxy at this point, so every read has to go the long way
+   round through P2PDrives' direct handles — reading through `db` would ask the
+   host for a local id it has never heard of. `_localCopy` marks the node so the
+   viewer's own download button does the same. */
+async function _openLocalCopy(local, node, tok){
+  const shown = { ...local, name: local.name || node.name, _localCopy: true };
+  if(_shouldStream(shown, false)){
+    try{
+      const url = await P2PStream.urlFor(shown, { local:true });
+      if(url && _viewerTokenValid(tok)){
+        _renderViewerForBlob(shown, new Blob([], { type: resolveMime(shown) }), tok, shown.size || 0, url);
+        return;
+      }
+    }catch(e){ console.warn('[local copy stream]', e); }
+  }
+  try{
+    const rec = await P2PDrives.localGet(local.id);
+    if(!_viewerTokenValid(tok)) return;
+    if(!rec || !rec.data){ showToast('That copy is no longer on this device', 'error'); return; }
+    _renderViewerForBlob(shown, rec.data, tok, rec.data.size);
+  }catch(e){
+    if(_viewerTokenValid(tok)) showToast((e && e.message) || 'Could not read the copy on this device', 'error');
+  }
 }
 
 function openFileViewer(node){
@@ -15727,8 +16001,24 @@ function openFileViewer(node){
   // renderer genuinely requires it. Streaming it in also means the viewer opens
   // against a progress bar instead of a frozen screen.
   try{
-    if(P2PDrives.isRemote() && P2PDrives.isOnline()){ _openRemoteFileViewer(node, _tok); return; }
-  }catch{}
+    if(P2PDrives.isRemote() && P2PDrives.isOnline()){
+      // Saved here as well? Then which copy was meant is a real question.
+      const local = _localCopyOf(node);
+      if(local){
+        const pref = P2PDrives.copyPref();
+        if(pref === 'local'){ _openLocalCopy(local, node, _tok); return; }
+        if(pref === 'drive'){ _openRemoteFileViewer(node, _tok); return; }
+        _askWhichCopy(node, local).then(choice => {
+          if(!_viewerTokenValid(_tok)) return;          // superseded while asking
+          if(!choice) return;                           // dismissed
+          if(choice === 'local') _openLocalCopy(local, node, _tok);
+          else _openRemoteFileViewer(node, _tok);
+        });
+        return;
+      }
+      _openRemoteFileViewer(node, _tok); return;
+    }
+  }catch(e){ console.warn('[open]', e); }
   /* This device's own drive streams too.
 
      A blob: URL over a stored file looks free, and on a desktop browser it very
@@ -15744,7 +16034,7 @@ function openFileViewer(node){
   if(!_remote && _shouldStream(node, false)){
     P2PStream.urlFor(node).then(url => {
       if(!_viewerTokenValid(_tok)) return;
-      if(url){ _renderViewerForBlob(node, new Blob([], { type:node.mimeType || getFileMimeGuess(node.name) }), _tok, node.size || 0, url); return; }
+      if(url){ _renderViewerForBlob(node, new Blob([], { type:resolveMime(node) }), _tok, node.size || 0, url); return; }
       _openLocalFileViewerWhole(node, _tok);
     }).catch(e => { console.warn('[local stream url]', e); _openLocalFileViewerWhole(node, _tok); });
     return;
@@ -15792,7 +16082,24 @@ function _renderViewerForBlob(node, blob, _tok, fullSize, srcUrl){
     _viewerCurrentUrl = null;
     setViewerExtraToolbar('');
     _viewerTypeActions = [];
-    const mime=node.mimeType||getFileMimeGuess(node.name);
+    const mime=resolveMime(node);
+    /* A format this engine cannot decode gets told, not shown.
+
+       Building a <video> for Matroska, AVI or WMV produces an element that
+       reports "MIME type not supported" to the console and nothing at all to
+       the screen — the viewer looks broken rather than honest. The panel says
+       which format it is and offers the file, which is the only useful thing
+       left to do with it. */
+    if(/^(video|audio)\//.test(mime) && !canPlayHere(mime)){
+      vc.innerHTML='';
+      const panel = viewerUnsupportedPanel(node.name, ()=>downloadFileNode(node));
+      const msg = panel.querySelector('.vu-msg');
+      if(msg) msg.textContent = `This browser cannot play ${mime.split('/').pop().replace(/^x-/, '').toUpperCase()} files. Download it to open in a media player.`;
+      vc.appendChild(panel);
+      _viewerTypeActions = [{label:'Download', icon:'dl', fn:()=>viewerDownloadCurrent()}];
+      v.classList.add('open'); v.style.display='flex';
+      return;
+    }
     if(mime.startsWith('image')){
       const img=document.createElement('img');img.id='viewerImageEl';img.src=url;img.style.cssText='max-width:100%;max-height:100%;object-fit:contain;border-radius:10px';vc.appendChild(img);
       _viewerImageState={rot:0,zoom:1};
@@ -15864,7 +16171,7 @@ function _renderViewerForBlob(node, blob, _tok, fullSize, srcUrl){
    move 4 MB. Everything else needs the whole file to render, and that arrives
    with a progress readout and a way out rather than a frozen screen. */
 async function _openRemoteFileViewer(node, tok){
-  const mime = node.mimeType || getFileMimeGuess(node.name);
+  const mime = resolveMime(node);
   const ext = (node.name||'').split('.').pop().toLowerCase();
   // Types the browser renders straight from a URL get one that streams: the
   // player fetches the ranges it wants, seeking works, and no copy of the file
@@ -15993,6 +16300,19 @@ function viewerUnsupportedPanel(name, onDownload){
 function viewerDownloadCurrent(){
   try{
     if(_viewerCurrentNode){
+      // A copy stored here while a drive is mounted: `db` is the drive's proxy,
+      // so this has to read the local database directly or the host would be
+      // asked for an id it has never seen.
+      if(_viewerCurrentNode._localCopy){
+        P2PDrives.localGet(_viewerCurrentNode.id).then(rec => {
+          if(!rec || !rec.data){ showToast('That copy is no longer on this device','error'); return; }
+          const u = URL.createObjectURL(rec.data);
+          const a = document.createElement('a'); a.href = u; a.download = _viewerCurrentNode.name || 'download';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(u), 5000);
+        }).catch(() => showToast('Download failed','error'));
+        return;
+      }
       if(typeof downloadFileNode==='function' && filesTree[_viewerCurrentNode.id]){ downloadFileNode(_viewerCurrentNode); return; }
       const store = _viewerCurrentNode._store || 'files';
       const tx=db.transaction([store],'readonly');
@@ -17220,7 +17540,7 @@ function showProperties(item){
 // ═══════════════════════════════════════════════════════
 function _fileAcceptedBy(node, dest){
   if(!node || node.type==='folder') return false;
-  const mime=(node.mimeType||getFileMimeGuess(node.name)||'').toLowerCase();
+  const mime=(resolveMime(node)||'').toLowerCase();
   const ext=(node.name||'').split('.').pop().toLowerCase();
   if(dest==='media'){
     return mime.startsWith('image/') || mime.startsWith('video/') || mime==='application/pdf'
@@ -23283,6 +23603,18 @@ const P2PDrives = (function(){
     // per-kind controls rather than inside one of them.
     controls.push(`<label class="dp-toggle"><input type="checkbox" id="dpStreamToggle" ${store.streamMedia === false ? '' : 'checked'} onchange="P2PDrives.setStreaming(this.checked)"><span>Stream video and audio${esc(streamHint())}</span></label>`);
     if(isRem){
+      /* Files saved onto this device off this drive exist twice. This is where
+         the answer to "which one did you mean" is set and, more importantly,
+         un-set — a choice remembered from a dialog with no way back is a trap. */
+      const pref = (store.copyPref && store.copyPref[store.active]) || 'ask';
+      const saved = Object.values(localTree()).filter(n => n && n.srcDrive === store.active).length;
+      controls.push(
+        `<label class="dp-label" for="dpCopyPref">Files also saved on this device (${saved})</label>` +
+        `<select id="dpCopyPref" class="dp-select" onchange="P2PDrives.setCopyPref(this.value);P2PDrives.openDriveProperties()">` +
+          `<option value="ask"${pref==='ask'?' selected':''}>Ask which copy to open</option>` +
+          `<option value="local"${pref==='local'?' selected':''}>Always open this device's copy</option>` +
+          `<option value="drive"${pref==='drive'?' selected':''}>Always open from the drive</option>` +
+        `</select>`);
       controls.push(`<label class="dp-toggle"><input type="checkbox" id="dpDockToggle" ${store.showDock === false ? '' : 'checked'} onchange="P2PDrives.setDock(this.checked)"><span>Show the connection dock above the files</span></label>`);
       controls.push(`<button class="btn-ghost" onclick="closePopup('drivePropsModal');P2PDrives.reconnect()">Reconnect</button>`);
     } else {
@@ -23759,6 +24091,19 @@ const P2PDrives = (function(){
   const api = {
     isRemote(){ return store.active !== 'local' && !!driveById(store.active); },
     isOnline(){ return !!conn && conn.state === 'online'; },
+    activeId(){ return store.active; },
+    /* Which copy to open when a file exists both on the drive and here.
+       'ask' (the default), 'local' or 'drive'. Per drive, because the answer
+       depends on the drive — a fast LAN host and a slow remote one deserve
+       different defaults. */
+    copyPref(){ load(); return (store.copyPref && store.copyPref[store.active]) || 'ask'; },
+    setCopyPref(v){
+      load();
+      store.copyPref = store.copyPref || {};
+      if(v && v !== 'ask') store.copyPref[store.active] = v;
+      else delete store.copyPref[store.active];
+      save();
+    },
     activeLabel,
     freeBytes(){ return conn && conn.state === 'online' ? Math.max(0, conn.quota - conn.used) : 0; },
     quotaBytes(){ return conn ? conn.quota : 0; },
@@ -23772,6 +24117,9 @@ const P2PDrives = (function(){
     streaming(){ return store.streamMedia !== false; },
     setStreaming,
     localTree, saveLocalTree, localPut, localDel, localGet, backupLocalTo,
+    // The stored Blob itself, for the stream worker's fast path. Handing over
+    // the Blob costs nothing — it is a handle, not the bytes.
+    async localBlob(id){ const rec = await localGet(id); return (rec && rec.data) || null; },
     selectedIds: () => [...selected], isSelecting: () => selMode,
     pushTree, pushTreeNow, paintBar, emptyStateHtml, onFilesOpen, reconnect, pick, remove,
     openDrivesModal, renderDrivesList, showAddDriveMenu, openAddDrivePopup, confirmAddDrive,
