@@ -79,7 +79,7 @@ async function serve(e){
      Kept small deliberately. This queue buys nothing but smoothness: the span
      itself is the read-ahead, and every byte parked here is resident memory on
      a machine that may not have much. */
-  const HOLD_AT = 1024 * 1024;
+  const HOLD_AT = 4 * 1024 * 1024;
   const check = () => {
     const room = controller ? controller.desiredSize : 0;
     if(!held && room <= 0){ held = true; try{ mc.port1.postMessage({ type:'hold' }); }catch{} }
@@ -134,6 +134,30 @@ async function serve(e){
     };
     client.postMessage({ type:'p2p-open', token, range: e.request.headers.get('range') || '' }, [mc.port2]);
   });
+
+  /* The page handed over the bytes themselves, as a Blob.
+
+     This is the fast path, and it is enormously faster: a file that already
+     lives in this browser needs no pipe at all. Chunking it through a
+     MessagePort meant a postMessage, a queue push and a backpressure decision
+     for every few hundred kilobytes — all of it JavaScript standing between the
+     player and bytes the browser already had. Handing over the Blob instead
+     lets the response stream straight out of the browser's own store at native
+     speed, with no per-chunk work anywhere and nothing on the heap: a Blob
+     slice is a lazy view, not a copy. */
+  if(head && head.ok && head.blob){
+    try{ mc.port1.close(); }catch{}
+    const h = new Headers();
+    h.set('Content-Type', head.mime || 'application/octet-stream');
+    h.set('Accept-Ranges', 'bytes');
+    h.set('Cache-Control', 'no-store');
+    h.set('Content-Length', String(head.length));
+    if(head.partial){
+      h.set('Content-Range', `bytes ${head.start}-${head.end}/${head.total}`);
+      return new Response(head.blob, { status:206, statusText:'Partial Content', headers:h });
+    }
+    return new Response(head.blob, { status:200, headers:h });
+  }
 
   if(!head || !head.ok){
     try{ mc.port1.close(); }catch{}
