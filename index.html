@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2180,6 +2181,11 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 .cchk svg{width:14px;height:14px;fill:#fff;opacity:0;transform:scale(.5);transition:opacity .13s,transform .13s;pointer-events:none}
 .cchk.checked{background:var(--accent-bg);border-color:transparent}
 .cchk.checked svg{opacity:1;transform:scale(1)}
+/* A box that will refuse the tick, saying so before it is pressed rather than
+   accepting the press and complaining afterwards. Still clickable — the toast
+   explains why, which a fully inert control could not. */
+.cchk.idle-blocked{opacity:.4;border-style:dashed;cursor:not-allowed}
+.cchk.idle-blocked:hover{border-color:var(--danger)}
 /* Events rows get a checkbox column while select mode is on. */
 .reminder-item.selectable{display:flex;align-items:flex-start;gap:10px}
 .reminder-item.selectable .rem-body{flex:1;min-width:0}
@@ -2405,6 +2411,10 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
 }
 .up-dock.on{display:flex}
 .up-dock.hidden{display:none}
+/* Following the work onto the home screen. Same strip, marked along its top
+   edge so it reads as something still running elsewhere rather than as part of
+   whatever app is on screen. */
+.up-dock.away{border-top:2px solid var(--accent)}
 
 /* Finished cleanly: the whole strip fades to the accent colour, says so, and
    drops out of view. Only ever shown when nothing failed or was cancelled. */
@@ -2909,6 +2919,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
         <!-- hidden legacy input, still stores masterPassword value -->
         <input type="hidden" id="menuPassword" value="">
         <div class="widget-checkbox"><input type="checkbox" id="usePasskey"><label for="usePasskey">Use Passkey (device biometrics)</label></div>
+        <div class="inactivity-hint" id="passkeyHint">The passkey holds its own copy of your encryption key, so it decrypts locked sections exactly as the password does. Register it while your data is unlocked — and register it again after setting a master password for the first time, or it will have a copy of the wrong key.</div>
         <div class="widget-checkbox lock-all-row"><input type="checkbox" id="lockAll"><label for="lockAll"><strong>Lock All</strong></label></div>
         <div class="widget-checkbox"><input type="checkbox" id="lockHistory"><label for="lockHistory">Lock History</label></div>
         <div class="widget-checkbox"><input type="checkbox" id="lockBookmarks"><label for="lockBookmarks">Lock Bookmarks</label></div>
@@ -3018,6 +3029,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
           <div class="widget-checkbox"><input type="checkbox" id="notifyTaskLimit"><label for="notifyTaskLimit">Approaching or passing a task/job time limit</label></div>
           <div class="widget-checkbox"><input type="checkbox" id="notifyJobPause"><label for="notifyJobPause">A job left paused too long ("get back to it")</label></div>
           <div class="widget-checkbox"><input type="checkbox" id="notifyJobAutoStart"><label for="notifyJobAutoStart">A job starting itself at its scheduled time</label></div>
+          <div class="widget-checkbox"><input type="checkbox" id="notifyTransfers"><label for="notifyTransfers">A file transfer finishing while Files is closed</label></div>
           <div class="inactivity-hint">Alarms and the timer always show their in-app dialog and play a sound while Googoke is open. These add a system notification on top, which is what reaches you when the app is in the background.</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
@@ -4437,7 +4449,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
          rather than letting the taps quietly fail. -->
     <div class="te-idle-hint" id="taskIdleHint" style="display:none">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-      <span>Start the job to begin timing and tick tasks off.</span>
+      <span id="taskIdleHintText">Start the job to begin timing and tick tasks off.</span>
     </div>
     <div class="te-select-bar" id="taskSelectBar">
       <button class="btn-ghost" onclick="toggleTaskSelectAll()" id="taskSelectAllBtn">Select all</button>
@@ -5321,6 +5333,21 @@ const Crypto = {
 const KeyVault = (function(){
   const WRAP_PW  = '__googoke_dek_pw';
   const WRAP_REC = '__googoke_dek_rec';
+  /* A third wrapped copy, under a key only the passkey can produce.
+
+     A passkey used to prove *who* you are and nothing more, so pressing "Use
+     Passkey" on an encrypted section opened a section with no data in it and a
+     message saying to type the password instead — which is not a passkey, it is
+     a detour. The DEK is what actually opens the data, so the passkey has to
+     hold a copy of it.
+
+     Note what this is not: the passkey does not encrypt the *password*. The
+     password is never stored anywhere, in any form, and after this change it
+     still is not. What the passkey unwraps is the same key the password
+     unwraps, which is the thing every decryption actually needs — so the
+     passkey opens exactly what the password opens, and neither one can be
+     derived from the other. */
+  const WRAP_PK  = '__googoke_dek_pk';
   const ITER = 210000;   // OWASP-recommended floor for PBKDF2-SHA256
   // Which localStorage keys move under the password when their section is locked.
   const SECTION_KEYS = {
@@ -5362,6 +5389,55 @@ const KeyVault = (function(){
       return new Uint8Array(pt);
     }catch{ return null; }
   }
+  /* Wrapping under a key that is already 256 random bits.
+
+     `_wrap` stretches its secret with PBKDF2 because a password is low-entropy
+     and needs the work factor. A passkey's secret is not: it is a full-strength
+     key handed over by the authenticator, so stretching it would cost a fifth
+     of a second on every unlock and buy nothing. AES-GCM directly, with a fresh
+     IV, is the whole of what is needed. */
+  async function _wrapKey(dek, key){
+    const iv = _bytes(12);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, dek));
+    const all = new Uint8Array(12 + ct.length);
+    all.set(iv, 0); all.set(ct, 12);
+    return _b64(all);
+  }
+  async function _unwrapKey(blob, key){
+    try{
+      const all = _unb64(blob);
+      if(all.length < 13) return null;
+      const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv: all.slice(0, 12) }, key, all.slice(12));
+      return new Uint8Array(pt);
+    }catch{ return null; }
+  }
+  const hasPasskeyWrap = () => !!raw().rawGet(WRAP_PK);
+  // Store a copy of the live DEK under the passkey's key. Only possible while
+  // the vault is open, which is the point: binding a passkey is something you
+  // do having already proved you can decrypt.
+  async function bindPasskey(key){
+    const dek = raw().dekBytes();
+    if(!dek || !key) return false;
+    raw().rawSet(WRAP_PK, await _wrapKey(dek, key));
+    return true;
+  }
+  async function unlockWithPasskey(key){
+    const blob = raw().rawGet(WRAP_PK);
+    if(!blob || !key) return false;
+    const dek = await _unwrapKey(blob, key);
+    if(!dek) return false;
+    raw().setDek(dek);
+    raw().markProtected(lockedSectionKeys());
+    return true;
+  }
+  // The wrap is only as good as the DEK inside it. Anything that mints a new
+  // DEK, or destroys it, has to take this with it — a stale copy would unlock
+  // nothing and would silently fail in a way that looks like a broken passkey.
+  function clearPasskeyWrap(){
+    raw().rawSet(WRAP_PK, '');
+    try{ localStorage.removeItem(WRAP_PK); }catch{}
+  }
+
   // Human-friendly, unambiguous alphabet (no O/0, I/1).
   function makeRecoveryKey(){
     const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -5393,6 +5469,8 @@ const KeyVault = (function(){
     const recovery = makeRecoveryKey();
     raw().rawSet(WRAP_PW,  await _wrap(dek, password));
     raw().rawSet(WRAP_REC, await _wrap(dek, recovery.replace(/-/g,'')));
+    // A new DEK: whatever a passkey was holding is now the wrong key.
+    clearPasskeyWrap();
     raw().setDek(dek);
     raw().rekey(lockedSectionKeys(), true);   // move locked data under the DEK
     await _rewrapDriveCodes();
@@ -5432,6 +5510,7 @@ const KeyVault = (function(){
     raw().setDek(null);
     raw().rawSet(WRAP_PW, ''); raw().rawSet(WRAP_REC, '');
     try{ localStorage.removeItem(WRAP_PW); localStorage.removeItem(WRAP_REC); }catch{}
+    clearPasskeyWrap();
     return true;
   }
   async function regenerateRecovery(password){
@@ -5458,7 +5537,8 @@ const KeyVault = (function(){
     _rewrapDriveCodes();
   }
   return { enable, disable, unlock, unlockWithRecovery, changePassword, regenerateRecovery,
-           lock, isEnabled, isUnlocked, syncSections, makeRecoveryKey, SECTION_KEYS, lockedSectionKeys };
+           lock, isEnabled, isUnlocked, syncSections, makeRecoveryKey, SECTION_KEYS, lockedSectionKeys,
+           bindPasskey, unlockWithPasskey, hasPasskeyWrap, clearPasskeyWrap };
 })();
 window.KeyVault = KeyVault;
 
@@ -5839,6 +5919,9 @@ const DEFAULT_SETTINGS = {
   notifyTaskLimit: true,       // approaching / passing a task or job limit
   notifyJobPause: true,        // a job left paused past its maximum pause
   notifyJobAutoStart: true,    // a job starting itself at its scheduled time
+  // Transfers now keep running with Files closed, so their outcome has to reach
+  // the user somewhere other than a dock they are no longer looking at.
+  notifyTransfers: true,
   // ── RSS ──
   rssShowImages: true,         // article thumbnails inside the RSS app
   // ── Page Viewer ──
@@ -6071,8 +6154,10 @@ function dismissTransientUI(){
 function closeModal(id) {
   const m = document.getElementById(id);
   if (m) { m.classList.remove('active','modal-suspended'); m.style.display = 'none'; }
-  // The upload dock belongs to Files; it must not float over the home screen.
-  if (id === 'filesModal') { try{ Transfers.hide(); }catch{} }
+  /* The dock belongs to Files, but a transfer in flight does not stop because
+     the app was closed — so it only stands down when nothing is left moving.
+     A locked Files section is handled separately, in its purge hook. */
+  if (id === 'filesModal') { try{ Transfers.leaveFiles(); }catch{} }
   if (!CHILD_MODALS.has(id)) dismissTransientUI();
   // Knowledge search is a query surface, not a setting — leaving it discards
   // the query, the match mode, the dates and the scope, so reopening always
@@ -6124,7 +6209,7 @@ function closeAllModals() {
   // Nothing is open any more, so the floating search bar has no target, and
   // nothing transient any app put up has anywhere to belong.
   try{ closeFloatingSearch(); }catch{}
-  try{ Transfers.hide(); }catch{}
+  try{ Transfers.leaveFiles(); }catch{}
   dismissTransientUI();
   try{ _relockVaultIfIdle(); }catch{}
   _syncScrollLock();
@@ -6465,8 +6550,10 @@ const SECTION_PURGE_HOOKS = {
   reminderModal: [() => { try{ closeEventsViewer(); closePopup('addEventModal'); }catch{} }],
   filesModal: [
     () => {
-      // The upload dock belongs to Files and shows filenames.
-      try{ Transfers.hide(); }catch{}
+      // The dock shows filenames out of the section being locked, and the
+      // connection its work rides on is dropped two lines below — so the
+      // transfers are stopped outright rather than hidden and left to fail.
+      try{ Transfers.purge(); }catch{}
       try{ selectedFileIds.clear(); }catch{}
       try{ currentFolderId = 'root'; }catch{}
       /* Drop the drive. The connection is an open door to every file on it, the
@@ -6525,6 +6612,152 @@ async function passwordMatches(input){
   return false;
 }
 
+/* ── the key a passkey can produce ─────────────────────────────────────────
+
+   A WebAuthn assertion proves who you are. On its own it hands back nothing you
+   can decrypt with, which is why "Use Passkey" used to open a locked section
+   and then have to admit it could not read it.
+
+   Two ways to get an actual key out of one, in order of preference:
+
+   1. The PRF extension. The authenticator evaluates a pseudo-random function
+      over a fixed salt using key material that never leaves it, and returns 32
+      bytes that are the same every time for this credential and this salt, and
+      unobtainable without the credential and the user's fingerprint or PIN.
+      This is the real answer: the wrapping key exists nowhere on this machine.
+
+   2. A non-extractable AES key in IndexedDB, for authenticators and browsers
+      with no PRF. `generateKey(..., extractable:false, ...)` produces a key the
+      page can encrypt and decrypt with but can never read, and it is only ever
+      reached after an assertion has succeeded — so script cannot exfiltrate it
+      and a passing glance at storage does not yield it. It is weaker than (1),
+      honestly: someone with the browser profile *files* has the key material,
+      whereas with PRF they would still need the authenticator. The password and
+      the recovery key are unaffected either way, and both remain the stronger
+      route in. */
+const PK_PRF_SALT = new TextEncoder().encode('googoke-vault-prf-v1');
+const PK_DB = 'googoke-passkey', PK_STORE = 'k';
+
+function _pkIdb(){
+  return new Promise((res, rej) => {
+    let rq;
+    try{ rq = indexedDB.open(PK_DB, 1); }catch(e){ return rej(e); }
+    rq.onupgradeneeded = () => { try{ rq.result.createObjectStore(PK_STORE); }catch{} };
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error || new Error('Could not open passkey storage'));
+  });
+}
+function _pkIdbGet(db, key){
+  return new Promise((res, rej) => {
+    const r = db.transaction([PK_STORE], 'readonly').objectStore(PK_STORE).get(key);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+function _pkIdbPut(db, key, val){
+  return new Promise((res, rej) => {
+    const tx = db.transaction([PK_STORE], 'readwrite');
+    tx.objectStore(PK_STORE).put(val, key);
+    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+  });
+}
+// Fallback (2): the same key every time, generated once, never readable.
+async function _pkLocalKey(){
+  try{
+    const db = await _pkIdb();
+    const have = await _pkIdbGet(db, 'wrap');
+    if(have) return have;
+    const key = await crypto.subtle.generateKey({ name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+    await _pkIdbPut(db, 'wrap', key);
+    return key;
+  }catch(e){ console.warn('[passkey local key]', e); return null; }
+}
+// One assertion, asking for PRF output along the way. Throws what WebAuthn
+// throws so callers can tell "cancelled" from "not supported".
+function _pkAssert(){
+  if(!settings.passkeyCredentialId) return Promise.resolve(null);
+  const id = Uint8Array.from(atob(settings.passkeyCredentialId), c => c.charCodeAt(0));
+  return navigator.credentials.get({ publicKey: {
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
+    allowCredentials: [{ id, type: 'public-key' }],
+    userVerification: 'preferred',
+    extensions: { prf: { eval: { first: PK_PRF_SALT } } }
+  }});
+}
+// The wrapping key this assertion yields, by whichever of the two routes works.
+async function _pkKeyFrom(assertion){
+  let prf = null;
+  try{
+    const r = assertion && assertion.getClientExtensionResults ? assertion.getClientExtensionResults() : null;
+    const first = r && r.prf && r.prf.results && r.prf.results.first;
+    if(first) prf = new Uint8Array(first);
+  }catch(e){ console.warn('[passkey prf]', e); }
+  if(prf && prf.length >= 32){
+    // Hashed with a domain tag rather than used raw, so this key is unrelated
+    // to anything else the same PRF output might ever be used for.
+    const tagged = new Uint8Array(PK_PRF_SALT.length + prf.length);
+    tagged.set(PK_PRF_SALT, 0); tagged.set(prf, PK_PRF_SALT.length);
+    const h = await crypto.subtle.digest('SHA-256', tagged);
+    prf.fill(0);
+    return crypto.subtle.importKey('raw', h, { name:'AES-GCM' }, false, ['encrypt','decrypt']);
+  }
+  return _pkLocalKey();
+}
+
+/* The one passkey flow every caller uses.
+
+   Resolves { ok, vault } — `ok` is "this is the right person", `vault` is
+   "and the locked data is now readable". A caller that only needs a yes/no
+   ignores the second; one that is about to show encrypted content must not.
+
+   Opening the vault is attempted whenever it is closed and a wrap exists, so a
+   single prompt does both jobs rather than asking twice. */
+async function passkeyVerify(opts){
+  opts = opts || {};
+  if(!settings.passkeyCredentialId) return { ok:false, vault:false, reason:'none' };
+  if(!navigator.credentials || !navigator.credentials.get) return { ok:false, vault:false, reason:'unsupported' };
+  let assertion = null;
+  try{ assertion = await _pkAssert(); }
+  catch(e){
+    console.warn('[passkey]', e);
+    return { ok:false, vault:false, reason: (e && e.name === 'NotAllowedError') ? 'cancelled' : 'failed' };
+  }
+  if(!assertion) return { ok:false, vault:false, reason:'failed' };
+  let vault = KeyVault.isUnlocked();
+  if(!vault && KeyVault.isEnabled() && KeyVault.hasPasskeyWrap()){
+    try{
+      const key = await _pkKeyFrom(assertion);
+      vault = !!(key && await KeyVault.unlockWithPasskey(key));
+    }catch(e){ console.warn('[passkey unlock]', e); }
+  }
+  // Registration and re-binding come through here too: the vault is open and
+  // the passkey should be able to open it next time.
+  if(opts.bind && KeyVault.isUnlocked()){
+    try{
+      const key = await _pkKeyFrom(assertion);
+      if(key) await KeyVault.bindPasskey(key);
+    }catch(e){ console.warn('[passkey bind]', e); }
+  }
+  return { ok:true, vault, reason:'' };
+}
+
+/* Give the registered passkey a copy of the current key.
+
+   Called after anything that mints a new DEK. Costs one platform prompt, and
+   without it the passkey silently stops opening anything — which is exactly the
+   failure that is hard to attribute later. */
+async function rebindPasskeyToVault(opts){
+  opts = opts || {};
+  if(!settings.usePasskey || !settings.passkeyCredentialId) return false;
+  if(!KeyVault.isEnabled() || !KeyVault.isUnlocked()) return false;
+  if(KeyVault.hasPasskeyWrap() && !opts.force) return true;
+  const r = await passkeyVerify({ bind:true });
+  if(!r.ok){
+    if(!opts.silent) showToast('Passkey not confirmed — it will not open locked sections until you re-register it', 'warn');
+    return false;
+  }
+  return KeyVault.hasPasskeyWrap();
+}
+
 async function registerPasskey() {
   const pkCb = document.getElementById('usePasskey');
   if (!navigator.credentials || !navigator.credentials.create) {
@@ -6553,14 +6786,35 @@ async function registerPasskey() {
       ],
       authenticatorSelection: { userVerification: 'preferred', residentKey: 'preferred' },
       timeout: 60000,
-      attestation: 'none'
+      attestation: 'none',
+      // Asks the authenticator to make a per-credential secret available. Where
+      // it is honoured, that secret — and nothing on this machine — is what
+      // wraps the encryption key.
+      extensions: { prf: {} }
     }});
     if(!cred || !cred.rawId) throw new Error('Empty credential');
     settings.passkeyCredentialId = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
     settings.usePasskey = true;
     saveSettings();
     if(pkCb) pkCb.checked = true;
-    showToast('Passkey registered!');
+    /* Registering is only half of it. A passkey that cannot produce the
+       encryption key is the old behaviour — an unlock that opens an empty
+       section — so the credential is used once, here, to wrap a copy of the
+       DEK. It needs the vault open, which is why an encrypted-but-locked vault
+       is asked for the password first rather than being left half-configured.
+
+       PRF results are not returned by create() on any current engine, so this
+       second prompt is unavoidable; it is also the last one this passkey will
+       ever need for setup. */
+    if(!KeyVault.isEnabled()){
+      showToast('Passkey registered — it will unlock your data once you set a master password');
+    } else if(!KeyVault.isUnlocked()){
+      showToast('Passkey registered — enter your master password once so it can hold the key', 'warn');
+    } else if(await rebindPasskeyToVault({ force:true, silent:true })){
+      showToast('Passkey registered — it can now unlock your locked sections');
+    } else {
+      showToast('Passkey registered, but it could not take a copy of your key — try registering again', 'warn');
+    }
   } catch (err) {
     console.error('[Passkey registration]', err);
     const msg = (err && err.name==='NotAllowedError') ? 'Passkey cancelled or not allowed'
@@ -6573,29 +6827,27 @@ async function registerPasskey() {
 }
 async function authenticatePasskey(modalId) {
   if (!settings.passkeyCredentialId) { showToast('No passkey registered', 'error'); return; }
-  try {
-    const assertion = await navigator.credentials.get({ publicKey: {
-      challenge: crypto.getRandomValues(new Uint8Array(32)),
-      allowCredentials: [{ id: Uint8Array.from(atob(settings.passkeyCredentialId), c => c.charCodeAt(0)), type: 'public-key' }],
-      userVerification: 'preferred'
-    }});
-    if (assertion) {
-      // A passkey proves who you are, but it cannot derive the encryption key —
-      // only the password (or the recovery key) can. Say so plainly instead of
-      // opening an empty section, and never weaken the encryption to make the
-      // passkey shortcut work.
-      if (KeyVault.isEnabled() && !KeyVault.isUnlocked()) {
-        showToast('This section is encrypted — enter your password to decrypt it', 'warn');
-        const pwScreen = document.getElementById(MODAL_SCREENS[modalId]);
-        const inp = pwScreen ? pwScreen.querySelector('.password-input') : null;
-        if (inp) setTimeout(()=>{ try{ inp.focus(); }catch{} }, 60);
-        return;
-      }
-      _reloadSectionData(modalId);
-      unlockedModals.add(modalId);
-      openLockedModal(modalId);
-    }
-  } catch { showToast('Passkey authentication failed', 'error'); }
+  const r = await passkeyVerify();
+  if (!r.ok) {
+    if (r.reason !== 'cancelled') showToast('Passkey authentication failed', 'error');
+    return;
+  }
+  /* The passkey holds no copy of the key. That is recoverable — the password
+     still works — but opening the section anyway would show an empty one, which
+     is what this used to do. Say which of the two situations it is, because
+     they need different things from the user. */
+  if (KeyVault.isEnabled() && !r.vault) {
+    showToast(KeyVault.hasPasskeyWrap()
+      ? 'The passkey could not decrypt this — enter your password'
+      : 'This passkey has no copy of your key yet — unlock with your password once, then re-register it in Settings', 'warn');
+    const pwScreen = document.getElementById(MODAL_SCREENS[modalId]);
+    const inp = pwScreen ? pwScreen.querySelector('.password-input') : null;
+    if (inp) setTimeout(()=>{ try{ inp.focus(); }catch{} }, 60);
+    return;
+  }
+  _reloadSectionData(modalId);
+  unlockedModals.add(modalId);
+  openLockedModal(modalId);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -6640,14 +6892,11 @@ function _updateTasksPinRow(){
 // user dismisses the platform prompt — so a caller can fall back to a password.
 async function passkeyAuthenticate(){
   if(!settings.usePasskey || !settings.passkeyCredentialId) return false;
-  try{
-    const assertion = await navigator.credentials.get({ publicKey: {
-      challenge: crypto.getRandomValues(new Uint8Array(32)),
-      allowCredentials: [{ id: Uint8Array.from(atob(settings.passkeyCredentialId), c => c.charCodeAt(0)), type: 'public-key' }],
-      userVerification: 'preferred'
-    }});
-    return !!assertion;
-  }catch(e){ console.warn('[passkey]', e); return false; }
+  // Opens the vault as a side effect where it can — a caller that only wanted a
+  // yes/no is not harmed by it, and one that goes on to read locked data is
+  // spared a second prompt for the same fingerprint.
+  const r = await passkeyVerify();
+  return r.ok;
 }
 // Changing or clearing the task PIN has to be at least as hard as using it —
 // otherwise the guard is decorative: anyone holding the phone could just set a
@@ -6819,6 +7068,13 @@ async function confirmChangePassword(){
   closePopup('changePasswordPopup');
   if(recovery) showRecoveryKey(recovery, true);
   else showToast('Password updated');
+  /* Setting a password for the first time mints a fresh key, which any
+     registered passkey knows nothing about. Handing it a copy now — one prompt,
+     while the vault is demonstrably open — is the difference between the
+     passkey working afterwards and failing silently the next time it is used.
+     Changing an existing password keeps the same key, so there is nothing to
+     do and `rebindPasskeyToVault` returns without prompting. */
+  try{ await rebindPasskeyToVault(); }catch(e){ console.warn('[passkey rebind]', e); }
 }
 // Shown once, at password setup. There is deliberately no way to display it
 // again later — only to generate a fresh one, which invalidates the old.
@@ -7016,7 +7272,17 @@ function attachSettingsListeners() {
     if (this.checked) {
       // Always allow (re)registration when user opts in
       await registerPasskey();
+      return;
     }
+    /* Turning it off has to destroy the copy of the key it was holding, not
+       merely stop offering the button. A wrap left behind is a second, silent
+       route into the data that the user has just said they do not want — and
+       it would still be there if the credential were later re-registered on a
+       different authenticator. */
+    settings.usePasskey = false;
+    try{ KeyVault.clearPasskeyWrap(); }catch(e){ console.warn('[passkey clear]', e); }
+    saveSettings();
+    showToast('Passkey unlocking turned off');
   });
   // Auto-request notification permission when Enable Notifications is turned on
   const enNotif = document.getElementById('enableNotifications');
@@ -7138,14 +7404,24 @@ async function submitVerifyAction(){
 function cancelVerifyAction(){ _resolveVerifyAction(false); }
 async function authenticateVerifyActionPasskey(){
   if (!settings.passkeyCredentialId){ showToast('No passkey registered','error'); return; }
-  try {
-    const assertion = await navigator.credentials.get({ publicKey: {
-      challenge: crypto.getRandomValues(new Uint8Array(32)),
-      allowCredentials: [{ id: Uint8Array.from(atob(settings.passkeyCredentialId), c => c.charCodeAt(0)), type: 'public-key' }],
-      userVerification: 'preferred'
-    }});
-    if (assertion) _resolveVerifyAction(true);
-  } catch(e){ console.warn('[verify passkey]', e); showToast('Passkey authentication failed','error'); }
+  const r = await passkeyVerify();
+  if (!r.ok){
+    if (r.reason !== 'cancelled') showToast('Passkey authentication failed','error');
+    return;
+  }
+  /* Some of what this gate protects needs the vault open, not merely the
+     person confirmed — re-keying, exporting, anything that reads a locked
+     section. Letting it through with the vault shut hands the caller data it
+     cannot read and no explanation. */
+  if (KeyVault.isEnabled() && !r.vault){
+    showToast(KeyVault.hasPasskeyWrap()
+      ? 'The passkey could not decrypt your data — enter your password'
+      : 'This passkey has no copy of your key — enter your password', 'warn');
+    const inp = document.getElementById('verifyActionInput');
+    if (inp) setTimeout(()=>{ try{ inp.focus(); }catch{} }, 60);
+    return;
+  }
+  _resolveVerifyAction(true);
 }
 
 async function resetSettings() {
@@ -7772,7 +8048,14 @@ function _renderRssWidgetItems(content, articles){
 // A styled checkbox that behaves like a checkbox but is actually a <button>,
 // so it looks identical in every browser. `checked` drives the tick.
 const _CHECK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
-function makeCustomCheckbox(checked, visible, onToggle){
+/* `guard` decides whether the box may change at all, before it changes.
+
+   Without it the box flipped on click and only the *handler* could refuse —
+   which it cannot undo, because nothing repaints afterwards. So a tick that was
+   turned down left a ticked box sitting next to a toast explaining that it had
+   not been ticked, and the two disagreed until something else caused a redraw.
+   A guard that returns false leaves the control exactly as it was found. */
+function makeCustomCheckbox(checked, visible, onToggle, guard){
   const b = document.createElement('button');
   b.type = 'button';
   b.className = 'cchk' + (visible?' visible':'') + (checked?' checked':'');
@@ -7782,6 +8065,7 @@ function makeCustomCheckbox(checked, visible, onToggle){
   b.onclick = (e) => {
     e.stopPropagation();
     const next = !b.classList.contains('checked');
+    if(guard && !guard(next, e)) return;
     b.classList.toggle('checked', next);
     b.setAttribute('aria-checked', next ? 'true' : 'false');
     if(onToggle) onToggle(next, e);
@@ -9681,22 +9965,28 @@ async function authenticateNotePasskey(){
     return;
   }
   if (!settings.passkeyCredentialId) { showToast('No passkey registered', 'error'); return; }
-  try {
-    const assertion = await navigator.credentials.get({ publicKey: {
-      challenge: crypto.getRandomValues(new Uint8Array(32)),
-      allowCredentials: [{ id: Uint8Array.from(atob(settings.passkeyCredentialId), c => c.charCodeAt(0)), type: 'public-key' }],
-      userVerification: 'preferred'
-    }});
-    if (assertion) {
-      const id = _notePwTargetId;
-      if (id) store.unlocked().add(id);
-      const cb = _notePwOnSuccess;
-      _notePwOnSuccess = null; _notePwTargetId = null;
-      closePopup('notePasswordPopup');
-      store.refresh();
-      cb && cb();
-    }
-  } catch(e) { console.warn('[note passkey]', e); showToast('Passkey authentication failed', 'error'); }
+  const r = await passkeyVerify();
+  if (!r.ok) {
+    if (r.reason !== 'cancelled') showToast('Passkey authentication failed', 'error');
+    return;
+  }
+  // The note itself lives in a locked section, so opening it without the key
+  // would show a blank one.
+  if (KeyVault.isEnabled() && !r.vault) {
+    showToast(KeyVault.hasPasskeyWrap()
+      ? 'The passkey could not decrypt this — enter your password'
+      : 'This passkey has no copy of your key — enter your password', 'warn');
+    const inp = document.getElementById('notePasswordPopupInput');
+    if (inp) setTimeout(()=>{ try{ inp.focus(); }catch{} }, 60);
+    return;
+  }
+  const id = _notePwTargetId;
+  if (id) store.unlocked().add(id);
+  const cb = _notePwOnSuccess;
+  _notePwOnSuccess = null; _notePwTargetId = null;
+  closePopup('notePasswordPopup');
+  store.refresh();
+  cb && cb();
 }
 
 // Guarantee ESC closes the note editor cleanly and only exits fullscreen if any.
@@ -11744,7 +12034,7 @@ function _updateNotifPermUI(){
       : 'Not granted yet — the options below stay off until you allow it.';
   }
   ['enableNotifications','notifyAlarms','notifyTimer','notifyTaskStart','notifyTaskEnd','notifyTaskLimit',
-   'notifyJobPause','notifyJobAutoStart'].forEach(id => {
+   'notifyJobPause','notifyJobAutoStart','notifyTransfers'].forEach(id => {
     const cb = document.getElementById(id); if(!cb) return;
     const usable = supported && perm === 'granted';
     cb.disabled = !usable;
@@ -14166,7 +14456,14 @@ function getFileMimeGuess(name){
     mp4:'video/mp4',m4v:'video/mp4',mov:'video/mp4','3gp':'video/mp4','3g2':'video/mp4',
     webm:'video/webm',ogv:'video/ogg',
     mkv:'video/x-matroska',avi:'video/x-msvideo',wmv:'video/x-ms-wmv',flv:'video/x-flv',
-    mpg:'video/mpeg',mpeg:'video/mpeg',ts:'video/mp2t',m2ts:'video/mp2t',mts:'video/mp2t',
+    /* `.ts` is deliberately absent. It appeared here as `video/mp2t` and again
+       further down as `text/typescript`, in the same object literal — so the
+       later one silently won and this entry has never done anything. Left as a
+       duplicate it is a trap: reordering the table, or deleting the other line,
+       would flip the behaviour of every .ts file with nothing to say why.
+       TypeScript is the honest default for a bare .ts, and transport streams
+       are still covered by .m2ts and .mts. */
+    mpg:'video/mpeg',mpeg:'video/mpeg',m2ts:'video/mp2t',mts:'video/mp2t',
     // Audio. Same reasoning: m4a/m4b/aac sit in an mp4 container.
     mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',oga:'audio/ogg',opus:'audio/ogg',
     flac:'audio/flac',m4a:'audio/mp4',m4b:'audio/mp4',aac:'audio/mp4',weba:'audio/webm',
@@ -14584,6 +14881,7 @@ const Transfers = (function(){
   let paintTimer = null;
   let clearTimer = null;
   let celebrated = false;     // the "all done" flourish has already played
+  let announced = false;      // the background-completion notification has gone
   let rowsStale = false;      // the per-file list was skipped while collapsed
   let mode = 'upload';
   /* How to stop a given job, supplied by whoever started it.
@@ -14662,15 +14960,28 @@ const Transfers = (function(){
     if(paintTimer) return;
     paintTimer = setTimeout(() => { paintTimer = null; draw(); }, 80);
   }
-  // The dock belongs to the Files app. It rides above the Files modal so it is
-  // visible over the grid, which also means it would float over the home screen
-  // if it were ever left on — so its visibility is tied to Files being open.
+  /* ── the dock outlives the Files app ──────────────────────────────────────
+
+     The dock was tied to Files being open, because it rides above the Files
+     modal and would otherwise be left floating over the home screen. But the
+     *work* was never tied to Files being open: closing the app leaves every
+     upload, save and backup running, and hiding the dock only removed the
+     progress readout and the Cancel button from a transfer that was still very
+     much happening. On a multi-gigabyte upload that reads as "it stopped".
+
+     So the rule is about the work, not the app: while something is actually
+     transferring the dock follows onto the home screen, and it goes away the
+     moment nothing is left in flight. The one exception is Files being *locked*
+     rather than merely closed — filenames are exactly what a lock is meant to
+     take off the screen, so that path cancels and clears instead (see purge). */
   function filesOpen(){
     try{ return !!document.getElementById('filesModal')?.classList.contains('active'); }catch{ return false; }
   }
   function draw(){
     const dock = $$('uploadDock'); if(!dock) return;
-    if(!jobs.length || !filesOpen()){ dock.classList.remove('on','open','err'); return; }
+    const away = !filesOpen();
+    if(!jobs.length || (away && !active().length)){ dock.classList.remove('on','open','err','away'); return; }
+    dock.classList.toggle('away', away);
     dock.classList.toggle('on', !hidden);
     let total = 0, sent = 0, done = 0, failed = 0;
     for(const j of jobs){
@@ -14726,6 +15037,18 @@ const Transfers = (function(){
         </div>`;
       }).join('');
     }
+    /* Finished while nobody was looking at Files — or at the tab at all.
+       A toast on a screen the user has left says nothing to them, so the
+       outcome goes out as a notification instead, once, whatever it was. */
+    if(!left && !announced && (done || failed) && (away || document.hidden)){
+      announced = true;
+      const W2 = words();
+      _notify(settings.notifyTransfers !== false,
+        failed ? W2.idle + ' — ' + failed + ' did not finish' : W2.complete,
+        failed ? `${done} finished, ${failed} cancelled or failed`
+               : (jobs.length === 1 ? jobs[0].name : W2.doneCount(done)),
+        'xfer-done-' + jobs.length + '-' + done + '-' + failed);
+    }
     // Everything landed and nothing went wrong: say so once, in full, and get
     // out of the way. Anything less than a clean sweep keeps the plain readout,
     // because a green tick over a cancelled file would be a lie.
@@ -14737,11 +15060,11 @@ const Transfers = (function(){
         dock.classList.add('done');
         clearTimer = setTimeout(() => {
           dock.classList.add('sink');
-          setTimeout(() => { jobs = []; cancelled = false; celebrated = false;
+          setTimeout(() => { jobs = []; cancelled = false; celebrated = false; announced = false;
                              dock.classList.remove('done','sink'); draw(); }, 420);
         }, 1100);
       } else {
-        clearTimer = setTimeout(() => { if(!active().length){ jobs = []; cancelled = false; celebrated = false; draw(); } }, 6000);
+        clearTimer = setTimeout(() => { if(!active().length){ jobs = []; cancelled = false; celebrated = false; announced = false; draw(); } }, 6000);
       }
     }
   }
@@ -14773,7 +15096,7 @@ const Transfers = (function(){
     add, begin, progress, rate, finish, cancelAll, setMode, onCancel,
     mode: () => mode,
     isCancelled: () => cancelled,
-    reset(m){ jobs = []; cancelled = false; hidden = false; celebrated = false;
+    reset(m){ jobs = []; cancelled = false; hidden = false; celebrated = false; announced = false;
              stoppers.clear();
              clearTimeout(clearTimer);
              const d = $$('uploadDock'); if(d) d.classList.remove('done','sink','err');
@@ -14790,6 +15113,32 @@ const Transfers = (function(){
       if(!jobs.length){ showToast('Nothing is transferring'); return; }
       draw();
     },
+    /* Files closed, but not locked.
+       Anything still moving keeps its readout and its Cancel button; a dock
+       showing nothing but finished rows gets out of the way, because those rows
+       belong to the app the user has just left. */
+    leaveFiles(){
+      if(!active().length){ hidden = true; const d = $$('uploadDock'); if(d) d.classList.remove('on','open'); }
+      draw();
+    },
+    /* Files locked. Every row is a filename out of a section that is being made
+       unreadable, so the dock cannot follow it onto the home screen — and the
+       work behind it cannot continue either, since the connection carrying it
+       is about to be dropped. Stop it deliberately rather than letting it die
+       of a broken channel and report itself as a mysterious failure. */
+    purge(){
+      for(const j of jobs){
+        if(j.state !== 'wait' && j.state !== 'run') continue;
+        const stop = stoppers.get(j.id);
+        if(stop) try{ stop(); }catch(e){ console.warn('[purge cancel]', e); }
+        else try{ P2PDrives.abortUpload(j.id); }catch{}
+      }
+      jobs = []; stoppers.clear();
+      cancelled = false; celebrated = false; announced = false; hidden = true; rowsStale = false;
+      clearTimeout(clearTimer); clearTimeout(paintTimer); paintTimer = null;
+      const d = $$('uploadDock');
+      if(d) d.classList.remove('on','open','err','away','done','sink');
+    },
     hasAny: () => jobs.length > 0
   };
 })();
@@ -14798,6 +15147,21 @@ const Transfers = (function(){
    it is here so a stale handler in a saved page, or anything added while this
    change was in flight, does not throw. */
 const Uploads = Transfers;
+
+/* Closing the tab is the one thing that really does stop a transfer.
+
+   Everything else — leaving Files, opening another app, locking the screen —
+   now lets the work carry on, which makes the tab itself the last remaining way
+   to lose a half-finished upload without meaning to. The browser will only show
+   its own generic wording here, but the choice it offers is the point. */
+addEventListener('beforeunload', e => {
+  let busy = false;
+  try{ busy = Transfers.busy(); }catch{}
+  if(!busy) return;
+  e.preventDefault();
+  e.returnValue = '';        // required by older engines to raise the prompt
+  return '';
+});
 
 // ═══════════════════════════════════════════════════════
 //  COPYING BETWEEN DRIVES
@@ -15533,16 +15897,42 @@ let _viewerDirty = false;
    the browser evicted and re-fetched ranges out of a stream that was still busy
    with the rest of the file.
 
-   So a ranged request is answered with at most STREAM_SPAN bytes, as an honest
-   206 that says which bytes they are. The player asks again when it wants more.
-   The cost of watching a file is then fixed regardless of its length, which is
-   what makes this work on a set-top box. */
-const STREAM_SPAN = 6 * 1024 * 1024;
+   So a ranged request is answered with a bounded span, as an honest 206 that
+   says which bytes they are. The player asks again when it wants more. The cost
+   of watching a file is then fixed regardless of its length, which is what makes
+   this work on a set-top box.
+
+   ── Why the span grows ─────────────────────────────────────────────────────
+
+   A fixed 6 MB span was the single biggest thing making playback slow, and the
+   reason is arithmetic rather than bandwidth. Every span costs a fixed setup:
+   the worker dispatches a fetch, the page is messaged, a request crosses the
+   data channel, the host looks the file up and decrypts its first block. Call
+   it 60–150 ms before a byte moves. Six megabytes at LAN speed is barely a
+   hundred milliseconds of transfer, so *half the wall clock* was spent starting
+   spans rather than sending film — and the faster the link, the worse the ratio
+   got. That is why a gigabit link and a phone hotspot felt about the same.
+
+   The fix is not one big span, because the first one has to arrive quickly or
+   the video takes a visible age to start. So it ramps: the first read after an
+   open or a seek is small and lands fast, and each span that continues exactly
+   where the last one ended — which is what sequential playback looks like —
+   doubles, up to a ceiling. A seek drops back to the small span, so scrubbing
+   stays responsive.
+
+   Growing the span costs no memory anywhere. Nothing on this side accumulates,
+   and the worker's queue is capped independently of it; a longer span only
+   means the drive is allowed to keep sending for longer before being asked
+   again, and backpressure still stops it the moment the player stops reading. */
+const STREAM_SPAN_FIRST = 4 * 1024 * 1024;
+const STREAM_SPAN_MAX   = 32 * 1024 * 1024;
 const P2PStream = (function(){
   const ROUTE = '__p2pstream';
-  // token -> { id, name, mime, size, remote, total }
-  //   size  — what the tree claims, used only until the source says otherwise
-  //   total — what the source actually reported, once it has
+  // token -> { id, name, mime, size, remote, total, span, nextOff }
+  //   size    — what the tree claims, used only until the source says otherwise
+  //   total   — what the source actually reported, once it has
+  //   span    — how much the next sequential read is allowed to carry
+  //   nextOff — where the last span ended, so "sequential" can be recognised
   const tokens = new Map();
   let ready = null;             // registration promise, or null when unavailable
 
@@ -15674,6 +16064,7 @@ const P2PStream = (function(){
     tokens.set(token, { id:node.id, name:node.name,
                         mime:resolveMime(node),
                         size:Number(node.size) || 0, remote, total:0,
+                        span:STREAM_SPAN_FIRST, nextOff:-1,
                         whole: !!(opts && opts.whole) });
     // Tokens are cheap but not free; a viewer session only ever needs a few.
     if(tokens.size > 24) for(const k of [...tokens.keys()].slice(0, tokens.size - 24)) tokens.delete(k);
@@ -15719,18 +16110,28 @@ const P2PStream = (function(){
     if(!port) return;
     const rec = tokens.get(ev.data.token);
     const fail = (status, msg, total) => { try{ port.postMessage({ type:'head', ok:false, status, msg, total }); }catch{} };
-    if(!rec) return fail(404, 'That stream is no longer available.');
+    /* Not a failure — a token this page never minted. One worker serves every
+       tab on the origin, so a request from another window's video lands here
+       too; answering it with a 404 is what broke playback whenever a second tab
+       was open. `notmine` tells the worker to ask the next window instead. */
+    if(!rec){ try{ port.postMessage({ type:'head', ok:false, notmine:true, status:404,
+                                      msg:'That stream is no longer available.' }); }catch{} return; }
 
-    let stream = null, closed = false, headSent = false;
+    let stream = null, closed = false, headSent = false, wantHold = false;
     const stop = () => { closed = true; if(stream) try{ stream.cancel(); }catch{} stream = null; };
-    // The worker's queue is full / has room again — pass it straight through to
-    // the source so it stops pushing rather than filling a queue nobody is
-    // draining. Registered before anything can arrive on it.
+    /* The worker's queue is full / has room again — pass it straight through to
+       the source so it stops pushing rather than filling a queue nobody is
+       draining. Registered before anything can arrive on it.
+
+       `wantHold` remembers a brake applied before the stream existed. The
+       handle is only assigned once getStream() returns, and a hold that arrived
+       in that window used to be dropped on the floor — after which the drive
+       pushed a whole span into a reader that had already said stop. */
     port.onmessage = e => {
       const d = e.data || {};
       if(d.type === 'cancel') return stop();
-      if(d.type === 'hold' && stream) try{ stream.hold(); }catch{}
-      if(d.type === 'go'   && stream) try{ stream.resume(); }catch{}
+      if(d.type === 'hold'){ wantHold = true; if(stream) try{ stream.hold(); }catch{} }
+      if(d.type === 'go'  ){ wantHold = false; if(stream) try{ stream.resume(); }catch{} }
     };
 
     const hadRange = !!ev.data.range;
@@ -15784,7 +16185,18 @@ const P2PStream = (function(){
     let span = 0;                                     // 0 = to the end of the file
     if(r && r.end !== null) span = r.end - start + 1;
     else if(guess) span = Math.max(0, guess - start);
-    if(hadRange && !rec.whole && (!span || span > STREAM_SPAN)) span = STREAM_SPAN;
+    /* The ramp. A read that begins exactly where the last one ended is the
+       player walking forward through the film, and it has earned a longer span;
+       anything else is a seek (or the first read) and gets the short one so it
+       lands quickly. `nextOff` starts at -1 so the very first read can never be
+       mistaken for a continuation of byte zero. */
+    if(hadRange && !rec.whole){
+      rec.span = (start === rec.nextOff)
+        ? Math.min(STREAM_SPAN_MAX, (rec.span || STREAM_SPAN_FIRST) * 2)
+        : STREAM_SPAN_FIRST;
+      if(!span || span > rec.span) span = rec.span;
+      rec.nextOff = start + span;
+    }
 
     /* The head is written from what the source reports, never from the tree.
 
@@ -15841,11 +16253,18 @@ const P2PStream = (function(){
       off: start,
       len: span,
       onMeta,
-      onChunk: buf => {
+      /* Transferred, not copied: the ArrayBuffer moves to the worker and this
+         side stops owning it, which is the whole point.
+
+         `off` goes with it rather than being sliced off first. A frame off the
+         data channel carries a four-byte request id in front of its payload,
+         and cutting that away made a fresh allocation and a full memcpy of
+         every byte of the film on the way past — for a two-hour video, several
+         gigabytes of copying that bought nothing, because the worker can just
+         as easily read from four bytes in. */
+      onChunk: (buf, off) => {
         if(closed) return;
-        // Transferred, not copied: the ArrayBuffer moves to the worker and this
-        // side stops owning it, which is the whole point.
-        try{ port.postMessage({ type:'chunk', buf }, [buf]); }
+        try{ port.postMessage({ type:'chunk', buf, off: off || 0 }, [buf]); }
         catch(err){ console.warn('[stream post]', err); stop(); }
       },
       onEnd: () => { if(!closed && headSent) try{ port.postMessage({ type:'end' }); }catch{} },
@@ -15860,6 +16279,7 @@ const P2PStream = (function(){
     try{
       if(!P2PDrives.isOnline()) return fail(503, 'The drive is not connected.');
       stream = P2PDrives.getStream(rec.id, opts);
+      if(wantHold) try{ stream.hold(); }catch{}   // braked before it existed
       headNow();                  // no round trip when the length is already known
       if(closed) stop();          // cancelled while we were setting up
     }catch(err){
@@ -16033,7 +16453,12 @@ function openFileViewer(node){
   let _remote = false; try{ _remote = P2PDrives.isRemote(); }catch{}
   if(!_remote && _shouldStream(node, false)){
     P2PStream.urlFor(node).then(url => {
-      if(!_viewerTokenValid(_tok)) return;
+      if(!_viewerTokenValid(_tok)){
+        // Another file was opened while this one was getting its URL — hand the
+        // token back instead of leaving a live read handle behind it.
+        if(url) try{ P2PStream.release(new URL(url, location.href).searchParams.get('t')); }catch{}
+        return;
+      }
       if(url){ _renderViewerForBlob(node, new Blob([], { type:resolveMime(node) }), _tok, node.size || 0, url); return; }
       _openLocalFileViewerWhole(node, _tok);
     }).catch(e => { console.warn('[local stream url]', e); _openLocalFileViewerWhole(node, _tok); });
@@ -16183,6 +16608,10 @@ async function _openRemoteFileViewer(node, tok){
         _renderViewerForBlob(node, new Blob([], { type:mime }), tok, node.size || 0, url);
         return;
       }
+      // Superseded while the worker was starting up. The token is the right to
+      // read this file over a URL; nothing is going to claim it now, so give it
+      // back rather than leaving it live until the cap evicts it.
+      if(url) try{ P2PStream.release(new URL(url, location.href).searchParams.get('t')); }catch{}
     }catch(e){ console.warn('[stream url]', e); }
     /* Falling through here means pulling the whole file across before anything
        plays, which for a film is both the slow answer and the one that can take
@@ -16198,6 +16627,47 @@ async function _openRemoteFileViewer(node, tok){
   }
   const headOnly = isTextMime(mime) && !['url','webloc','desktop'].includes(ext);
   const want = headOnly ? Math.min(VIEWER_TEXT_MAX, node.size || VIEWER_TEXT_MAX) : (node.size || 0);
+  /* ── the file that must not be assembled ──────────────────────────────────
+
+     Everything below pulls the whole file across and builds one Blob out of it.
+     That is the right answer for a document and a catastrophic one for a film:
+     a four-gigabyte video would sit behind a progress bar for as long as the
+     link takes to move four gigabytes, and only then try to open — on a phone
+     or a TV box, usually by taking the tab down first.
+
+     A ceiling turns that into an answer. Above it the viewer says what happened
+     and offers the download, which streams to disk and does not have to fit in
+     memory at all. Text is exempt because it is already read as a head, and a
+     `whole` download is exempt because it never comes through here. */
+  const WHOLE_LOAD_MAX = 512 * 1024 * 1024;
+  if(!headOnly && want > WHOLE_LOAD_MAX){
+    if(!_viewerTokenValid(tok)) return;
+    const v = document.getElementById('viewerModal'), vc = document.getElementById('viewerContent');
+    if(vc){
+      vc.innerHTML = '';
+      // Whatever the viewer was showing before is gone from the screen, so its
+      // blob URL (or stream token) must go with it.
+      try{ _viewerReleaseSource(); }catch{}
+      _viewerCurrentNode = node; _viewerCurrentMode = null; _viewerTextArea = null; _viewerDirty = false;
+      _viewerCurrentUrl = null;
+      try{ _updateViewerDlBtn(); }catch{}
+      try{ setViewerExtraToolbar(''); }catch{}
+      const rb = document.getElementById('viewerReloadBtn'); if(rb) rb.style.display = 'none';
+      const panel = viewerUnsupportedPanel(node.name, () => downloadFileNode(node));
+      const title = panel.querySelector('.vu-title');
+      if(title) title.textContent = 'Too large to open here';
+      const msg = panel.querySelector('.vu-msg');
+      if(msg){
+        const why = P2PStream.problem();
+        msg.textContent = `${formatFileSize(want)} would have to be loaded whole before anything appeared. `
+          + (why || 'Streaming is turned off for this drive, so it cannot be read a piece at a time — turn it back on, or download the file.');
+      }
+      vc.appendChild(panel);
+      _viewerTypeActions = [{label:'Download', icon:'dl', fn:()=>viewerDownloadCurrent()}];
+      if(v){ v.classList.add('open'); v.style.display = 'flex'; }
+    }
+    return;
+  }
   const big = want > 2 * 1024 * 1024;
   let cancelled = false, handle = null;
   // Cancelling has to reach the host, or it keeps sending a file nobody is
@@ -16222,8 +16692,8 @@ async function _openRemoteFileViewer(node, tok){
         off: 0,
         len: headOnly ? want : 0,
         onMeta: meta => { if(big && meta && meta.size) _viewerLoadingProgress(0, meta.size); },
-        onChunk: buf => {
-          const u8 = new Uint8Array(buf);
+        onChunk: (buf, off) => {
+          const u8 = off ? new Uint8Array(buf, off) : new Uint8Array(buf);
           parts.push(u8); raw += u8.length; got += u8.length;
           if(raw >= 2 * 1024 * 1024) fold();
           if(big) _viewerLoadingProgress(got, want);
@@ -17992,7 +18462,10 @@ function renderTasksWidget(){
   (list.items||[]).forEach(item => {
     const row = document.createElement('div');
     row.className = 'twb-item' + (item.done?' done':'') + (_taskOverLimit(item)&&!item.done?' over':'');
-    const cb = makeCustomCheckbox(!!item.done, true, () => _widgetToggleTaskItem(list.id, item.id));
+    // The widget is a tap target on the home screen, so a refused tick that
+    // still drew itself as ticked was the most misleading version of this.
+    const cb = makeCustomCheckbox(!!item.done, true, () => _widgetToggleTaskItem(list.id, item.id), _taskTickGuard(list));
+    if(!list.running && !item.done) cb.classList.add('idle-blocked');
     row.appendChild(cb);
     const t = document.createElement('span'); t.className='twb-text'; t.textContent = item.text||'';
     row.appendChild(t);
@@ -18361,6 +18834,11 @@ function renderTaskItems(){
   host.classList.toggle('job-idle', idle);
   const hint = document.getElementById('taskIdleHint');
   if(hint) hint.style.display = idle ? 'flex' : 'none';
+  // Paused and never-started are both "idle", but they need different advice.
+  const hintText = document.getElementById('taskIdleHintText');
+  if(hintText && idle) hintText.textContent = _jobEverStarted(n)
+    ? 'This job is paused. Resume it to keep timing and tick tasks off.'
+    : 'Start the job to begin timing and tick tasks off.';
   if(!n.items.length){
     const d = document.createElement('div');
     d.className = 'te-empty';
@@ -18537,7 +19015,13 @@ function _taskItemRow(list, item, idx){
   };
   row.appendChild(exp);
 
-  const cb = makeCustomCheckbox(!!item.done, true, () => toggleTaskItem(list.id, item.id));
+  const cb = makeCustomCheckbox(!!item.done, true, () => toggleTaskItem(list.id, item.id), _taskTickGuard(list));
+  // Says so before it is pressed, rather than only after.
+  if(!list.running && !item.done){
+    cb.classList.add('idle-blocked');
+    cb.title = _jobEverStarted(list) ? 'The job is paused — resume it to tick this off'
+                                     : 'Start the job to tick this off';
+  }
   row.appendChild(cb);
   const mid = document.createElement('div'); mid.className = 'te-item-main';
   const txt = document.createElement('div'); txt.className = 'te-item-text'; txt.textContent = item.text || '';
@@ -18639,7 +19123,12 @@ function _taskItemRow(list, item, idx){
       grip.setAttribute('aria-hidden','true');
       grip.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 4h2v2H9zm4 0h2v2h-2zM9 9h2v2H9zm4 0h2v2h-2zm-4 5h2v2H9zm4 0h2v2h-2zm-4 5h2v2H9zm4 0h2v2h-2z"/></svg>';
       sr.appendChild(grip);
-      const scb = makeCustomCheckbox(!!st.done, true, () => toggleSubtask(list.id, item.id, st.id));
+      const scb = makeCustomCheckbox(!!st.done, true, () => toggleSubtask(list.id, item.id, st.id), _taskTickGuard(list));
+      if(!list.running && !st.done){
+        scb.classList.add('idle-blocked');
+        scb.title = _jobEverStarted(list) ? 'The job is paused — resume it to tick this off'
+                                          : 'Start the job to tick this off';
+      }
       sr.appendChild(scb);
       const stx = document.createElement('span'); stx.className = 'te-sub-text'; stx.textContent = st.text || '';
       sr.appendChild(stx);
@@ -18759,6 +19248,7 @@ function _startStopJob(list, run, opts){
       return false;
     }
     list.running = true;
+    list.everStarted = true;
     list.pausedSince = null; list.pauseNotified = false;
     _syncTaskSequence(list);
     _notifyTaskEvent('start', list, next);
@@ -18773,12 +19263,30 @@ function _startStopJob(list, run, opts){
   list.updatedAt = new Date().toISOString();
   return true;
 }
-// Nothing can be ticked off a job that isn't running: the point of the sequence
-// is that a tick means "I finished this while the clock was on it".
+/* Nothing can be ticked off a job that isn't running: the point of the sequence
+   is that a tick means "I finished this while the clock was on it".
+
+   This is a refusal, not a warning. It used to read as a warning because the
+   checkbox flipped anyway — the data said unticked, the box said ticked, and
+   the toast was the only clue which one was true. The tick is now blocked at
+   the control (see `_taskTickGuard`), and this stays as the last line of
+   defence for any path that reaches the toggle another way.
+
+   The two idle states need different words. "Start the job first" is wrong
+   advice for a job that has been started and paused: what that one needs is to
+   be resumed, and saying so is the difference between an instruction and a
+   riddle. */
 function _taskJobIdleBlocked(list){
   if(list && list.running) return false;
-  showToast('Start the job first', 'warn');
+  showToast(_jobEverStarted(list)
+    ? 'This job is paused — resume it to tick tasks off'
+    : 'This job has not been started — start it to tick tasks off', 'warn');
   return true;
+}
+// The guard the checkboxes themselves use. Unticking is always allowed, so a
+// completed job (which stops itself) can still be reopened.
+function _taskTickGuard(list){
+  return next => !(next && _taskJobIdleBlocked(list));
 }
 function _updateJobRunBtn(list){
   const b = document.getElementById('taskRunBtn'); if(!b) return;
@@ -18877,9 +19385,12 @@ function toggleSubtask(listId, itemId, subId){
   const list = _findTaskNode(listId); if(!list) return;
   const item = (list.items||[]).find(i => i.id === itemId); if(!item) return;
   const st = (item.subtasks||[]).find(s => s.id === subId); if(!st) return;
-  // Unchecking is always allowed — otherwise a completed job (which stops
-  // itself) could never be reopened.
-  if(!st.done && _taskJobIdleBlocked(list)) return;
+  /* Unchecking is always allowed — otherwise a completed job (which stops
+     itself) could never be reopened.
+
+     Repainting on refusal matters: this is reachable from paths that are not
+     the guarded checkbox, and any of them may have already drawn the tick. */
+  if(!st.done && _taskJobIdleBlocked(list)){ renderTaskItems(); refreshTasksWidget(); return; }
   st.done = !st.done;
   if(st.done){ _taskStopTimer(st); st.completedAt = new Date().toISOString(); }
   else { st.completedAt = null; }
@@ -18899,8 +19410,9 @@ function toggleSubtask(listId, itemId, subId){
 function toggleTaskItem(listId, itemId){
   const list = _findTaskNode(listId); if(!list) return;
   const item = (list.items||[]).find(i => i.id === itemId); if(!item) return;
-  // See toggleSubtask: checking needs a running job, unchecking never does.
-  if(!item.done && _taskJobIdleBlocked(list)) return;
+  // See toggleSubtask: checking needs a running job, unchecking never does,
+  // and a refusal repaints so nothing is left drawn as ticked.
+  if(!item.done && _taskJobIdleBlocked(list)){ renderTaskItems(); refreshTasksWidget(); return; }
   item.done = !item.done;
   // Either way this was a deliberate tick, so the subtask cascade no longer
   // owns the item's state.
@@ -19188,10 +19700,17 @@ function _jobElapsed(list){
   }
   return base;
 }
-// Has this job ever been started? Nothing about a limit means anything before
-// that, so the readout and the watcher both need to know.
+/* Has this job ever been started? Nothing about a limit means anything before
+   that, so the readout and the watcher both need to know — and so does the
+   wording of a refused tick, which is "resume it" for a paused job and "start
+   it" for one that has never run.
+
+   `everStarted` is stamped by `_startStopJob`, because the accumulated clock is
+   not a reliable answer on its own: a job started and paused inside the same
+   millisecond banks zero, and then reads as never started forever after. The
+   clock is still consulted for jobs saved before the flag existed. */
 function _jobEverStarted(list){
-  return !!(list && (list.jobAccumulatedMs || list.jobRunningSince));
+  return !!(list && (list.everStarted || list.jobAccumulatedMs || list.jobRunningSince));
 }
 // Kept separate so the editor can still show effort logged against tasks.
 function _jobLoggedTime(list){
@@ -22674,9 +23193,15 @@ const P2PDrives = (function(){
       // Bytes are arriving, so the transfer is alive. See `arm`.
       if(dl.keepAlive) dl.keepAlive();
       dl.got += data.byteLength - 4;
-      // A streaming reader takes the chunk and lets it go; only the buffering
-      // path keeps the parts around to make a Blob out of at the end.
-      if(dl.onChunk) try{ dl.onChunk(data.slice(4)); }catch(e){ console.warn('[stream chunk]', e); }
+      /* A streaming reader takes the chunk and lets it go; only the buffering
+         path keeps the parts around to make a Blob out of at the end.
+
+         The whole buffer is handed over with the offset of the payload inside
+         it, rather than a slice() of the payload. slice() copies, and on the
+         streaming path that copy is per frame for the whole length of a film —
+         pure waste, since the reader is about to transfer the buffer onward
+         anyway and can read from an offset just as well. */
+      if(dl.onChunk) try{ dl.onChunk(data, 4); }catch(e){ console.warn('[stream chunk]', e); }
       else stash(dl, new Uint8Array(data, 4));
       if(dl.onProgress) try{ dl.onProgress(dl.got, dl.size); }catch{}
       return;
