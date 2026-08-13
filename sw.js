@@ -52,20 +52,40 @@ self.addEventListener('fetch', e => {
   e.respondWith(serve(e));
 });
 
+/* ── which page owns this token ────────────────────────────────────────────
+
+   A media element's request often carries no clientId, and one worker serves
+   every tab on the origin. Asking whichever window happened to be first in the
+   list is a coin toss: tokens are minted by the page that opened the file and
+   live only there, so with two tabs open the wrong one answered "no such
+   stream" and the video failed with a 404 that had nothing to do with the file.
+
+   So the request is offered to each window in turn — the one the browser named
+   first, if it named one. A page that does not hold the token says so (`notmine`)
+   and costs one postMessage; the page that does answers with the head and
+   serves the body. Only when every window has disowned it is it really gone. */
 async function serve(e){
   const url = new URL(e.request.url);
   const token = url.searchParams.get('t') || '';
 
-  // The client that issued the request, or any open window if the browser did
-  // not attribute it (media element requests sometimes have no clientId).
-  let client = null;
-  try{ if(e.clientId) client = await self.clients.get(e.clientId); }catch{}
-  if(!client){
+  const order = [];
+  try{ if(e.clientId){ const c = await self.clients.get(e.clientId); if(c) order.push(c); } }catch{}
+  try{
     const all = await self.clients.matchAll({ type:'window', includeUncontrolled:true });
-    client = all[0] || null;
-  }
-  if(!client) return new Response('The page serving this file is no longer open.', { status:503 });
+    for(const c of all) if(!order.some(x => x.id === c.id)) order.push(c);
+  }catch{}
+  if(!order.length) return new Response('The page serving this file is no longer open.', { status:503 });
 
+  for(const client of order){
+    const r = await attempt(client, token, e.request);
+    if(r) return r;                       // null = that page does not own it
+  }
+  return new Response('That stream is no longer available.', { status:404 });
+}
+
+// One offer to one page. Resolves to a Response, or to null when the page
+// disowns the token so the caller can try the next window.
+async function attempt(client, token, request){
   const mc = new MessageChannel();
   let controller = null, finished = false, held = false;
   let want = 0, sent = 0;               // what the headers promised, what arrived
@@ -76,10 +96,16 @@ async function serve(e){
      piles up here in full. `desiredSize` going negative is the signal to tell
      the page — and through it the drive — to hold off.
 
-     Kept small deliberately. This queue buys nothing but smoothness: the span
+     Kept bounded deliberately. This queue buys nothing but smoothness: the span
      itself is the read-ahead, and every byte parked here is resident memory on
-     a machine that may not have much. */
-  const HOLD_AT = 4 * 1024 * 1024;
+     a machine that may not have much.
+
+     8 MB rather than 4: the round trip that lifts a hold is worker → page →
+     drive → back, and on anything but a LAN that is long enough for the queue
+     to run dry before the first byte returns. Twice the buffer is one more
+     quarter-second of playback to cover it with, and it is still a fixed cost
+     that does not grow with the length of the film. */
+  const HOLD_AT = 8 * 1024 * 1024;
   const check = () => {
     const room = controller ? controller.desiredSize : 0;
     if(!held && room <= 0){ held = true; try{ mc.port1.postMessage({ type:'hold' }); }catch{} }
@@ -104,7 +130,15 @@ async function serve(e){
       if(d.type === 'head'){ clearTimeout(timer); if(d.ok) want = Number(d.length) || 0; resolve(d); return; }
       if(d.type === 'chunk'){
         if(!finished && controller){
-          const u8 = new Uint8Array(d.buf);
+          /* `off` lets the page hand over the buffer it received rather than a
+             copy of the interesting part of it.
+
+             Frames off a data channel carry a four-byte request id in front of
+             the payload, and stripping it with slice() copied every byte of
+             every film through a second allocation on the page's heap before
+             it was transferred here. A view onto the transferred buffer costs
+             nothing and says the same thing. */
+          const u8 = d.off ? new Uint8Array(d.buf, d.off) : new Uint8Array(d.buf);
           sent += u8.length;
           try{ controller.enqueue(u8); }catch{}
           check();
@@ -132,8 +166,19 @@ async function serve(e){
         resolve({ ok:false, status:502, msg:d.msg || 'The drive could not send that file.' });
       }
     };
-    client.postMessage({ type:'p2p-open', token, range: e.request.headers.get('range') || '' }, [mc.port2]);
+    try{
+      client.postMessage({ type:'p2p-open', token, range: request.headers.get('range') || '' }, [mc.port2]);
+    }catch(err){
+      // A window that has gone away since matchAll() listed it. Not an error —
+      // the next one in the list may well own this token.
+      clearTimeout(timer);
+      resolve({ ok:false, notmine:true });
+    }
   });
+
+  // This page has never heard of the token. Say nothing and let another window
+  // answer; only the caller knows whether one is left to ask.
+  if(head && head.notmine){ try{ mc.port1.close(); }catch{} return null; }
 
   /* The page handed over the bytes themselves, as a Blob.
 
