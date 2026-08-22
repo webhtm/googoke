@@ -1978,6 +1978,19 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .notes-widget-body .nwb-preview ul,.notes-widget-body .nwb-preview ol{padding-left:22px!important;margin:4px 0!important}
 .notes-widget-body .nwb-preview .nwb-empty{opacity:.5;font-style:italic}
 .notes-widget-body .nwb-meta{font-size:.72em;opacity:.55;text-align:right;padding:0 2px}
+/* Notes widget: idle lock screen. Replaces the preview entirely — there is no
+   note text behind it to be revealed by a stray selection or a screenshot. */
+.notes-widget-body .nwb-locked{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:16px 14px;min-height:80px}
+.notes-widget-body .nwb-lk-icon{width:26px;height:26px;fill:var(--accent);opacity:.9;flex:none}
+.notes-widget-body .nwb-lk-title{font-size:.9em;font-weight:600;color:#fff}
+.notes-widget-body .nwb-lk-sub{font-size:.76em;opacity:.65;line-height:1.45;max-width:34ch}
+.notes-widget-body .nwb-lk-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+.notes-widget-body .nwb-lk-btns button{padding:7px 16px;font-size:.8em;border-radius:8px;border:1px solid transparent;cursor:pointer;font-family:var(--font)}
+.notes-widget-body .nwb-lk-primary{background:var(--accent);color:#fff}
+.notes-widget-body .nwb-lk-primary:hover{filter:brightness(1.08)}
+.notes-widget-body .nwb-lk-ghost{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.14)}
+.notes-widget-body .nwb-lk-ghost:hover{background:rgba(255,255,255,.14)}
+.notes-widget-body .nwb-lk-note{font-size:.7em;opacity:.5;font-style:italic}
 
 /* Notes switcher popup — larger custom picker over any modal */
 .notes-switcher-popup .popup-box{max-width:520px;width:94%;padding:16px}
@@ -2933,6 +2946,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
         <div class="widget-checkbox"><input type="checkbox" id="lockNotes"><label for="lockNotes">Lock Notes</label></div>
         <div class="widget-checkbox"><input type="checkbox" id="lockTasks"><label for="lockTasks">Lock Tasks</label></div>
         <div class="widget-checkbox"><input type="checkbox" id="lockClock"><label for="lockClock">Lock Clock</label></div>
+        <div class="widget-checkbox"><input type="checkbox" id="lockInfo"><label for="lockInfo">Lock InfoBase</label></div>
         <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn-primary" onclick="showChangePasswordDialog()">Change Password</button>
           <button class="btn-ghost" onclick="clearMasterPassword()" id="clearPwBtn">Clear Password</button>
@@ -2954,7 +2968,7 @@ li[data-checked="1"]{opacity:.55;text-decoration:line-through}
               <option value="30">30 minutes</option>
             </select>
           </div>
-          <div class="inactivity-hint">When any locked section (Files, Media, Settings, etc.) is open and idle for this long, it will lock itself automatically.</div>
+          <div class="inactivity-hint">When any locked section (Files, Media, Settings, etc.) is open and idle for this long, it will lock itself automatically. Locked notes and folders you opened re-lock on the same clock. The Notes <strong>widget</strong> uses <strong>half</strong> this time — it sits on the home screen in plain view, so it always goes first. That half is derived from this setting and can't be set separately; turning auto-lock Off turns it off too.</div>
         </div>
         <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
           <div class="setting-item"><label>Return to home after inactivity</label>
@@ -6021,11 +6035,15 @@ window.addEventListener('load', async () => {
       // exits fullscreen — the surface itself stays open. The browser handles
       // the fullscreen-exit; we just skip the close-cascade.
       if (document.fullscreenElement) return;
+      hideCtxMenu();
+      // Popups nest now (New Folder over the move dialog), so ESC peels one
+      // layer off rather than sweeping the whole stack — and it must not reach
+      // the viewer/reader cascade below while any popup is still up.
+      const top = _topOpenPopup();
+      if (top){ top.classList.remove('open'); top.style.zIndex = ''; _syncScrollLock(); return; }
       closeViewer();
       closeRSSReader();
       try { closeEventsViewer(); } catch{}
-      hideCtxMenu();
-      document.querySelectorAll('.popup-overlay.open').forEach(p => p.classList.remove('open'));
     }
   });
 });
@@ -6141,7 +6159,7 @@ function dismissTransientUI(){
   // Without this, `await askDelete(...)` never settles and whatever was waiting
   // on it — a delete, a backup, a cancel — is stuck for the rest of the session.
   try{ if(_confirmResolver && document.getElementById('confirmActionPopup')?.classList.contains('open')) _resolveConfirm(false); }catch{}
-  try{ document.querySelectorAll('.popup-overlay.open').forEach(p => p.classList.remove('open')); }catch{}
+  try{ document.querySelectorAll('.popup-overlay.open').forEach(p => { p.classList.remove('open'); p.style.zIndex=''; }); }catch{}
   try{ const c = document.getElementById('ctxMenu'); if(c) c.style.display = 'none'; }catch{}
   try{ document.querySelectorAll('.files-more-menu,.files-upload-menu,.files-select-menu,.manage-menu,.events-menu,.ne-dropdown-menu,.notes-mini-menu,.md-menu,.ks-filter-menu,.ne-actions-dropdown,.viewer-nav-menu')
         .forEach(el => { el.style.display = ''; }); }catch{}
@@ -6179,8 +6197,13 @@ function closeModal(id) {
   _syncScrollLock();
   // Closing the calendar also dismisses its child surfaces (add / view modals).
   if (id === 'reminderModal') { try{ closeEventsViewer(); closePopup('addEventModal'); }catch{} }
-  // Leaving Notes drops any active multi-selection so it doesn't linger.
-  if (id === 'notesModal') { try{ _notesSelectMode=false; _notesSelectedIds.clear(); }catch{} }
+  /* Leaving Notes ends every per-note and per-folder unlock with it, along with
+     the multi-selection. An unlock was for that visit; keeping it meant a note
+     you had opened once came back already open for the rest of the session —
+     which is the "closed it but it stayed unlocked" case. When Notes is a
+     locked *section* the purge above has already run this; this is the path for
+     when it isn't, and running it twice is harmless. */
+  if (id === 'notesModal') { try{ _relockAllNotes(); renderNotesWidget(); }catch(e){ console.warn('[notes relock]', e); } }
   // The widget-style sheet holds image handles for its swatches and preview.
   if (id === 'widgetStyleModal') { try{ _wsReleaseAll(); }catch{} }
   // Reset password fields
@@ -6271,8 +6294,41 @@ function _relockVaultIfIdle(){
   });
   if(!stillOpen) KeyVault.lock();
 }
-function openPopup(id) { const e=document.getElementById(id); if(e){ e.classList.add('open'); _syncScrollLock(); } }
-function closePopup(id) { const e=document.getElementById(id); if(e){ e.classList.remove('open'); _syncScrollLock(); } }
+/* ── Popup stacking ──
+   Every .popup-overlay shares one z-index, so when a popup opened on top of
+   another popup the winner was decided by document order — which is arbitrary.
+   That is why "New Folder", opened from inside the move/copy dialog, was drawn
+   *behind* the dialog that opened it: the copy dialog simply happens to sit
+   further down the file.
+
+   Each popup is now placed explicitly, one step above whatever is already open,
+   and the inline value is cleared again on close so the numbers cannot creep
+   upward across a session. The ceiling keeps this clear of the floating menus
+   and toasts that live above 10050. */
+const POPUP_Z_BASE = 10001;
+function _openPopupList(){ return [...document.querySelectorAll('.popup-overlay.open')]; }
+function _popupZ(el){ return parseInt(el.style.zIndex, 10) || POPUP_Z_BASE; }
+// The popup a keypress belongs to: the visually topmost one, not the first in
+// the document. Ties fall back to document order, which is also the paint order.
+function _topOpenPopup(){
+  const open = _openPopupList();
+  if(!open.length) return null;
+  return open.reduce((best, p) => (_popupZ(p) >= _popupZ(best) ? p : best), open[0]);
+}
+function openPopup(id) {
+  const e = document.getElementById(id);
+  if(!e) return;
+  const others = _openPopupList().filter(p => p !== e);
+  if(others.length){
+    const top = Math.max(...others.map(_popupZ));
+    e.style.zIndex = String(Math.min(top + 2, POPUP_Z_BASE + 40));
+  } else {
+    e.style.zIndex = '';
+  }
+  e.classList.add('open');
+  _syncScrollLock();
+}
+function closePopup(id) { const e=document.getElementById(id); if(e){ e.classList.remove('open'); e.style.zIndex=''; _syncScrollLock(); } }
 
 const MODAL_LOCKS = {
   historyModal: 'lockHistory', bookmarksModal: 'lockBookmarks', settingsModal: 'lockSettings',
@@ -6467,6 +6523,14 @@ function _purgeSectionData(modalId){
   // re-locks, every folder inside it re-locks too, and you land back at root.
   if(modalId === 'bookmarksModal'){
     try{ _unlockedBookmarkIds.clear(); _bmFolderId = null; _bmSelectMode = false; _bmSelectedIds.clear(); }catch{}
+  }
+  // Same rule for Notes, which never had it: purging the section but leaving
+  // the per-note session unlocks behind meant every note you had opened this
+  // session came back already unlocked the moment the section was reopened —
+  // and `_notesLoadedThisSession` would let the widget re-read them from disk
+  // without the section ever being unlocked again.
+  if(modalId === 'notesModal'){
+    try{ _relockAllNotes(); }catch{}
   }
   _scrubSectionDom(modalId);
   // Anything a section put somewhere other than its own subtree — an open
@@ -7161,7 +7225,7 @@ async function confirmClearMasterPassword(){
   }
   settings.menuPassword='';
   const h=document.getElementById('menuPassword'); if(h) h.value='';
-  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes','lockTasks','lockClock','lockInfo','lockClock'].forEach(id=>{
+  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes','lockTasks','lockClock','lockInfo'].forEach(id=>{
     settings[id]=false; const el=document.getElementById(id); if(el) el.checked=false;
   });
   const la=document.getElementById('lockAll'); if(la) la.checked=false;
@@ -7179,7 +7243,7 @@ function updateMasterPwStatus(){
   const clr=document.getElementById('clearPwBtn'); if(clr) clr.style.display=settings.menuPassword?'':'none';
   const rec=document.getElementById('newRecoveryBtn'); if(rec) rec.style.display=settings.menuPassword?'':'none';
 }
-const LOCK_KEYS=['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes','lockTasks','lockClock','lockInfo','lockClock'];
+const LOCK_KEYS=['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes','lockTasks','lockClock','lockInfo'];
 function refreshLockAllState(){
   const all=LOCK_KEYS.every(k=>{const el=document.getElementById(k); return el && el.checked;});
   const any=LOCK_KEYS.some(k=>{const el=document.getElementById(k); return el && el.checked;});
@@ -7296,7 +7360,7 @@ function attachSettingsListeners() {
     });
   }
   // Lock checkbox enforcement
-  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes','lockTasks','lockClock','lockInfo','lockClock'].forEach(id => {
+  ['lockHistory','lockBookmarks','lockSettings','lockReminders','lockMedia','lockWebApps','lockFiles','lockRSS','lockUrl','lockNotes','lockTasks','lockClock','lockInfo'].forEach(id => {
     const cb = document.getElementById(id);
     if (!cb || cb._lockListenerAttached) return;
     cb._lockListenerAttached = true;
@@ -8134,6 +8198,35 @@ let _noteEditorAutosaveTimer = null;
 // Note IDs whose lock has been unlocked in this session
 const _unlockedNoteIds = new Set();
 
+/* ── Ending a per-item unlock ──────────────────────────────────────────────
+   Unlocking a note or a folder was only ever meant to last as long as you are
+   working with it, but nothing outside the note editor ever ended it: a folder
+   unlocked once stayed open for the whole session, a note unlocked from the
+   widget stayed readable on the home screen indefinitely, and closing the Notes
+   section left both behind — so reopening it showed everything already unlocked.
+
+   `_unlockedNoteIds` is the whole of that state, so one function ends it, and
+   every path that should end it calls here: closing the section, the section
+   auto-locking, returning to the home screen, and the widget's own idle timer.
+
+   The DOM is cleared alongside it. A note whose lock has come back but whose
+   text is still sitting in the editor, the widget or the switcher list is not
+   locked in any sense that matters — that markup is memory, and it is exactly
+   what the lock exists to take away. */
+function _relockAllNotes(){
+  try{ _unlockedNoteIds.clear(); }catch{}
+  // Browsing state is part of it: you were inside a folder because you had
+  // unlocked it, so the way back in is the root, not where you left off.
+  try{ _notesCurrentFolderId = null; _notesSelectMode = false; _notesSelectedIds.clear(); }catch{}
+  try{ _stopNotesWidgetIdle(); }catch{}
+  _nwLockedViewId = null;
+  _notesLoadedThisSession = false;
+  ['noteEditorContent','notesWidgetPreview','notesSwitcherList','notesListContainer'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.innerHTML = '';
+  });
+  const t = document.getElementById('noteEditorTitle'); if(t) t.value = '';
+}
+
 function _loadNotes(){
   try { notesData = JSON.parse(localStorage.getItem('googokeNotesData')) || []; } catch { notesData = []; }
   try { notesMeta = { ...notesMeta, ...(JSON.parse(localStorage.getItem('googokeNotesMeta')) || {}) }; } catch {}
@@ -8197,14 +8290,148 @@ function createNotesWidget() {
   document.getElementById('widgetsContainer').appendChild(w);
   renderNotesWidget();
 }
+/* ── The widget's own idle lock ────────────────────────────────────────────
+   An unlocked note inside the Notes app is behind a modal you had to open. The
+   same note in the widget is lying open on the home screen, in front of anyone
+   who walks past the machine. It should not enjoy the same grace period.
+
+   So the widget re-locks at half the section auto-lock time. That is derived,
+   not configurable: a separate setting would only ever be used to make it
+   longer, which is the one direction that makes the app less safe, and the
+   relationship — the widget always goes first — is the point.
+
+   Auto-lock set to Off turns this off with it; you have asked for no idle
+   locking at all and the widget is not the place to overrule that.
+
+   What happens on the tick is in `_notesWidgetIdleLock`: the note is written
+   back (so it is ciphertext on disk again), the plaintext is taken out of the
+   DOM, the session unlock is dropped, and the widget shows a lock screen
+   instead of quietly sliding to some other note. */
+let _nwIdleTimer = null;
+let _nwWatchedId = null;     // the unlocked-but-locked note the widget is exposing
+let _nwLockedViewId = null;  // the note the widget is showing its lock screen for
+function _notesWidgetIdleMs(){
+  const mins = Number(settings.autoLockMinutes);
+  if(!mins || mins <= 0) return 0;                 // auto-lock off → this is off too
+  return Math.max(15000, (mins / 2) * 60 * 1000);  // floor so it can't become a flicker
+}
+function _stopNotesWidgetIdle(){
+  if(_nwIdleTimer){ clearTimeout(_nwIdleTimer); _nwIdleTimer = null; }
+  _nwWatchedId = null;
+}
+function _bumpNotesWidgetIdle(){
+  if(!_nwWatchedId) return;
+  const ms = _notesWidgetIdleMs();
+  if(!ms){ _stopNotesWidgetIdle(); return; }
+  if(_nwIdleTimer) clearTimeout(_nwIdleTimer);
+  const id = _nwWatchedId;
+  _nwIdleTimer = setTimeout(() => _notesWidgetIdleLock(id), ms);
+}
+function _watchNotesWidgetIdle(noteId){
+  if(!noteId){ _stopNotesWidgetIdle(); return; }
+  if(_nwWatchedId === noteId && _nwIdleTimer) return;   // already counting for this note
+  _stopNotesWidgetIdle();
+  _nwWatchedId = noteId;
+  if(!window._nwIdleBound){
+    window._nwIdleBound = true;
+    ['mousemove','mousedown','keydown','touchstart','scroll','wheel'].forEach(evt =>
+      window.addEventListener(evt, _bumpNotesWidgetIdle, { passive:true }));
+  }
+  _bumpNotesWidgetIdle();
+}
+function _notesWidgetIdleLock(noteId){
+  _stopNotesWidgetIdle();
+  const n = _findNote(noteId);
+  // A public note has nothing to re-lock — the timer simply doesn't apply to it.
+  if(!n || !n.locked) return;
+  /* Commit before wiping. Anything typed into the widget preview may still be
+     sitting in a debounced save; dropping the plaintext without flushing it
+     first would lose the edit, and re-locking is not supposed to cost you work.
+     The write goes through the encrypted-storage wrapper, so the note is
+     ciphertext on disk the moment this returns. */
+  try{
+    if(n._widgetSaveTimer){ clearTimeout(n._widgetSaveTimer); n._widgetSaveTimer = null; }
+    const el = document.getElementById('notesWidgetPreview');
+    if(el && el.isContentEditable && _canEditNoteInWidget(n)){
+      n.content = el.innerHTML;
+      n.updatedAt = new Date().toISOString();
+    }
+    _saveNotes();
+  }catch(e){ console.warn('[notes widget idle]', e); }
+  // Now the lock actually bites: session unlock gone, text out of the DOM.
+  _unlockedNoteIds.delete(noteId);
+  const prev = document.getElementById('notesWidgetPreview');
+  if(prev){ prev.setAttribute('contenteditable','false'); prev.innerHTML = ''; }
+  _nwLockedViewId = noteId;
+  renderNotesWidget();
+  /* And the key itself, when nothing is left holding it open. Notes as a locked
+     *section* is encrypted under the vault key; leaving that key in memory for
+     a widget that has just locked itself would undo most of what this did.
+     (`_relockVaultIfIdle` is a no-op while any locked section is still open.) */
+  try{ _relockVaultIfIdle(); }catch{}
+}
+// The lock screen the widget shows in place of the note. Deliberately not a
+// silent fall-through to another note: you are told this one locked itself, and
+// given the two ways on — back in with its password, or back to the picker.
+function _renderNotesWidgetLockScreen(n, body, title){
+  _stopNotesWidgetIdle();
+  if(title) title.textContent = n.title || 'Untitled note';
+  const hasOther = _notesVisibleInSwitcher().length > 0;
+  body.innerHTML =
+    `<div class="nwb-locked">`+
+      `<svg class="nwb-lk-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>`+
+      `<div class="nwb-lk-title">Locked after inactivity</div>`+
+      `<div class="nwb-lk-sub">This note has been encrypted again. Enter its password to carry on.</div>`+
+      `<div class="nwb-lk-btns">`+
+        `<button type="button" class="nwb-lk-primary" onclick="unlockNotesWidgetNote()">Unlock</button>`+
+        `<button type="button" class="nwb-lk-ghost" onclick="notesWidgetBackToPicker()">Back</button>`+
+      `</div>`+
+      (hasOther ? '' : `<div class="nwb-lk-note">Back leaves the widget empty — there is no unlocked note to show.</div>`)+
+    `</div>`;
+}
+// "Unlock" — the same gate the app uses, so a note with its own password asks
+// for that one and a master-locked note takes the master password or passkey.
+function unlockNotesWidgetNote(){
+  const id = _nwLockedViewId;
+  if(!id) return;
+  promptNoteUnlock(id, () => {
+    _nwLockedViewId = null;
+    notesMeta.activeWidgetNoteId = id;
+    _saveNotesMeta();
+    renderNotesWidget();
+  });
+}
+// "Back" — leave the note locked and hand the widget back to the picker. It
+// lands on an unlocked note if there is one and on the empty state if there
+// isn't; the picker itself opens on top so you can choose a different one,
+// which is the whole reason you'd press Back rather than Unlock.
+function notesWidgetBackToPicker(){
+  _nwLockedViewId = null;
+  const pub = _notesVisibleInSwitcher()[0];
+  notesMeta.activeWidgetNoteId = pub ? pub.id : null;
+  _saveNotesMeta();
+  renderNotesWidget();
+  if (pub) try{ openNotesWidgetSwitcher(); }catch{}
+}
+
 function renderNotesWidget(){
   const body = document.getElementById('notesWidgetBody');
   const title = document.getElementById('notesWidgetTitle');
   if (!body) return;
+  /* The idle lock screen wins over everything below, and is checked before the
+     visible-note fallback on purpose: falling through would pick a different
+     note and quietly erase the fact that this one locked itself. It clears
+     itself as soon as the note is unlocked again, or stops being locked. */
+  if (_nwLockedViewId){
+    const ln = _findNote(_nwLockedViewId);
+    if (!ln || !ln.locked || _unlockedNoteIds.has(_nwLockedViewId)) _nwLockedViewId = null;
+    else { _renderNotesWidgetLockScreen(ln, body, title); return; }
+  }
   const visible = _notesVisibleInSwitcher();
   if (!visible.length){
     body.innerHTML = `<div class="nwb-preview"><span class="nwb-empty">No notes yet.</span></div>`;
     if (title) title.textContent = 'Notes';
+    _stopNotesWidgetIdle();
     return;
   }
   // Pick active — must be in the visible list (locked notes filtered out when menu locked)
@@ -8240,6 +8467,11 @@ function renderNotesWidget(){
         : `contenteditable="false" tabindex="-1"`)+
       `>${previewHtml}</div>`+
     (showSettingsHint ? `<div class="nwb-meta">Widget editing disabled in settings</div>` : '');
+  // Start (or stop) the shorter widget clock. It only runs while the widget is
+  // actually showing a locked note you have unlocked — a public note is not
+  // something the timer has any business hiding.
+  if (active && active.locked && _unlockedNoteIds.has(active.id)) _watchNotesWidgetIdle(active.id);
+  else _stopNotesWidgetIdle();
 }
 // Notes eligible for the switcher.
 //
@@ -8450,7 +8682,9 @@ function onNotesWidgetSelect(id){
 function refreshAllNotesSurfaces(){
   // If the widget is pointing at something that just became locked, move on.
   const active = notesMeta.activeWidgetNoteId && _findNote(notesMeta.activeWidgetNoteId);
-  if (active && (_noteIsLockedNow(active) || _isInsideLockedFolder(active))){
+  // …unless the widget is deliberately parked on that note's lock screen. Moving
+  // on would be the silent fall-through the lock screen exists to prevent.
+  if (active && active.id !== _nwLockedViewId && (_noteIsLockedNow(active) || _isInsideLockedFolder(active))){
     const fallback = _notesVisibleInSwitcher()[0];
     notesMeta.activeWidgetNoteId = fallback ? fallback.id : null;
     _saveNotesMeta();
@@ -8519,8 +8753,18 @@ function openNoteFolder(folderId){
 function notesGoUp(){
   if (!_notesCurrentFolderId) return;
   const cur = _findNote(_notesCurrentFolderId);
+  /* Walking out of a folder you unlocked closes it again. Folder unlocks used
+     to be the one kind that never ended — the note editor re-locked notes on
+     the way out, but nothing ever re-locked a folder, so one password entry
+     kept its whole subtree readable (in the app, in the widget and in the
+     switcher) until the page was reloaded. */
+  if (cur && cur.locked){
+    _unlockedNoteIds.delete(cur.id);
+    _notesSelectedIds.clear();
+  }
   _notesCurrentFolderId = cur ? (cur.parentId || null) : null;
   renderNotesApp();
+  try{ renderNotesWidget(); }catch{}
 }
 function _folderPath(folderId){
   const path = [];
@@ -9278,11 +9522,20 @@ function closeNoteEditor(){
   if (_noteEditorAutosaveTimer) { clearTimeout(_noteEditorAutosaveTimer); _noteEditorAutosaveTimer = null; }
   const editingId = _currentEditingNoteId;
   if (editingId && _noteEditorDirty) _flushNoteEditor();
-  // Auto-relock: once we close a locked note that we unlocked, it locks again
+  /* Auto-relock: once we close a locked note that we unlocked, it locks again.
+
+     `_findNote` can come back empty — the section may have been purged out from
+     under the editor by an auto-lock — and the old `n && n.locked` test read
+     that as "not locked" and left the id in the unlocked set. Missing means
+     unreadable, so treat it as locked; and drop the text out of the editor
+     rather than leaving the last locked note sitting in the DOM behind a
+     display:none. */
   if (editingId){
     const n = _findNote(editingId);
-    if (n && n.locked) {
+    if (!n || n.locked){
       _unlockedNoteIds.delete(editingId);
+      const c = document.getElementById('noteEditorContent'); if (c) c.innerHTML = '';
+      const t = document.getElementById('noteEditorTitle');   if (t) t.value = '';
     }
   }
   _currentEditingNoteId = null;
@@ -9993,6 +10246,9 @@ async function authenticateNotePasskey(){
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (document.fullscreenElement) return;
+  // A popup opened *over* the editor (lock, link, colours) owns the key first —
+  // ESC should dismiss that one dialog, not tear the editor down underneath it.
+  if (_topOpenPopup()) return;
   const editor = document.getElementById('noteEditor');
   if (editor && editor.classList.contains('open')) {
     closeNoteEditor();
@@ -15813,7 +16069,7 @@ function copyDialogNewFolder(){
     _copyDialogState.browsingFolderId = id;
     renderCopyDialogList();
     showToast('Folder created');
-  });
+  }, { title:'New folder', confirmLabel:'Create', placeholder:'Folder name' });
 }
 function confirmCopyDialog(){
   if(!_copyDialogState) return;
@@ -17914,7 +18170,7 @@ const POPUP_ENTER_MAP = {
 document.addEventListener('keydown',e=>{
   if(e.key!=='Enter') return;
   if(e.shiftKey||e.altKey) return;
-  const openPopupEl = document.querySelector('.popup-overlay.open');
+  const openPopupEl = _topOpenPopup();   // topmost, not first in the document
   if(!openPopupEl) return;
   // Do not hijack Enter inside a multi-line textarea
   const active=document.activeElement;
@@ -25277,10 +25533,38 @@ function _lockPromptIsOpen(){
   });
 }
 function _lockAllUnlockedModals(){
-  if (!settings.menuPassword) return; // no password → nothing to lock
   // Something is playing: re-arm and come back to it rather than locking the
   // screen someone is watching.
   if (_mediaIsPlaying()) { _setupInactivityAutoLock(); return; }
+  /* Per-item locks first, and before the master-password test below.
+
+     A note or folder can carry its own password with no master password set at
+     all, so gating this on `settings.menuPassword` (as the section locking has
+     to be) would have left exactly those items unlocked through any amount of
+     idling. Close the editor first so a pending edit is flushed while the note
+     is still readable, then end every session unlock. */
+  let relockedItems = false;
+  try{
+    const ed = document.getElementById('noteEditor');
+    const editing = ed && ed.classList.contains('open') && _currentEditingNoteId;
+    const editingLocked = editing && (() => { const n = _findNote(_currentEditingNoteId); return !n || n.locked; })();
+    if (editingLocked) closeNoteEditor();
+    if (_unlockedNoteIds.size || _nwLockedViewId){
+      _relockAllNotes();
+      // Repaint both surfaces, not just the widget: the Notes app may be open
+      // on a folder that has just re-locked, and it must not sit there showing
+      // the contents of one.
+      refreshAllNotesSurfaces();
+      relockedItems = true;
+    }
+  }catch(e){ console.warn('[idle relock]', e); }
+  // No password → there are no *sections* to lock, but the per-item relock above
+  // may still have happened, so say so before leaving.
+  if (!settings.menuPassword) {
+    if (relockedItems) showToast('Locked due to inactivity','warn');
+    _setupInactivityAutoLock();
+    return;
+  }
   const anyLockedOpen = [...unlockedModals].some(id => {
     const el = document.getElementById(id);
     return el && el.classList.contains('active');
@@ -25290,6 +25574,7 @@ function _lockAllUnlockedModals(){
     // announcing "Locked due to inactivity" was simply wrong — the section was
     // locked the whole time. Drop back to the home screen instead, which is
     // what the idle timer is really for.
+    if (relockedItems) showToast('Locked due to inactivity','warn');
     if (_lockPromptIsOpen()) _goHomeIdle();
     _setupInactivityAutoLock();
     return;
@@ -25324,7 +25609,7 @@ function _lockAllUnlockedModals(){
   try{ _relockVaultIfIdle(); if(KeyVault.isEnabled()) KeyVault.lock(); }catch{}
   // Only say it if it happened. An open modal with no lock config of its own
   // used to reach here and toast about a lock that never took place.
-  if (lockedCount) showToast('Locked due to inactivity','warn');
+  if (lockedCount || relockedItems) showToast('Locked due to inactivity','warn');
   else if (_lockPromptIsOpen()) _goHomeIdle();
   _setupInactivityAutoLock();
 }
@@ -25361,8 +25646,11 @@ function _goHomeIdle(){
   try { closeRSSReader(); } catch{}
   try { closeEventsViewer(); } catch{}
   try { closeAllModals(); } catch{}
-  document.querySelectorAll('.popup-overlay.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.popup-overlay.open').forEach(p => { p.classList.remove('open'); p.style.zIndex=''; });
   try { _closeAllFloatingMenus(); } catch{}
+  // Back at the home screen, nothing should still be unlocked from before —
+  // including the note left showing in the widget.
+  try { _relockAllNotes(); renderNotesWidget(); } catch(e){ console.warn('[home relock]', e); }
   _setupInactivityHome();
 }
 
